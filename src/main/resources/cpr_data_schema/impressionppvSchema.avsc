@@ -1,0 +1,436 @@
+{
+  "type" : "record",
+  "name" : "ImpressionPPVFact",
+  "namespace" : "com.flipkart.dpg.unified.session",
+  "doc" : "Raw fact at ProductCard ImpressionId x PPV FetchId x ListingId",
+  "fields" : [ {
+    "name" : "sessionAttributes",
+    "type" : {
+      "type" : "record",
+      "name" : "ImpressionPPVSessionAttributes",
+      "doc" : "Session level attributes for the ImpressionPPVFact",
+      "fields" : [ {
+        "name" : "sessionId",
+        "type" : "string",
+        "doc" : "Session Id"
+      }, {
+        "name" : "sessionStartTime",
+        "type" : "long",
+        "doc" : "Session start time at ms"
+      }, {
+        "name" : "platform",
+        "type" : [ "null", "string" ],
+        "doc" : "Platform Android/iOs/Desktop etc."
+      }, {
+        "name" : "uaDeviceId",
+        "type" : [ "null", "string" ],
+        "doc" : "Device Id derived from UserAgent"
+      }, {
+        "name" : "uaAppVersion",
+        "type" : [ "null", "string" ],
+        "doc" : "App version derived from UserAgent"
+      }, {
+        "name" : "uaBrowserFamily",
+        "type" : [ "null", "string" ],
+        "doc" : "Browser family derived from UserAgent"
+      }, {
+        "name" : "uaDeviceFamily",
+        "type" : [ "null", "string" ],
+        "doc" : "Device family derived from UserAgent"
+      }, {
+        "name" : "uaDeviceType",
+        "type" : [ "null", "string" ],
+        "doc" : "Device type derived from UserAgent"
+      }, {
+        "name" : "visitorId",
+        "type" : [ "null", "string" ],
+        "doc" : "Visitor Id"
+      }, {
+        "name" : "pincode",
+        "type" : [ "null", "int" ],
+        "doc" : "Last set pincode"
+      } ]
+    },
+    "doc" : "Session level attributes"
+  }, {
+    "name" : "accountId",
+    "type" : [ "null", "string" ],
+    "doc" : "Account Id, null if not logged in"
+  }, {
+    "name" : "findingMethod",
+    "type" : [ "null", "string" ],
+    "doc" : "Finding method"
+  }, {
+    "name" : "marketingChannelType",
+    "type" : [ "null", "string" ],
+    "doc" : "Marketing channel type SEO/SCM/AFFILIATE"
+  }, {
+    "name" : "marketingChannelId",
+    "type" : [ "null", "string" ],
+    "doc" : "Marketing channel id"
+  }, {
+    "name" : "productCardAttributes",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "ImpressionPPVProductCardAttributes",
+      "doc" : "Product card related attributes",
+      "fields" : [ {
+        "name" : "impressionId",
+        "type" : [ "null", "string" ],
+        "doc" : "contentImpressionId for ProductCard, null for PPVs with no parent productCardImpression"
+      }, {
+        "name" : "isDerivedFromClick",
+        "type" : "boolean",
+        "doc" : "Is the impression derived (No DCI, only DCC)"
+      }, {
+        "name" : "timestamp",
+        "type" : [ "null", "long" ],
+        "doc" : "Event occurrence timestamp in epochs"
+      }, {
+        "name" : "navigationImpressionId",
+        "type" : [ "null", "string" ],
+        "doc" : "navigation ImpressionId for ProductCard"
+      }, {
+        "name" : "position",
+        "type" : [ "null", "int" ],
+        "doc" : "Position of the productCard"
+      }, {
+        "name" : "productId",
+        "type" : [ "null", "string" ],
+        "doc" : "ProductID/FSN for ProductCard"
+      }, {
+        "name" : "pageType",
+        "type" : [ "null", "string" ],
+        "doc" : "PageType from the navigation context of the productCard"
+      }, {
+        "name" : "prevPageType",
+        "type" : [ "null", "string" ],
+        "doc" : "Previous PageType from the navigation context of the productCard"
+      }, {
+        "name" : "isImageAvailable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Is the image available for the product card"
+      }, {
+        "name" : "finalProductState",
+        "type" : [ "null", "string" ],
+        "doc" : "Final product state"
+      }, {
+        "name" : "ugcReviewCount",
+        "type" : [ "null", "int" ],
+        "doc" : "Review count"
+      }, {
+        "name" : "ugcRatingBase",
+        "type" : [ "null", "int" ],
+        "doc" : "Max Rating allowed (Currently 5)"
+      }, {
+        "name" : "ugcAvgRating",
+        "type" : [ "null", "double" ],
+        "doc" : "Average Rating"
+      }, {
+        "name" : "ugcRatingCount",
+        "type" : [ "null", "int" ],
+        "doc" : "Rating Count"
+      } ]
+    } ],
+    "doc" : "Product card related attributes"
+  }, {
+    "name" : "productCardListingAttributes",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "ImpressionPPVListingDetails",
+      "doc" : "Listing view for ImpressionPPVFact",
+      "fields" : [ {
+        "name" : "listingId",
+        "type" : "string",
+        "doc" : "Listing ID"
+      }, {
+        "name" : "isServiceable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "If the listing is serviceable"
+      }, {
+        "name" : "availabilityStatus",
+        "type" : [ "null", "string" ],
+        "doc" : "Availability status In-stock, etc"
+      }, {
+        "name" : "state",
+        "type" : "string",
+        "doc" : "State of listing (Coming Soon, Pre-order etc)"
+      }, {
+        "name" : "isFlipkartAdvantage",
+        "type" : [ "null", "boolean" ],
+        "doc" : "If the listing is a FA-listing"
+      }, {
+        "name" : "deliveryDate",
+        "type" : [ "null", "string" ],
+        "doc" : "Delivery date as displayed to the user"
+      }, {
+        "name" : "minDeliveryDateEpochMs",
+        "type" : [ "null", "long" ],
+        "doc" : "Min delivery date in epoch ms for serviceable options"
+      }, {
+        "name" : "maxDeliveryDateEpochMs",
+        "type" : [ "null", "long" ],
+        "doc" : "Max delivery date in epoch ms for serviceable options"
+      }, {
+        "name" : "mrp",
+        "type" : [ "null", "int" ],
+        "doc" : "MRP"
+      }, {
+        "name" : "finalPrice",
+        "type" : [ "null", "int" ],
+        "doc" : "Price after discount"
+      }, {
+        "name" : "fsp",
+        "type" : [ "null", "int" ],
+        "doc" : "Flipkart selling price"
+      }, {
+        "name" : "sellerId",
+        "type" : "string",
+        "doc" : "Seller ID"
+      }, {
+        "name" : "isCodAvailable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Is a delivery options with cod available"
+      }, {
+        "name" : "deliverySpeedOptions",
+        "type" : [ "null", {
+          "type" : "array",
+          "items" : "string"
+        } ],
+        "doc" : "Set of serviceable speed options available"
+      }, {
+        "name" : "prexoOfferId",
+        "type" : [ "null", "string" ],
+        "doc" : "Prexo Offer ID"
+      }, {
+        "name" : "isPrexoServiceable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Prexo serviceability"
+      }, {
+        "name" : "offerIds",
+        "type" : [ "null", {
+          "type" : "array",
+          "items" : "string"
+        } ],
+        "doc" : "All associated offerIds"
+      } ]
+    } ],
+    "doc" : "Listing attributes for the product card, null if server side event (PCS) is missing"
+  }, {
+    "name" : "productPageAttributes",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "ImpressionPPVProductPageAttributes",
+      "doc" : "Product page related attributes",
+      "fields" : [ {
+        "name" : "fetchId",
+        "type" : [ "null", "string" ],
+        "doc" : "FetchId of the product page"
+      }, {
+        "name" : "timestamp",
+        "type" : [ "null", "long" ],
+        "doc" : "Event occurrence timestamp in epochs"
+      }, {
+        "name" : "productId",
+        "type" : [ "null", "string" ],
+        "doc" : "ProductID/FSN for ProductPage"
+      }, {
+        "name" : "analyticalSuperCategory",
+        "type" : [ "null", "string" ],
+        "doc" : "superCategory"
+      }, {
+        "name" : "analyticalCategory",
+        "type" : [ "null", "string" ],
+        "doc" : "category"
+      }, {
+        "name" : "analyticalSubCategory",
+        "type" : [ "null", "string" ],
+        "doc" : "subCategory"
+      }, {
+        "name" : "analyticalVertical",
+        "type" : [ "null", "string" ],
+        "doc" : "vertical"
+      }, {
+        "name" : "isVideoAvailable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Is video available in the product page"
+      }, {
+        "name" : "isImagesAvailable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Is images available for product page"
+      }, {
+        "name" : "finalProductState",
+        "type" : [ "null", "string" ],
+        "doc" : "Final product state"
+      }, {
+        "name" : "isVisualDiscoverEnabled",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Is visual discover enabled for product page"
+      }, {
+        "name" : "isDigital",
+        "type" : [ "null", "boolean" ],
+        "doc" : "If the listing is a digital listing"
+      }, {
+        "name" : "isSwatchAvailable",
+        "type" : [ "null", "boolean" ],
+        "doc" : "Is swatch available for the listing"
+      }, {
+        "name" : "ugcReviewCount",
+        "type" : [ "null", "int" ],
+        "doc" : "Review count"
+      }, {
+        "name" : "ugcRatingBase",
+        "type" : [ "null", "int" ],
+        "doc" : "Max Rating allowed (Currently 5)"
+      }, {
+        "name" : "ugcAvgRating",
+        "type" : [ "null", "double" ],
+        "doc" : "Average Rating"
+      }, {
+        "name" : "ugcRatingCount",
+        "type" : [ "null", "int" ],
+        "doc" : "Rating Count"
+      } ]
+    } ],
+    "doc" : "Product page related attributes"
+  }, {
+    "name" : "searchAttributes",
+    "type" : [ "null", {
+      "type" : "record",
+      "name" : "SearchQueryAttributes",
+      "doc" : "Search query related attributes",
+      "fields" : [ {
+        "name" : "searchQueryId",
+        "type" : [ "null", "string" ],
+        "doc" : "sqid of the corresponding search."
+      }, {
+        "name" : "originalSearchQuery",
+        "type" : [ "null", "string" ],
+        "doc" : "User entered text for the search."
+      }, {
+        "name" : "searchSessionId",
+        "type" : [ "null", "string" ],
+        "doc" : "search sessionid received in request"
+      }, {
+        "name" : "timestamp",
+        "type" : [ "null", "long" ],
+        "doc" : "Timestamp of the first SearchResultsServed event for the search."
+      }, {
+        "name" : "sortBy",
+        "type" : [ "null", "string" ],
+        "doc" : "Sorting attributes used."
+      }, {
+        "name" : "filtersApplied",
+        "type" : [ "null", {
+          "type" : "array",
+          "items" : {
+            "type" : "record",
+            "name" : "SearchFilter",
+            "doc" : "Search Filter",
+            "fields" : [ {
+              "name" : "type",
+              "type" : "string",
+              "doc" : "Type of filter"
+            }, {
+              "name" : "option",
+              "type" : "string",
+              "doc" : "Value of filter"
+            } ]
+          }
+        } ],
+        "doc" : "filters received in query"
+      }, {
+        "name" : "searchRequestStorePath",
+        "type" : [ "null", "string" ],
+        "doc" : "Store path in which search was carried out."
+      }, {
+        "name" : "abIds",
+        "type" : [ "null", {
+          "type" : "array",
+          "items" : "string"
+        } ],
+        "doc" : "Id for running AB tests if any, taken from the navigation context.",
+        "default" : null
+      }, {
+        "name" : "searchResponseStorePath",
+        "type" : [ "null", "string" ],
+        "doc" : "StorePath returned by sherlock."
+      }, {
+        "name" : "searchQuery",
+        "type" : [ "null", "string" ],
+        "doc" : "Search query on the basis of which results are fetched (original query may be augmented)."
+      }, {
+        "name" : "numProductsFound",
+        "type" : [ "null", "int" ],
+        "doc" : "Total number of search results for this query."
+      }, {
+        "name" : "payloadId",
+        "type" : [ "null", "string" ],
+        "doc" : "Payload Id of sherlock response."
+      } ],
+      "default" : null
+    } ],
+    "doc" : "Search related attributes",
+    "default" : null
+  }, {
+    "name" : "productPageListingIndex",
+    "type" : [ "null", "int" ],
+    "doc" : "Position of the listing in the PPV, productPageListingIndex=0 gives primary PPV / FetchID level data"
+  }, {
+    "name" : "productPageListingAttributes",
+    "type" : [ "null", "ImpressionPPVListingDetails" ],
+    "doc" : "Listing attributes for the product page, null if server side event (PPS) is missing"
+  }, {
+    "name" : "productCardImpressions",
+    "type" : "int",
+    "doc" : "Number of impressions on the impressionId (ProductCard grain)"
+  }, {
+    "name" : "productCardClicks",
+    "type" : "int",
+    "doc" : "Number of clicks on the impressionId (ProductCard grain)"
+  }, {
+    "name" : "firstProductCardClickTimestamp",
+    "type" : [ "null", "long" ],
+    "doc" : "Timestamp of the first DCC event."
+  }, {
+    "name" : "productCardAddToWishListClicks",
+    "type" : "int",
+    "doc" : "Number of ATW clicks on product card (ProductCard grain)"
+  }, {
+    "name" : "firstProductCardWishListClickTimestamp",
+    "type" : [ "null", "long" ],
+    "doc" : "Timestamp of the first ATW event on the product card."
+  }, {
+    "name" : "productPageViews",
+    "type" : "int",
+    "doc" : "Number of ppvs on the fetchId (PPV grain)"
+  }, {
+    "name" : "addToCartClicks",
+    "type" : "int",
+    "doc" : "Number of AddToCart clicks (PPV + Listing grain)"
+  }, {
+    "name" : "firstAddToCartClickTimestamp",
+    "type" : [ "null", "long" ],
+    "doc" : "Timestamp of the first ATC event."
+  }, {
+    "name" : "buyNowClicks",
+    "type" : "int",
+    "doc" : "Number of BuyNow clicks (PPV + Listing grain)"
+  }, {
+    "name" : "firstBuyNowClickTimestamp",
+    "type" : [ "null", "long" ],
+    "doc" : "Timestamp of the first BNC event."
+  }, {
+    "name" : "productPageAddToWishListClicks",
+    "type" : "int",
+    "doc" : "Number of ATW clicks on product page (PPV grain)"
+  }, {
+    "name" : "firstProductPageWishListClickTimestamp",
+    "type" : [ "null", "long" ],
+    "doc" : "Timestamp of the first ATW event on the product page."
+  }, {
+    "name" : "productCardImpressionFilter",
+    "type" : "boolean",
+    "doc" : "Filter to get productCardImpressionId level rows"
+  } ]
+}
