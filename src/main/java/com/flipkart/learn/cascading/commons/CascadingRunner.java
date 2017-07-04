@@ -3,6 +3,7 @@ package com.flipkart.learn.cascading.commons;
 import cascading.flow.Flow;
 import cascading.flow.FlowDef;
 import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
+import cascading.pipe.Pipe;
 import cascading.property.AppProps;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,7 +28,7 @@ public class CascadingRunner {
         CascadingFlows cascadingFlow = CascadingFlowFactory.getCascadingFlow(options.get("flowName"));
         FlowDef flowDef = cascadingFlow.getFlowDefinition(options);
 
-        final Properties properties = CascadingJobConfiguration.getConfiguration(500);
+        final Properties properties = CascadingJobConfiguration.getConfiguration(200);
 //        final Properties properties = new Properties();
 
         AppProps.addApplicationTag(properties, "sample app");

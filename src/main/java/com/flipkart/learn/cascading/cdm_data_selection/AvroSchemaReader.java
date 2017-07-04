@@ -12,12 +12,13 @@ package com.flipkart.learn.cascading.cdm_data_selection;
 
 
 import com.google.common.base.Optional;
-        import lombok.AllArgsConstructor;
-        import lombok.Data;
-        import lombok.Getter;
-        import org.apache.avro.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import org.apache.avro.Schema;
+//import org.springframework.core.io.ClassPathResource;
 
-        import java.io.*;
+import java.io.*;
         import java.util.*;
 
 /**
@@ -42,20 +43,6 @@ public class AvroSchemaReader {
         }
         return Optional.absent();
     }
-
-//    public Optional<NodeIndex> getNodeIndex(String nodeName, String parentNodeName) {
-//
-//        Optional<List<NodeIndex>> parentNodeIndices = this.getNodeIndex(nodeName);
-//        if (!parentNodeIndices.isPresent()) {
-//            return Optional.absent();
-//        }
-//        for (NodeIndex nodeIndex : parentNodeIndices.get()) {
-//            if (nodeIndex.getNodeName().equals(parentNodeName)) {
-//                return Optional.of(nodeIndex);
-//            }
-//        }
-//        return Optional.absent();
-//    }
 
     public Optional<NodeIndex> getIndex(String parentNodeName, String nodeName) {
 
@@ -104,23 +91,34 @@ public class AvroSchemaReader {
 
 
     public AvroSchemaReader buildSchema() throws IOException {
-
-        ClassLoader classLoader = getClass().getClassLoader();
-        File fileRef = new File(classLoader.getResource(this.inputSchemaPath).getFile());
+        InputStream in = getClass().getResourceAsStream(this.inputSchemaPath);
         Schema.Parser parser = new Schema.Parser();
-        this.schema = parser.parse(fileRef);
+        this.schema = parser.parse(in);
         this.parseNode(this.schema, "root", "-1", 0);
         return this;
     }
 
+//    public AvroSchemaReader buildSchema() throws IOException {
+//        ClassPathResource resource = new ClassPathResource(this.inputSchemaPath);
+//        try (InputStream inputStream = resource.getInputStream()) {
+//            Schema.Parser parser = new Schema.Parser();
+//            this.schema = parser.parse(inputStream);
+//            this.parseNode(this.schema, "root", "-1", 0);
+//            inputStream.close();
+//            return this;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+//    }
 
     public static void main(String[] args) {
-        AvroSchemaReader avroSchemaReader = new AvroSchemaReader("data/nonavro/impressionppvSchema.avsc");
+        AvroSchemaReader avroSchemaReader = new AvroSchemaReader("/cpr_data_schema/impressionppvSchema.avsc");
         try {
             avroSchemaReader.buildSchema();
 
             System.out.println(avroSchemaReader.getNodeIndex("listingId").get());
-//            System.out.println(avroSchemaReader.getIndex("searchAttributes", "searchSessionId").get().getIdx());
+            System.out.println(avroSchemaReader.getIndex("searchAttributes", "searchSessionId").get().getIdx());
         }
         catch (IOException e) {
             System.out.println("error reading the file");
