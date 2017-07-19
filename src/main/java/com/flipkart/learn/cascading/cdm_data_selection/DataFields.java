@@ -9,31 +9,40 @@ public class DataFields {
     //session attributes
     public static final String _SESSIONATTRIBUTES = "sessionAttributes";
     public static final String _PLATFORM = "platform";
+    public static final String _DEVICEID = "uaDeviceId";
 
     //finding method
     public static final String _FINDINGMETHOD = "findingMethod";
+
+    //product attribute related
     public static final String _CMS = "cms";
     public static final String _FSN = "fsn";
     public static final String _VERTICAL = "vertical";
+    public static final String _BRAND = "brand";
+
+    //product card attributes
+    public static final String _PRODUCTCARDATTRIBUTES = "productCardAttributes";
+    public static final String _POSITION = "position";
 
     //product page attributes
-    public static String _PRODUCTPAGEATTRIBUTES = "productPageAttributes";
-    public static String _TIMESTAMP = "timestamp";
-    public static String _PRODUCTID = "productId";
-    public static String _ANALYTICALSUPERCATEGORY = "analyticalSuperCategory";
-    public static String _ANALYTICALCATEGORY = "analyticalCategory";
-    public static String _ANALYTICALSUBCATEGORY = "analyticalSubCategory";
-    public static String _ANALYTICALVERTICAL = "analyticalVertical";
-    public static String _ISVIDEOAVAILABLE = "isVideoAvailable";
-    public static String _ISIMAGESAVAILABLE = "isImagesAvailable";
-    public static String _FINALPRODUCTSTATE = "finalProductState";
-    public static String _ISVISUALDISCOVERENABLED = "isVisualDiscoverEnabled";
-    public static String _ISDIGITAL = "isDigital";
-    public static String _ISSWATCHAVAILABLE = "isSwatchAvailable";
-    public static String _UGCREVIEWCOUNT = "ugcReviewCount";
-    public static String _UGCRATINGBASE = "ugcRatingBase";
-    public static String _UGCAVGRATING = "ugcAvgRating";
-    public static String _UGCRATINGCOUNT = "ugcRatingCount";
+    public static final String _PRODUCTPAGEATTRIBUTES = "productPageAttributes";
+    public static final String _FETCHID = "fetchId";
+    public static final String _TIMESTAMP = "timestamp";
+    public static final String _PRODUCTID = "productId";
+    public static final String _ANALYTICALSUPERCATEGORY = "analyticalSuperCategory";
+    public static final String _ANALYTICALCATEGORY = "analyticalCategory";
+    public static final String _ANALYTICALSUBCATEGORY = "analyticalSubCategory";
+    public static final String _ANALYTICALVERTICAL = "analyticalVertical";
+    public static final String _ISVIDEOAVAILABLE = "isVideoAvailable";
+    public static final String _ISIMAGESAVAILABLE = "isImagesAvailable";
+    public static final String _FINALPRODUCTSTATE = "finalProductState";
+    public static final String _ISVISUALDISCOVERENABLED = "isVisualDiscoverEnabled";
+    public static final String _ISDIGITAL = "isDigital";
+    public static final String _ISSWATCHAVAILABLE = "isSwatchAvailable";
+    public static final String _UGCREVIEWCOUNT = "ugcReviewCount";
+    public static final String _UGCRATINGBASE = "ugcRatingBase";
+    public static final String _UGCAVGRATING = "ugcAvgRating";
+    public static final String _UGCRATINGCOUNT = "ugcRatingCount";
 
 
     //product page listing attributes
@@ -68,7 +77,10 @@ public class DataFields {
     
     //Final output of cdm data for cpr--required because of the custom operation required to fetch desired fields
 
-    public static final Fields cdmOutputFields = new Fields(_PLATFORM,
+    public static final Fields cdmOutputFields = new Fields(_FETCHID,
+            _TIMESTAMP,
+            _PLATFORM,
+            _DEVICEID,
             _FINDINGMETHOD,
             _PRODUCTID,
             _ISVIDEOAVAILABLE,
@@ -96,5 +108,6 @@ public class DataFields {
             _PRODUCTPAGEVIEWS,
             _PRODUCTPAGELISTINGINDEX,
             _ADDTOCARTCLICKS,
-            _BUYNOWCLICKS);
+            _BUYNOWCLICKS,
+            _POSITION);
 }

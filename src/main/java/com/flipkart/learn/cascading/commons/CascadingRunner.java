@@ -28,7 +28,7 @@ public class CascadingRunner {
         CascadingFlows cascadingFlow = CascadingFlowFactory.getCascadingFlow(options.get("flowName"));
         FlowDef flowDef = cascadingFlow.getFlowDefinition(options);
 
-        final Properties properties = CascadingJobConfiguration.getConfiguration(200);
+            final Properties properties = CascadingJobConfiguration.getConfiguration(200);
 //        final Properties properties = new Properties();
 
         AppProps.addApplicationTag(properties, "sample app");

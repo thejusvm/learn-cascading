@@ -3,9 +3,8 @@ package com.flipkart.learn.cascading.cdm_data_selection;
 import cascading.avro.AvroScheme;
 import cascading.flow.FlowDef;
 import cascading.operation.AssertionLevel;
-import cascading.pipe.CoGroup;
-import cascading.pipe.Each;
-import cascading.pipe.Pipe;
+import cascading.operation.expression.ExpressionFilter;
+import cascading.pipe.*;
 import cascading.pipe.assembly.Discard;
 import cascading.pipe.joiner.InnerJoin;
 import cascading.scheme.Scheme;
@@ -39,12 +38,16 @@ public class CPRDataFlow implements CascadingFlows {
 
         Pipe cmsPipe = new Pipe("cmsPipe");
         cmsPipe = new Each(cmsPipe, Fields.ALL,
-                new VerticalFromCMSJson(new Fields(DataFields._FSN, DataFields._VERTICAL)));
+                new VerticalFromCMSJson(new Fields(DataFields._FSN, DataFields._BRAND, DataFields._VERTICAL)));
 
         Pipe cdmPipe = new Pipe("cdmPipe");
 
         cdmPipe = new Each(cdmPipe, Fields.ALL,//new Fields("searchAttributes"),
                 new CPRRow(DataFields.cdmOutputFields), Fields.RESULTS);
+
+        cdmPipe = new GroupBy("fetchidGroup", cdmPipe, new Fields(DataFields._FETCHID));
+        cdmPipe = new Every(cdmPipe, Fields.ALL, new FilterListingPerFetchId(DataFields.cdmOutputFields),
+                Fields.RESULTS);
 
         Pipe cprRawPipe = new CoGroup(cdmPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
                 new Fields(DataFields._FSN),

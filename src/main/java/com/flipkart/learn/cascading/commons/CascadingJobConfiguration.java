@@ -38,9 +38,21 @@ public class CascadingJobConfiguration {
         for (Map.Entry<String, String> entry : actionConf) {
             properties.setProperty(entry.getKey(), entry.getValue());
         }
+        //sproperties.setProperty("mapred.max.split.size", "1073741824");
+        properties.setProperty("mapreduce.input.fileinputformat.split.maxsize", "1073741824");
+        properties.setProperty("mapreduce.input.fileinputformat.split.minsize", "1073741824");
+        properties.setProperty("mapred.fileinputformat.split.maxsize", "1073741824");
 
-        if(numReducers == 0)
-            numReducers = 250;
+
+        properties.setProperty("mapreduce.job.reduce.slowstart.completedmaps", "0.95");
+        properties.setProperty("mapreduce.task.io.sort.mb", "1024");
+        properties.setProperty("mapreduce.task.io.sort.factor", "50");
+// properties.setProperty("mapred.max.split.size", "1024");
+        properties.setProperty("mapreduce.input.fileinputformat.split.maxsize", "1073741824");
+        properties.setProperty("mapreduce.input.fileinputformat.split.minsize", "1073741824");
+        properties.setProperty("mapreduce.job.reduces", ""+numReducers);
+        properties.setProperty("mapred.mapper.new-api", "true");
+        properties.setProperty("avro.mapred.ignore.inputs.without.extension", "false");
 
 
         //Overriders if any.

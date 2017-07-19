@@ -29,13 +29,17 @@ public class VerticalFromCMSJson extends BaseOperation implements Function {
         try {
             JSONObject json = new JSONObject(cmsJson);
             String verticalName = json.getJSONArray("vertical").getString(0);
-
+            String brand = "";
+            if (json.has("brand")) {
+                brand = json.getJSONArray("brand").getString(0);
+            }
             Tuple result = new Tuple();
             result.add(fsn);
+            result.add(brand);
             result.add(verticalName);
-
-            functionCall.getOutputCollector().add(result);
-
+            if(verticalName.equalsIgnoreCase("t_shirt")){
+                functionCall.getOutputCollector().add(result);
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
