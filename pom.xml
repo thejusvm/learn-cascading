@@ -4,7 +4,7 @@
   <groupId>com.flipkart.learn.cascading</groupId>
   <artifactId>learn-cascading</artifactId>
   <packaging>jar</packaging>
-  <version>0.9.0</version>
+  <version>0.10.0</version>
   <name>learn-cascading</name>
   <url>http://maven.apache.org</url>
   <properties>

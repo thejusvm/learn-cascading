@@ -11,6 +11,10 @@ import cascading.tuple.TupleEntry;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Created by shubhranshu.shekhar on 28/06/17.
  */
@@ -37,7 +41,11 @@ public class VerticalFromCMSJson extends BaseOperation implements Function {
             result.add(fsn);
             result.add(brand);
             result.add(verticalName);
-            if(verticalName.equalsIgnoreCase("t_shirt")){
+//            if(verticalName.equalsIgnoreCase("t_shirt")){
+//                functionCall.getOutputCollector().add(result);
+//            }
+            List<String> verticalsWhitelist = Arrays.asList("watch", "sari", "television", "computer", "power_bank", "shoe", "t_shirt");
+            if(verticalsWhitelist.contains(verticalName.toLowerCase())){
                 functionCall.getOutputCollector().add(result);
             }
         } catch (JSONException e) {
