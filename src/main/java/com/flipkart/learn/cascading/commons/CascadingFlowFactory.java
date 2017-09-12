@@ -2,6 +2,7 @@ package com.flipkart.learn.cascading.commons;
 
 import com.flipkart.learn.cascading.assemblyjoins.AssembledJoinsFlow;
 import com.flipkart.learn.cascading.cdm_data_selection.CPRDataFlow;
+import com.flipkart.learn.cascading.cdm_data_selection.SimpleCDMFlow;
 import com.flipkart.learn.cascading.data_selection.DataSelectionFlow;
 import com.flipkart.learn.cascading.group_aggregation.GroupAggregatorFlow;
 import com.flipkart.learn.cascading.pass_through.PassThroughFlow;
@@ -32,6 +33,8 @@ public class CascadingFlowFactory {
                 return new DataSelectionFlow();
             case "cpr-data":
                 return new CPRDataFlow();
+            case "simple-cdm":
+                return new SimpleCDMFlow();
             default:
                 throw new IllegalArgumentException("Appropriate factory is not available for this runtime configuration in Bucket:");
         }

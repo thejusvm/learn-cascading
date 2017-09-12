@@ -5,6 +5,7 @@ import cascading.flow.FlowDef;
 import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
 import cascading.pipe.Pipe;
 import cascading.property.AppProps;
+import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -28,15 +29,19 @@ public class CascadingRunner {
         CascadingFlows cascadingFlow = CascadingFlowFactory.getCascadingFlow(options.get("flowName"));
         FlowDef flowDef = cascadingFlow.getFlowDefinition(options);
 
-            final Properties properties = CascadingJobConfiguration.getConfiguration(200);
+//            final Properties properties = CascadingJobConfiguration.getConfiguration(200);
 //        final Properties properties = new Properties();
 
-        AppProps.addApplicationTag(properties, "sample app");
-        AppProps.setApplicationJarClass(properties, CascadingRunner.class);
-        AppProps.setApplicationName(properties, "FirstSampleApp");
+//        properties.setProperty("mapred.reduce.tasks", "1");
+//        AppProps.addApplicationTag(properties, "sample app");
+//        AppProps.setApplicationJarClass(properties, CascadingRunner.class);
+//        AppProps.setApplicationName(properties, "FirstSampleApp");
         // Run the flow
-        Hadoop2MR1FlowConnector flowConnector = new Hadoop2MR1FlowConnector(properties);
-        Flow wcFlow = flowConnector.connect(flowDef);
-        wcFlow.complete();
+//        Hadoop2MR1FlowConnector flowConnector = new Hadoop2MR1FlowConnector(properties);
+//        Flow wcFlow = flowConnector.connect(flowDef);
+        PipeRunner runner = new PipeRunner(flowDef);
+        runner.setNumReducers(1);
+        runner.execute();
+//        wcFlow.complete();
     }
 }

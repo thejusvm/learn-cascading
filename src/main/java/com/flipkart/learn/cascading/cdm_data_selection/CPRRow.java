@@ -41,134 +41,176 @@ public class CPRRow extends BaseOperation implements Function {
         Tuple productPageListingAttributes = (Tuple) entry.getObject(DataFields._PRODUCTPAGELISTINGATTRIBUTES);
 
         //if product page view happenend then collect all the required fields
-        if (productPageListingAttributes != null) {
-            Integer productPageListingIndex = entry.getInteger(DataFields._PRODUCTPAGELISTINGINDEX);
+
+        Integer productPageListingIndex = entry.getInteger(DataFields._PRODUCTPAGELISTINGINDEX);
 //            if (productPageListingIndex == 0) { //getting only primary listing
-            Tuple sessionAttributes = (Tuple) entry.getObject(DataFields._SESSIONATTRIBUTES);
-            String platform = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
-                    DataFields._PLATFORM).get().getIdx());
-            String deviceId = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
-                    DataFields._DEVICEID).get().getIdx());
+        Tuple sessionAttributes = (Tuple) entry.getObject(DataFields._SESSIONATTRIBUTES);
+        String platform = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
+                DataFields._PLATFORM).get().getIdx());
+        String deviceId = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
+                DataFields._DEVICEID).get().getIdx());
+        String sessionId = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
+                DataFields._SESSIONID).get().getIdx());
+        String visitorId = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
+                DataFields._VISITORID).get().getIdx());
 
 
-            String findingMethod = entry.getString(DataFields._FINDINGMETHOD);
+        String accoutId = entry.getString(DataFields._ACCOUNTID);
+        String findingMethod = entry.getString(DataFields._FINDINGMETHOD);
+        String productCardImpressionsFilter = entry.getString(DataFields._PRODUCTCARDIMPRESSIONFILTER);
 
-            //getting position for eda purposes
-            Tuple productCardAttributes = (Tuple) entry.getObject(DataFields._PRODUCTCARDATTRIBUTES);
-            Integer position;
-            try{
-                position = productCardAttributes.getInteger(avroSchemaReader.getIndex(
-                        DataFields._PRODUCTCARDATTRIBUTES, DataFields._POSITION).get().getIdx());
-            } catch (NullPointerException e){
-                position = -999;
-            }
 
-            //product page attributes
-            Tuple productPageAttributes = (Tuple) entry.getObject(DataFields._PRODUCTPAGEATTRIBUTES);
+        String fetchId = null;
+        String timestamp = null;
+        String productId = null;
+        String isVideoAvailable = null;
+        String isImagesAvailable = null;
+        String finalProductState = null;
+        String isSwatchAvailable = null;
+        Integer ugcReviewCount = null;
+        Double ugcAvgRating = null;
+        Integer ugcRatingCount = null;
 
-            String fetchId = productPageAttributes.getString(
+        //getting position for eda purposes
+        Tuple productCardAttributes = (Tuple) entry.getObject(DataFields._PRODUCTCARDATTRIBUTES);
+        Integer position;
+        try {
+            position = productCardAttributes.getInteger(avroSchemaReader.getIndex(
+                    DataFields._PRODUCTCARDATTRIBUTES, DataFields._POSITION).get().getIdx());
+            productId = productCardAttributes.getString(
+                    avroSchemaReader.getIndex(DataFields._PRODUCTCARDATTRIBUTES, DataFields._PRODUCTID).get().getIdx());
+            timestamp = productCardAttributes.getString(
+                    avroSchemaReader.getIndex(DataFields._PRODUCTCARDATTRIBUTES, DataFields._TIMESTAMP).get().getIdx());
+        } catch (NullPointerException e) {
+            position = -999;
+        }
+
+        //product page attributes
+        Tuple productPageAttributes = (Tuple) entry.getObject(DataFields._PRODUCTPAGEATTRIBUTES);
+
+        if (productPageAttributes != null) {
+
+            fetchId = productPageAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._FETCHID)
                             .get().getIdx());
-            String ppvTimestamp = productPageAttributes.getString(
-                    avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._TIMESTAMP)
-                            .get().getIdx());
+//            timestamp = productPageAttributes.getString(
+//                    avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._TIMESTAMP)
+//                            .get().getIdx());
 
-            String productId = productPageAttributes.getString(
+            productId = productPageAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._PRODUCTID).get().getIdx());
-            String isVideoAvailable = productPageAttributes.getString(
+            isVideoAvailable = productPageAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._ISVIDEOAVAILABLE)
                             .get().getIdx());
-            String isImagesAvailable = productPageAttributes.getString(
+            isImagesAvailable = productPageAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._ISIMAGESAVAILABLE)
                             .get().getIdx());
-            String finalProductState = productPageAttributes.getString(
+            finalProductState = productPageAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._FINALPRODUCTSTATE)
                             .get().getIdx());
-            String isSwatchAvailable = productPageAttributes.getString(
+            isSwatchAvailable = productPageAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._ISSWATCHAVAILABLE)
                             .get().getIdx());
-            Integer ugcReviewCount = productPageAttributes.getInteger(
+            ugcReviewCount = productPageAttributes.getInteger(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._UGCREVIEWCOUNT)
                             .get().getIdx());
             Double ugcRatingBase = productPageAttributes.getDouble(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._UGCRATINGBASE)
                             .get().getIdx());
-            Double ugcAvgRating = productPageAttributes.getDouble(
+            ugcAvgRating = productPageAttributes.getDouble(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._UGCAVGRATING)
                             .get().getIdx());
             ugcAvgRating = ugcAvgRating / ugcRatingBase;
-            Integer ugcRatingCount = productPageAttributes.getInteger(
+            ugcRatingCount = productPageAttributes.getInteger(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._UGCRATINGCOUNT)
                             .get().getIdx());
 
+        }
 
-            //product page listing attributes
-            String listingId = productPageListingAttributes.getString(
+        //product page listing attributes
+        String listingId = null;
+        String isServiceable = null;
+        String availabilityStatus = null;
+        String state = null;
+        String isFlipkartAdvantage = null;
+        String isCodAvailable = null;
+        Double fsp = null;
+        Double finalPrice = null;
+        Double mrp = null;
+        String maxDeliveryDateEpochMs = null;
+        String minDeliveryDateEpochMs = null;
+        String deliveryDate = null;
+        String deliverySpeedOptions = null;
+        String prexoOfferId = null;
+        String offerIds = null;
+        if (productPageListingAttributes != null) {
+            listingId = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._LISTINGID)
                             .get().getIdx());
-            String isServiceable = productPageListingAttributes.getString(
+            isServiceable = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._ISSERVICEABLE)
                             .get().getIdx());
-            String availabilityStatus = productPageListingAttributes.getString(
+            availabilityStatus = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._AVAILABILITYSTATUS)
                             .get().getIdx());
-            String state = productPageListingAttributes.getString(
+            state = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._STATE)
                             .get().getIdx());
-            String isFlipkartAdvantage = productPageListingAttributes.getString(
+            isFlipkartAdvantage = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._ISFLIPKARTADVANTAGE)
                             .get().getIdx());
-            String deliveryDate = productPageListingAttributes.getString(
+            deliveryDate = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._DELIVERYDATE)
                             .get().getIdx());
-            String minDeliveryDateEpochMs = productPageListingAttributes.getString(
+            minDeliveryDateEpochMs = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES,
                             DataFields._MINDELIVERYDATEEPOCHMS).get().getIdx());
-            String maxDeliveryDateEpochMs = productPageListingAttributes.getString(
+            maxDeliveryDateEpochMs = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES,
                             DataFields._MAXDELIVERYDATEEPOCHMS).get().getIdx());
-            Double mrp = productPageListingAttributes.getDouble(
+            mrp = productPageListingAttributes.getDouble(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._MRP).get().getIdx()
             );
-            Double finalPrice = productPageListingAttributes.getDouble(
+            finalPrice = productPageListingAttributes.getDouble(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._FINALPRICE)
                             .get().getIdx());
-            Double fsp = productPageListingAttributes.getDouble(
+            fsp = productPageListingAttributes.getDouble(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._FSP)
                             .get().getIdx());
-            String isCodAvailable = productPageListingAttributes.getString(
+            isCodAvailable = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._ISCODAVAILABLE)
                             .get().getIdx());
-            String deliverySpeedOptions = productPageListingAttributes.getString(
+            deliverySpeedOptions = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES,
                             DataFields._DELIVERYSPEEDOPTIONS).get().getIdx());
-            String prexoOfferId = productPageListingAttributes.getString(
+            prexoOfferId = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._PREXOOFFERID)
                             .get().getIdx());
-            String offerIds = productPageListingAttributes.getString(
+            offerIds = productPageListingAttributes.getString(
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._OFFERIDS)
                             .get().getIdx());
+        }
 
 
-            //Rest other signals
-            Double productPageViews = entry.getDouble(DataFields._PRODUCTPAGEVIEWS);
-            //this line is shifted above because this is also a filtering signal
-            // Integer productPageListingIndex = entry.getInteger(DataFields._PRODUCTPAGELISTINGINDEX);
-            Double addToCartClicks = entry.getDouble(DataFields._ADDTOCARTCLICKS);
-            Double buyNowClicks = entry.getDouble(DataFields._BUYNOWCLICKS);
+        //Rest other signals
+        Double productCardClicks = entry.getDouble(DataFields._PRODUCTCARDCLICKS);
+        Double productPageViews = entry.getDouble(DataFields._PRODUCTPAGEVIEWS);
+        //this line is shifted above because this is also a filtering signal
+        // Integer productPageListingIndex = entry.getInteger(DataFields._PRODUCTPAGELISTINGINDEX);
+        Double addToCartClicks = entry.getDouble(DataFields._ADDTOCARTCLICKS);
+        Double buyNowClicks = entry.getDouble(DataFields._BUYNOWCLICKS);
 
+
+        if(productId != null) {
 
             Tuple result = new Tuple();
-            result.addAll(fetchId, ppvTimestamp, platform, deviceId, findingMethod, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
+            result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
                     deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, isCodAvailable,
-                    deliverySpeedOptions, prexoOfferId, offerIds, productPageViews, productPageListingIndex,
-                    addToCartClicks, buyNowClicks, position);
-            if(platform.equalsIgnoreCase("AndroidApp")){
-                functionCall.getOutputCollector().add(result);
-            }
-
-//            }
+                    deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productPageListingIndex,
+                    addToCartClicks, buyNowClicks, position, productCardImpressionsFilter);
+            functionCall.getOutputCollector().add(result);
         }
+
     }
 }

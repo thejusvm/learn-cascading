@@ -10,6 +10,9 @@ public class DataFields {
     public static final String _SESSIONATTRIBUTES = "sessionAttributes";
     public static final String _PLATFORM = "platform";
     public static final String _DEVICEID = "uaDeviceId";
+    public static final String _SESSIONID = "sessionId";
+    public static final String _ACCOUNTID = "accountId";
+    public static final String _VISITORID = "visitorId";
 
     //finding method
     public static final String _FINDINGMETHOD = "findingMethod";
@@ -24,7 +27,7 @@ public class DataFields {
     public static final String _PRODUCTCARDATTRIBUTES = "productCardAttributes";
     public static final String _POSITION = "position";
 
-    //product page attributes
+    //product page attributestimestamp
     public static final String _PRODUCTPAGEATTRIBUTES = "productPageAttributes";
     public static final String _FETCHID = "fetchId";
     public static final String _TIMESTAMP = "timestamp";
@@ -74,10 +77,16 @@ public class DataFields {
     public static final String _FIRSTBUYNOWCLICKTIMESTAMP = "firstBuyNowClickTimestamp";
     public static final String _PRODUCTCARDIMPRESSIONFILTER = "productCardImpressionFilter";
     public static final String _PRODUCTPAGELISTINGINDEX = "productPageListingIndex";
-    
+    public static final String _BUYINTENT = "buyIntent";
+
+
     //Final output of cdm data for cpr--required because of the custom operation required to fetch desired fields
 
-    public static final Fields cdmOutputFields = new Fields(_FETCHID,
+    public static final Fields cdmOutputFields = new Fields(
+            _SESSIONID,
+            _ACCOUNTID,
+            _VISITORID,
+            _FETCHID,
             _TIMESTAMP,
             _PLATFORM,
             _DEVICEID,
@@ -105,9 +114,11 @@ public class DataFields {
             _DELIVERYSPEEDOPTIONS,
             _PREXOOFFERID,
             _OFFERIDS,
+            _PRODUCTCARDCLICKS,
             _PRODUCTPAGEVIEWS,
             _PRODUCTPAGELISTINGINDEX,
             _ADDTOCARTCLICKS,
             _BUYNOWCLICKS,
-            _POSITION);
+            _POSITION,
+            _PRODUCTCARDIMPRESSIONFILTER);
 }
