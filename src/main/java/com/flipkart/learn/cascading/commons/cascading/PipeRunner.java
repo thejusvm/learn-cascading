@@ -131,7 +131,12 @@ public class PipeRunner {
     }
 
     public void executeHfs(Pipe pipe, String input, Fields inputFields, String output, boolean replaceOutput) {
-        Tap inputTap = new GlobHfs(new TextDelimited(inputFields, "\t"), input);
+        Tap inputTap;
+        if(inputFields.equals(Fields.ALL)) {
+            inputTap = new GlobHfs(new TextDelimited(inputFields, true, "\t"), input);
+        } else {
+            inputTap = new GlobHfs(new TextDelimited(inputFields, "\t"), input);
+        }
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), output,
                 replaceOutput ? SinkMode.REPLACE : SinkMode.KEEP);
         executeTap(pipe, inputTap, outputTap);

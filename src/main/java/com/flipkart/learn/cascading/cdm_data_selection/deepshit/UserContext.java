@@ -1,5 +1,8 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonProperty;
+
 import java.io.Serializable;
 
 /**
@@ -7,10 +10,28 @@ import java.io.Serializable;
  */
 class UserContext implements Serializable {
 
+    @JsonProperty(value = "accountId")
     private String accountId;
+
+    @JsonProperty(value = "deviceId")
     private String deviceId;
+
+    @JsonProperty(value = "platform")
     private String platform;
+
+    @JsonProperty(value = "products")
     private SearchSessions products;
+
+    @JsonCreator
+    public UserContext(@JsonProperty(value = "accountId") String accountId,
+                       @JsonProperty(value = "deviceId") String deviceId,
+                       @JsonProperty(value = "platform") String platform,
+                       @JsonProperty(value = "products") SearchSessions products) {
+        this.accountId = accountId;
+        this.deviceId = deviceId;
+        this.platform = platform;
+        this.products = products;
+    }
 
     public UserContext() {
         products = new SearchSessions();
@@ -50,6 +71,10 @@ class UserContext implements Serializable {
     public void setAccountId(String accountId) {
         if (this.accountId == null)
             this.accountId = accountId;
+    }
+
+    public void setProducts(SearchSessions products) {
+        this.products = products;
     }
 
     @Override

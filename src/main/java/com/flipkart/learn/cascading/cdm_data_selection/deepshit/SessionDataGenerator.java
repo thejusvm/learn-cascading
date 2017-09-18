@@ -34,7 +34,7 @@ import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
  * Created by thejus on 11/9/17.
  */
 @CascadingFlow(name = "session-data")
-public class SessionDataGenerator implements CascadingFlows {
+public class SessionDataGenerator implements CascadingFlows, Serializable {
 
     public static final Fields subFields = new Fields(
             _ACCOUNTID,
@@ -76,6 +76,14 @@ public class SessionDataGenerator implements CascadingFlows {
             _ADDTOCARTCLICKS,
             _BUYNOWCLICKS,
             _PRODUCTCARDIMPRESSIONFILTER);
+    public static final String USER_CONTEXT = "userContext";
+    public static final String USER_STATS = "userStats";
+    public static final String USER_DAY_STATS = "userDayStats";
+    public static final String NUM_DAYS = "numDays";
+    public static final String NUM_SESSIONS = "numSessions";
+    public static final String NUM_IMPRESSIONS = "numImpressions";
+    public static final String NUM_CLICKS = "numClicks";
+    public static final String NUM_BUYS = "numBuys";
 
     @Override
     public FlowDef getFlowDefinition(Map<String, String> options) {
@@ -98,12 +106,13 @@ public class SessionDataGenerator implements CascadingFlows {
 //        cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTCARDCLICKS), new ExpressionFunction(new Fields(_INVERTPRODUCTCARDCLICKS), "1 - " + _PRODUCTCARDCLICKS, Float.class), Fields.ALL);
 
         cdmPipe = new GroupBy(cdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
-        Fields userContext = new Fields("userContext");
-        Fields userStats = new Fields("userStats");
-        Fields userDayStats = new Fields("userDayStats");
+        Fields userContext = new Fields(USER_CONTEXT);
+        Fields userStats = new Fields(USER_STATS);
+        Fields userDayStats = new Fields(USER_DAY_STATS);
 
         cdmPipe = new Every(cdmPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext)), Fields.ALL);
-        cdmPipe = new Each(cdmPipe, userStats, new SessionsFilter());
+        cdmPipe = new Each(cdmPipe, userStats, new ExplodeUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
+        cdmPipe = new Each(cdmPipe, new Fields(NUM_CLICKS), new RegexFilter("^[^0]$"));
         cdmPipe = new JsonEncodeEach(cdmPipe, userStats);
         cdmPipe = new JsonEncodeEach(cdmPipe, userDayStats);
         cdmPipe = new JsonEncodeEach(cdmPipe, userContext);
@@ -134,7 +143,7 @@ public class SessionDataGenerator implements CascadingFlows {
         args = new String[3];
         args[0] = "flowName=session-data";
         args[1] = "input=data/cdm-2017-0801.1000.avro";
-        args[2] = "output=data/simple-cdm-2017-0801.1000";
+        args[2] = "output=data/session-2017-0801.1000";
         CascadingRunner.main(args);
     }
 
@@ -161,12 +170,13 @@ public class SessionDataGenerator implements CascadingFlows {
             String sqid = aggregatorCall.getArguments().getString(_SEARCHQUERYID);
             String findingmethod = aggregatorCall.getArguments().getString(_FINDINGMETHOD);
             String productId = aggregatorCall.getArguments().getString(_PRODUCTID);
+            int pos = aggregatorCall.getArguments().getInteger(_POSITION);
             long timestamp = aggregatorCall.getArguments().getLong(_TIMESTAMP);
             float click = aggregatorCall.getArguments().getFloat(_PRODUCTCARDCLICKS);
             float buy = aggregatorCall.getArguments().getFloat(_BUYINTENT);
 
 
-            userContext.addProduct(sqid, new ProductObj(productId, timestamp, click, buy, findingmethod));
+            userContext.addProduct(sqid, new ProductObj(productId, timestamp, pos, click, buy, findingmethod));
         }
 
         @Override
@@ -174,17 +184,28 @@ public class SessionDataGenerator implements CascadingFlows {
             UserContext userContext = aggregatorCall.getContext();
             SearchSessions sessions = userContext.getProducts();
             Pair<SessionsStats, Map<String, SessionsStats>> stats = sessions.getStats();
-            aggregatorCall.getOutputCollector().add(new Tuple(stats.getFirst(), stats.getSecond(), sessions));
+            SessionsStats sessionsStats = stats.getFirst();
+            aggregatorCall.getOutputCollector().add(new Tuple(sessionsStats, stats.getSecond(), sessions));
         }
     }
 
-    private static class SessionsFilter extends BaseOperation implements Filter {
+    private class ExplodeUserStats extends BaseOperation implements Function, Serializable {
 
-        @Override
-        public boolean isRemove(FlowProcess flowProcess, FilterCall filterCall) {
-            SessionsStats stats = (SessionsStats) filterCall.getArguments().getObject(0);
-            return stats.getNumClicks() == 0;
+
+        public ExplodeUserStats(Fields fields) {
+            super(fields);
         }
 
+        @Override
+        public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
+            SessionsStats stats = (SessionsStats) functionCall.getArguments().getObject(0);
+            functionCall.getOutputCollector().add(new Tuple(
+                    stats.getNumDays(),
+                    stats.getNumSessions(),
+                    stats.getNumImpressions(),
+                    stats.getNumClicks(),
+                    stats.getNumBuys()
+            ));
+        }
     }
 }

@@ -1,7 +1,9 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 import org.apache.commons.math3.util.Pair;
+import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -12,9 +14,21 @@ import java.util.*;
  */
 class SearchSessions implements Serializable{
 
+    @JsonProperty(value = "sessions")
     Map<String, SearchSession> sessions;
+
+    int lastPosition;
+
     String lastFindingMethod;
+
     String lastSQID;
+
+    @JsonCreator
+    public SearchSessions(@JsonProperty(value = "sessions") Map<String, SearchSession> sessions) {
+        this.sessions = sessions;
+        this.lastFindingMethod = null;
+        this.lastSQID = null;
+    }
 
     public SearchSessions() {
         sessions = new LinkedHashMap<>();
@@ -27,8 +41,9 @@ class SearchSessions implements Serializable{
 
     public void add(String sqid, ProductObj product) {
         String currentFindingMethod = product.getFindingmethod();
+        int currentPos = product.getPosition();
         if (sqid == null) {
-            if (lastFindingMethod == null || !lastFindingMethod.equals(currentFindingMethod)) {
+            if (lastFindingMethod == null || !lastFindingMethod.equals(currentFindingMethod) || currentPos <= lastPosition) {
                 sqid = UUID.randomUUID().toString();
                 lastSQID = sqid;
             } else {
@@ -40,6 +55,7 @@ class SearchSessions implements Serializable{
         }
         sessions.get(sqid).add(product);
         lastFindingMethod = currentFindingMethod;
+        lastPosition = currentPos;
     }
 
     @Override

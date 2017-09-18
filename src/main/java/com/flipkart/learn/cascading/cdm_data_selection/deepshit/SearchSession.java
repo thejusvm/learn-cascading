@@ -1,20 +1,40 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by thejus on 13/9/17.
  */
 public class SearchSession implements Serializable {
 
+    @JsonProperty(value = "sqid")
     private String sqid;
+    @JsonProperty(value = "timestamp")
     private long timestamp;
+    @JsonProperty(value = "date")
     private String date;
+    @JsonProperty(value = "products")
     private List<ProductObj> products;
+
+    @JsonCreator
+    public SearchSession(@JsonProperty(value = "sqid") String sqid,
+                         @JsonProperty(value = "timestamp") long timestamp,
+                         @JsonProperty(value = "date") String date,
+                         @JsonProperty(value = "products") List<ProductObj> products) {
+        this.sqid = sqid;
+        this.timestamp = timestamp;
+        this.date = date;
+        this.products = products;
+    }
 
     private static SimpleDateFormat format = new SimpleDateFormat("dd/MM/YY HH:mm:ss.SSSZ");
 
@@ -64,5 +84,31 @@ public class SearchSession implements Serializable {
 
     public int numImpressions() {
         return products.size();
+    }
+
+    @JsonIgnore
+    public List<ProductObj> getClickedProduct() {
+        return products
+                .stream()
+                .filter(ProductObj::isClick)
+                .collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    public List<ProductObj> getBoughtProducts() {
+        return products
+                .stream()
+                .filter(ProductObj::isBought)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String toString() {
+        return "SearchSession{" +
+                "sqid='" + sqid + '\'' +
+                ", timestamp=" + timestamp +
+                ", date='" + date + '\'' +
+                ", products=" + products +
+                '}';
     }
 }
