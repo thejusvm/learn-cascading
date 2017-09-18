@@ -47,6 +47,9 @@ public class DataFields {
     public static final String _UGCAVGRATING = "ugcAvgRating";
     public static final String _UGCRATINGCOUNT = "ugcRatingCount";
 
+    //Search attributes
+    public static final String _SEARCHATTRIBUTES = "searchAttributes";
+    public static final String _SEARCHQUERYID = "searchQueryId";
 
     //product page listing attributes
     public static final String _PRODUCTPAGELISTINGATTRIBUTES = "productPageListingAttributes";//parent node
@@ -91,6 +94,7 @@ public class DataFields {
             _PLATFORM,
             _DEVICEID,
             _FINDINGMETHOD,
+            _SEARCHQUERYID,
             _PRODUCTID,
             _ISVIDEOAVAILABLE,
             _ISIMAGESAVAILABLE,

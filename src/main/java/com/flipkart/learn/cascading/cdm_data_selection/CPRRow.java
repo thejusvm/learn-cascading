@@ -56,6 +56,9 @@ public class CPRRow extends BaseOperation implements Function {
 
 
         String accoutId = entry.getString(DataFields._ACCOUNTID);
+        if(accoutId == null) {
+            accoutId = deviceId;
+        }
         String findingMethod = entry.getString(DataFields._FINDINGMETHOD);
         String productCardImpressionsFilter = entry.getString(DataFields._PRODUCTCARDIMPRESSIONFILTER);
 
@@ -125,6 +128,15 @@ public class CPRRow extends BaseOperation implements Function {
                     avroSchemaReader.getIndex(DataFields._PRODUCTPAGEATTRIBUTES, DataFields._UGCRATINGCOUNT)
                             .get().getIdx());
 
+        }
+
+        //search attributes
+        Tuple searchAttributes = (Tuple) entry.getObject(DataFields._SEARCHATTRIBUTES);
+        String sqId = null;
+        if(searchAttributes != null) {
+            sqId = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SEARCHQUERYID).get().getIdx());
+        } else {
+//            sqId = fetchId;
         }
 
         //product page listing attributes
@@ -204,7 +216,7 @@ public class CPRRow extends BaseOperation implements Function {
         if(productId != null) {
 
             Tuple result = new Tuple();
-            result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
+            result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, sqId, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
                     deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, isCodAvailable,
                     deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productPageListingIndex,
