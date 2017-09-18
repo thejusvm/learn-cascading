@@ -1,4 +1,4 @@
-package com.flipkart.learn.cascading.cdm_data_selection;
+package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 import cascading.avro.AvroScheme;
 import cascading.flow.FlowDef;
@@ -17,6 +17,9 @@ import cascading.tap.hadoop.GlobHfs;
 import cascading.tap.hadoop.Hfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
+import com.flipkart.learn.cascading.cdm_data_selection.CPRRow;
+import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
+import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
@@ -24,15 +27,14 @@ import org.apache.commons.math3.util.Pair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
 
 /**
  * Created by thejus on 11/9/17.
  */
-public class SimpleCDMFlow implements CascadingFlows {
+@CascadingFlow(name = "session-data")
+public class SessionDataGenerator implements CascadingFlows {
 
     public static final Fields subFields = new Fields(
             _ACCOUNTID,
@@ -130,7 +132,7 @@ public class SimpleCDMFlow implements CascadingFlows {
 
     public static void main(String[] args) {
         args = new String[3];
-        args[0] = "flowName=simple-cdm";
+        args[0] = "flowName=session-data";
         args[1] = "input=data/cdm-2017-0801.1000.avro";
         args[2] = "output=data/simple-cdm-2017-0801.1000";
         CascadingRunner.main(args);

@@ -1,4 +1,4 @@
-package com.flipkart.learn.cascading.cdm_data_selection;
+package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 /**
  * Created by thejus on 14/9/17.

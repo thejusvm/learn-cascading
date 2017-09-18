@@ -1,6 +1,5 @@
-package com.flipkart.learn.cascading.cdm_data_selection;
+package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
-import com.jcraft.jsch.Session;
 import org.apache.commons.math3.util.Pair;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
