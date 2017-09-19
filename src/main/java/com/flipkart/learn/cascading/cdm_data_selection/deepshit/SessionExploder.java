@@ -39,10 +39,10 @@ public class SessionExploder implements SimpleFlow {
         Pipe pipe = new Pipe("session-exploder-pipe");
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
-        Fields expodedFields = new Fields(RANDOM_ID, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
+        Fields expodedFields = new Fields(RANDOM_ID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
         pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
-        pipe = new JsonEncodeEach(pipe, expodedFields);
+        pipe = new JsonEncodeEach(pipe, new Fields(PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, NEGATIVE_PRODUCTS));
         pipe = new GroupBy(pipe, new Fields(RANDOM_ID));
         pipe = new Discard(pipe, new Fields(RANDOM_ID));
         return pipe;
@@ -61,10 +61,10 @@ public class SessionExploder implements SimpleFlow {
             List<String> pastClick = Collections.emptyList();
             List<String> pastBought = Collections.emptyList();
             for (SearchSession session : sessions) {
+                long timestamp = session.getTimestamp();
                 List<ProductObj> impressionProducts = session.getProducts();
                 List<ProductObj> clickedProducts = session.getClickedProduct();
                 List<ProductObj> boughtProducts = session.getBoughtProducts();
-
                 for (ProductObj clickedProduct : clickedProducts) {
                     String findingMethod = clickedProduct.getFindingmethod();
                     int clickedProductPos = clickedProduct.getPosition();
@@ -84,7 +84,7 @@ public class SessionExploder implements SimpleFlow {
                             .limit(numProducts)
                             .collect(Collectors.toList());
                     pastClick = new ArrayList<>(pastClick);
-                    functionCall.getOutputCollector().add(new Tuple(UUID.randomUUID().toString(), findingMethod, ACTION_CLICK, pastClick, pastBought, clickedProduct.getProductId(), negativeForClicked));
+                    functionCall.getOutputCollector().add(new Tuple(UUID.randomUUID().toString(), timestamp, findingMethod, ACTION_CLICK, pastClick, pastBought, clickedProduct.getProductId(), negativeForClicked));
                 }
 
                 pastClick = new ArrayList<>(pastClick);
