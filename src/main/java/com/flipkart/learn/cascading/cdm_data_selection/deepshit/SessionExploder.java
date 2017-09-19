@@ -34,15 +34,21 @@ public class SessionExploder implements SimpleFlow {
 
     private static int numProducts = 10;
 
+    private String regex = ".*";
+
+    public void setRegex(String regex) {
+        this.regex = regex;
+    }
+
     @Override
     public Pipe getPipe() {
         Pipe pipe = new Pipe("session-exploder-pipe");
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
         Fields expodedFields = new Fields(RANDOM_ID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
-        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields), Fields.ALL);
+        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields, regex), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
-        pipe = new JsonEncodeEach(pipe, new Fields(PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, NEGATIVE_PRODUCTS));
+        pipe = new JsonEncodeEach(pipe, new Fields(NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
         pipe = new GroupBy(pipe, new Fields(RANDOM_ID));
         pipe = new Discard(pipe, new Fields(RANDOM_ID));
         return pipe;
@@ -50,8 +56,11 @@ public class SessionExploder implements SimpleFlow {
 
     private class ExplodeSessions extends BaseOperation implements Function, Serializable {
 
-        public ExplodeSessions(Fields fields) {
+        private final String regex;
+
+        public ExplodeSessions(Fields fields, String regex) {
             super(fields);
+            this.regex = regex;
         }
 
         @Override
@@ -65,6 +74,12 @@ public class SessionExploder implements SimpleFlow {
                 List<ProductObj> impressionProducts = session.getProducts();
                 List<ProductObj> clickedProducts = session.getClickedProduct();
                 List<ProductObj> boughtProducts = session.getBoughtProducts();
+
+                clickedProducts = clickedProducts
+                        .stream()
+                        .filter(product -> product.getProductId().matches(regex))
+                        .collect(Collectors.toList());
+
                 for (ProductObj clickedProduct : clickedProducts) {
                     String findingMethod = clickedProduct.getFindingmethod();
                     int clickedProductPos = clickedProduct.getPosition();
@@ -72,9 +87,10 @@ public class SessionExploder implements SimpleFlow {
                     impressionsSorted
                             .sort(Comparator.comparingInt(o -> Math.abs(clickedProductPos - o.getPosition())));
                     List<String> finalPastClick = pastClick;
-                    List<String> finalPastBought = pastBought;
+//                    List<String> finalPastBought = pastBought;
                     List negativeForClicked = impressionsSorted
                             .stream()
+                            .filter(product -> product.getProductId().matches(regex))
                             .filter(product -> !product.isClick()) // removing if the product has been clicked
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
                             .filter(product -> !finalPastClick.contains(product.getProductId())) // removed if the product had been clicked in the history
@@ -104,14 +120,18 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/test-session.1", "data/test-session-exploded.1"};
+            args = new String[]{"data/test-session.1", "data/test-session-exploded.1", "JWS.*"};
         }
 
-//        SimpleFlowRunner.execute(new SessionExploder(), args[0], args[1]);
+        String prefix = args.length > 2 ? args[2] : null;
 
         PipeRunner runner = new PipeRunner("session-explode");
-        runner.setNumReducers(600);
-        runner.executeHfs(new SessionExploder().getPipe(), args[0], args[1], true);
+        runner.setNumReducers(1);
+        SessionExploder sessionExploder = new SessionExploder();
+        if(prefix != null) {
+            sessionExploder.setRegex(prefix);
+        }
+        runner.executeHfs(sessionExploder.getPipe(), args[0], args[1], true);
 
     }
 
