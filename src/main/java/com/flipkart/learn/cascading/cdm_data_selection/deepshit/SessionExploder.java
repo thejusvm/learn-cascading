@@ -108,6 +108,7 @@ public class SessionExploder implements SimpleFlow {
                     pastClick.add(clickedProduct.getProductId());
                 }
 
+                boughtProducts = boughtProducts.stream().filter(product -> product.getProductId().matches(regex)).collect(Collectors.toList());
                 pastBought = new ArrayList<>(pastBought);
                 for (ProductObj boughtProduct : boughtProducts) {
                     pastBought.add(boughtProduct.getProductId());
@@ -126,7 +127,7 @@ public class SessionExploder implements SimpleFlow {
         String prefix = args.length > 2 ? args[2] : null;
 
         PipeRunner runner = new PipeRunner("session-explode");
-        runner.setNumReducers(1);
+        runner.setNumReducers(600);
         SessionExploder sessionExploder = new SessionExploder();
         if(prefix != null) {
             sessionExploder.setRegex(prefix);
