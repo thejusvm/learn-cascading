@@ -1,7 +1,7 @@
 import cPickle as pickle
 import tensorflow as tf
 import numpy as np
-from model import getmodel, nn
+from model import model, nn
 from operator import itemgetter
 
 with open('saved_models/sessionsimple-productdict.pickle', 'rb') as handle:
@@ -9,17 +9,17 @@ with open('saved_models/sessionsimple-productdict.pickle', 'rb') as handle:
 
 vocabulary_size = productdict.dictSize()
 embedding_size = 15
-positive_samples, negative_samples, embeddings_dict, loss, train_step = getmodel(vocabulary_size, embedding_size)
+md = model(vocabulary_size, embedding_size)
 saver = tf.train.Saver()
 
 def computeScore(sess, i) :
-    i_embedding = tf.nn.embedding_lookup(embeddings_dict, i)
+    i_embedding = tf.nn.embedding_lookup(md.embeddings_dict, i)
     score = nn(i_embedding)
     return sess.run(score)
 
 with tf.Session() as sess:
     # Restore variables from disk.
-    saver.restore(sess, "./saved_models/sessionsimple.499-28788")
+    saver.restore(sess, "./saved_models/sessionsimple.19-1440")
     products = productdict.getDict()
     productScore = []
     c = 0

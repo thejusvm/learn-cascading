@@ -6,14 +6,22 @@ import pandas as pd
 import tensorflow as tf
 import time
 import sys
-from sklearn.model_selection import train_test_split
+from model import model
 
-from model import getmodel
+from sklearn.model_selection import train_test_split
 from mind_palace.DictIntegerizer import DictIntegerizer
+
+def process_negative_samples(var_len_negative_samples, vocabulary_size, num_negative_samples) :
+    batch_size = np.shape(var_len_negative_samples)[0]
+    negative_samples_data = np.random.randint(vocabulary_size, size = (batch_size, num_negative_samples))
+    for i in range(batch_size) :
+        for j in range(len(var_len_negative_samples[i])) :
+            negative_samples_data[i][j] = var_len_negative_samples[i][j]
+    return negative_samples_data
 
 ################################### Start data prep
 def train(path) :
-    filenames = glob.glob(path + "/part-*")
+    filenames = glob.glob(path + "/part-000*")
 
     # frame = pd.DataFrame()
     list_ = []
@@ -41,6 +49,9 @@ def train(path) :
     raw_data = df[["positiveProductsInt", "negativeProductsInt"]]
     trainFrame, testFrame = train_test_split(raw_data, test_size=0.2)
     train = trainFrame.as_matrix()
+    test = testFrame.as_matrix()
+
+    print "data prep done"
     ################################### End data prep
 
     ################################### Start model building
@@ -48,27 +59,35 @@ def train(path) :
     vocabulary_size = productdict.dictSize()
     embedding_size = 15
 
-    positive_samples, negative_samples, embeddings_dict, loss, train_step = getmodel(vocabulary_size, embedding_size)
+    md = model(vocabulary_size, embedding_size)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    loss_summary = tf.summary.scalar("loss", loss)
+    loss_summary = tf.summary.scalar("loss", md.loss)
+
+    test_loss_summary = tf.summary.scalar("test_loss", md.loss)
+    test_accuracy_summary = tf.summary.scalar("test_accuracy", md.accuracy)
+    test_prec_summary = tf.summary.scalar("test_prec_1", md.prec_1)
+
     # merged_summary = tf.summary.merge_all()
     timestamp = str(time.time())
     summary_writer = tf.summary.FileWriter("/tmp/cdm-v1-" + timestamp, sess.graph)
+    # test_summary_writer = tf.summary.FileWriter("/tmp/test-cdm-v1-" + timestamp, sess.graph)
 
     ################################### End model building
 
     ################################### Saving dict to file
-    with open('saved_models/sessionsimple-productdict.pickle', 'wb') as handle:
+    with open('saved_models/sessionsimple-productdict.pickle', 'w+b') as handle:
         pickle.dump(productdict, handle, protocol=pickle.HIGHEST_PROTOCOL)
     ################################### End saving dict to file
 
     ################################### Start model training
 
+    print "model training started"
+
     batch_size = 500
-    num_epochs = 10
+    num_epochs = 20
 
     num_negative_samples = 20
 
@@ -90,22 +109,32 @@ def train(path) :
         print "epoch : " + str(i)
         for batch in iterate_minibatches(train, batch_size, shuffle=True):
             positive_samples_data = np.reshape(batch[:, 0], [batch_size, 1])
-            negative_samples_var_len = batch[:, 1]
 
-            negative_samples_data = np.random.randint(vocabulary_size, size = (batch_size, num_negative_samples))
+            var_len_negative_samples = batch[:, 1]
+            negative_samples_data = process_negative_samples(var_len_negative_samples, md.vocabulary_size, num_negative_samples)
 
-            for i in range(batch_size) :
-                for j in range(len(negative_samples_var_len[i])) :
-                    negative_samples_data[i][j] = negative_samples_var_len[i][j]
-
-            feed = {positive_samples : positive_samples_data, negative_samples : negative_samples_data}
-            _, loss_val, summary = sess.run([train_step, loss, loss_summary], feed_dict=feed)
-
+            feed = {md.positive_samples : positive_samples_data, md.negative_samples : negative_samples_data}
+            _, loss_val, summary = sess.run([md.train_step, md.loss, loss_summary], feed_dict=feed)
+            # print loss_val
             summary_writer.add_summary(summary, counter)
+
+            if(counter % 1000 == 0) :
+                positive_samples_data = np.reshape(test[:, 0], [np.shape(test)[0], 1])
+                var_len_negative_samples = test[:, 1]
+                negative_samples_data = process_negative_samples(var_len_negative_samples, md.vocabulary_size, num_negative_samples)
+
+                feed = {md.positive_samples : positive_samples_data, md.negative_samples : negative_samples_data}
+                s1, s2, s3 = sess.run([test_loss_summary, test_accuracy_summary, test_prec_summary], feed_dict = feed)
+                summary_writer.add_summary(s1, counter)
+                summary_writer.add_summary(s2, counter)
+                summary_writer.add_summary(s3, counter)
+
             counter = counter + 1
+
         ################################### Saving model to file
         saver.save(sess, "saved_models/sessionsimple." + str(i), global_step = counter)
         ################################### End model to file
+    print "model training ended"
 
     ################################### End model training
 
@@ -119,7 +148,6 @@ def train(path) :
 if __name__ == '__main__' :
     # path = sys.argv[0]
     path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB"
-    print "tranin with path"
     train(path)
 
 
