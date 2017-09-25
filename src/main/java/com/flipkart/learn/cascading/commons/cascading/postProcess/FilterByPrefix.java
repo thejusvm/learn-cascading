@@ -22,10 +22,10 @@ import java.util.Set;
  */
 public class FilterByPrefix implements SimpleFlow {
 
-    private Set<String> prefixes;
+    private String prefixes;
     private int queryField = 0;
 
-    public FilterByPrefix(int queryField, Set<String> prefixes) {
+    public FilterByPrefix(int queryField, String prefixes) {
         this.queryField = queryField;
         this.prefixes = prefixes;
     }
@@ -40,20 +40,19 @@ public class FilterByPrefix implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/test-session-exploded.1", "data/test-session-exploded.1.search", "accountId", "ACC988CE5AADDB408CB9A7E8715BC7987DQ"};
+            args = new String[]{"data/catalog-data", "data/catalog-data.KBHE25", "0", "KBHE25"};
         }
 
-        ImmutableSet<String> prefixes = ImmutableSet.copyOf(args[3].split(","));
-        SimpleFlowRunner.execute(new FilterByPrefix(Integer.parseInt(args[2]), prefixes), args[0], args[1]);
+        SimpleFlowRunner.execute(new FilterByPrefix(Integer.parseInt(args[2]), args[3]), args[0], false, args[1]);
     }
 
     private static class QueryIn extends BaseOperation implements Filter, Serializable {
 
         private static ObjectMapper objectMapper = new ObjectMapper();
         private int queryField;
-        private Set<String> prefixes;
+        private String prefixes;
 
-        public QueryIn(int queryField, Set<String> prefixes) {
+        public QueryIn(int queryField, String prefixes) {
             this.queryField = queryField;
             this.prefixes = prefixes;
         }
@@ -61,11 +60,13 @@ public class FilterByPrefix implements SimpleFlow {
         @Override
         public boolean isRemove(FlowProcess flowProcess, FilterCall filterCall) {
             String fieldData = (String) filterCall.getArguments().getObject(queryField, String.class);
-            Iterables.all(prefixes, prefix -> {
-                assert prefix != null;
-                return fieldData.startsWith(prefix);
-            });
-            return !prefixes.contains(fieldData);
+            boolean startsWith = fieldData.startsWith(prefixes);
+            if(startsWith) {
+                System.out.println("true");
+            } else {
+                System.out.println("false");
+            }
+            return !startsWith;
         }
     }
 }

@@ -1,7 +1,7 @@
 import cPickle as pickle
 import tensorflow as tf
 import numpy as np
-from sessionpredictor_model import getmodel, nn
+from model import getmodel, nn
 from operator import itemgetter
 
 with open('saved_models/sessionsimple-productdict.pickle', 'rb') as handle:
@@ -19,7 +19,7 @@ def computeScore(sess, i) :
 
 with tf.Session() as sess:
     # Restore variables from disk.
-    saver.restore(sess, "./saved_models/sessionsimple-7200")
+    saver.restore(sess, "./saved_models/sessionsimple.499-28788")
     products = productdict.getDict()
     productScore = []
     c = 0

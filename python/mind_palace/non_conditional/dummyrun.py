@@ -1,6 +1,6 @@
 import tensorflow as tf
 import time
-from sessionpredictor_model import getmodel, nn
+from model import getmodel, nn
 
 embedding_size = 10
 vocabulary_size = 10
