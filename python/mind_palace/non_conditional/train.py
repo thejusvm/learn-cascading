@@ -21,7 +21,7 @@ def process_negative_samples(var_len_negative_samples, vocabulary_size, num_nega
 
 ################################### Start data prep
 def train(path) :
-    filenames = glob.glob(path + "/part-000*")
+    filenames = glob.glob(path + "/part-00000")
 
     # frame = pd.DataFrame()
     list_ = []
@@ -31,7 +31,7 @@ def train(path) :
         list_.append(df)
     df = pd.concat(list_)
 
-    productdict = DictIntegerizer()
+    productdict = DictIntegerizer(default = "<pad>")
     integerize = lambda x : productdict.get(x)
     df["positiveProductsInt"] = df["positiveProducts"].apply(integerize)
 

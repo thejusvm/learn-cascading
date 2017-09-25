@@ -2,9 +2,11 @@
 
 class DictIntegerizer :
 
-    def __init__(self) :
+    def __init__(self, default = None) :
         self.termdict = {}
         self.currentCount = 0
+        if(default != None) :
+            self.get(default)
 
     def _add_(self, term) :
         self.termdict[term] = self.currentCount
