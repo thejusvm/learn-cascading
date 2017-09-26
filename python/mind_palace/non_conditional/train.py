@@ -19,6 +19,13 @@ def process_negative_samples(var_len_negative_samples, vocabulary_size, num_nega
             negative_samples_data[i][j] = var_len_negative_samples[i][j]
     return negative_samples_data
 
+def splitIO(batch, md) :
+    batch_size = np.shape(batch)[0]
+    positive_samples = np.reshape(batch[:, 0], [batch_size, 1])
+    var_len_negative_samples = batch[:, 1]
+    negative_samples = process_negative_samples(var_len_negative_samples, md.vocabulary_size, md.num_negative_samples)
+    return positive_samples, negative_samples
+
 ################################### Start data prep
 def train(path) :
     filenames = glob.glob(path + "/part-00000")
@@ -108,21 +115,14 @@ def train(path) :
     for i in range(num_epochs) :
         print "epoch : " + str(i)
         for batch in iterate_minibatches(train, batch_size, shuffle=True):
-            positive_samples_data = np.reshape(batch[:, 0], [batch_size, 1])
-
-            var_len_negative_samples = batch[:, 1]
-            negative_samples_data = process_negative_samples(var_len_negative_samples, md.vocabulary_size, num_negative_samples)
-
+            positive_samples_data, negative_samples_data = splitIO(batch, md)
             feed = {md.positive_samples : positive_samples_data, md.negative_samples : negative_samples_data}
             _, loss_val, summary = sess.run([md.train_step, md.loss, loss_summary], feed_dict=feed)
             # print loss_val
             summary_writer.add_summary(summary, counter)
 
             if(counter % 1000 == 0) :
-                positive_samples_data = np.reshape(test[:, 0], [np.shape(test)[0], 1])
-                var_len_negative_samples = test[:, 1]
-                negative_samples_data = process_negative_samples(var_len_negative_samples, md.vocabulary_size, num_negative_samples)
-
+                positive_samples_data, negative_samples_data = splitIO(test, md)
                 feed = {md.positive_samples : positive_samples_data, md.negative_samples : negative_samples_data}
                 s1, s2, s3 = sess.run([test_loss_summary, test_accuracy_summary, test_prec_summary], feed_dict = feed)
                 summary_writer.add_summary(s1, counter)

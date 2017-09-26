@@ -16,8 +16,8 @@ def _nn_internal_(embeddings, ifreuse, context = None) :
     dense_v1 = tf.layers.dense(inputs=input_embedding,
                                units=100,
                                activation=tf.nn.relu,
-                               kernel_initializer =  tf.random_uniform_initializer(1, 3),
-                               bias_initializer = tf.random_uniform_initializer(1, 3),
+                               kernel_initializer =  tf.random_uniform_initializer(1, 3, seed = 25),
+                               bias_initializer = tf.random_uniform_initializer(1, 3, seed = 25),
                                kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
                                name = "layer1",
                                reuse=ifreuse)
@@ -39,10 +39,11 @@ embedding_size = 10
 
 class model :
 
-    def __init__(self, vocabulary_size, embedding_size, init_embedding = None) :
+    def __init__(self, vocabulary_size, embedding_size, init_embedding = None, num_negative_samples = 20) :
 
         self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
+        self.num_negative_samples = num_negative_samples
 
         if init_embedding is None :
             self.embeddings_dict = tf.Variable(tf.random_uniform([vocabulary_size, embedding_size], 0.0, 1.0), dtype= tf.float32)
