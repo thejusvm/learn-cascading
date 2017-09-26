@@ -11,24 +11,50 @@ from model import model
 from sklearn.model_selection import train_test_split
 from mind_palace.DictIntegerizer import DictIntegerizer
 
-def process_negative_samples(var_len_negative_samples, vocabulary_size, num_negative_samples) :
+def process_negative_samples(var_len_negative_samples, vocabulary_size, max_num_negative_samples) :
     batch_size = np.shape(var_len_negative_samples)[0]
-    negative_samples_data = np.random.randint(vocabulary_size, size = (batch_size, num_negative_samples))
+    negative_samples_data = np.random.randint(vocabulary_size, size = (batch_size, max_num_negative_samples))
     for i in range(batch_size) :
-        for j in range(len(var_len_negative_samples[i])) :
+        numsamples = len(var_len_negative_samples[i])
+        iter_len = min(numsamples, max_num_negative_samples)
+        for j in range(iter_len) :
             negative_samples_data[i][j] = var_len_negative_samples[i][j]
+    return negative_samples_data
+
+def process_past_click(var_len_past_click, max_num_click_context, pad_int) :
+    batch_size = np.shape(var_len_past_click)[0]
+    negative_samples_data = np.ones([batch_size, max_num_click_context]) * pad_int
+    for i in range(batch_size) :
+        numclicks = len(var_len_past_click[i])
+        iter_len = min(numclicks, max_num_click_context)
+        for j in range(iter_len) :
+            index = numclicks - 1 - j
+            negative_samples_data[i][j] = var_len_past_click[i][index]
     return negative_samples_data
 
 def splitIO(batch, md) :
     batch_size = np.shape(batch)[0]
+
     positive_samples = np.reshape(batch[:, 0], [batch_size, 1])
+
     var_len_negative_samples = batch[:, 1]
     negative_samples = process_negative_samples(var_len_negative_samples, md.vocabulary_size, md.num_negative_samples)
-    return positive_samples, negative_samples
+
+    var_len_past_click = batch[:, 2]
+    click_context = process_past_click(var_len_past_click, md.num_click_context, md.pad_index)
+
+    return positive_samples, negative_samples, click_context
+
+def get_feeddict(batch, md):
+    process_data = splitIO(batch, md)
+    feed_keys = [md.positive_samples, md.negative_samples, md.click_context_samples]
+    feed = dict(zip(feed_keys, process_data))
+    return feed
+
 
 ################################### Start data prep
 def train(path) :
-    filenames = glob.glob(path + "/part-00000")
+    filenames = glob.glob(path + "/part-0000*")
 
     # frame = pd.DataFrame()
     list_ = []
@@ -47,13 +73,13 @@ def train(path) :
         return map(integerize, strList)
 
     # jsonListCols = ["negativeProducts", "pastClickedProducts", "pastBoughtProducts"]
-    jsonListCols = ["negativeProducts"]
+    jsonListCols = ["negativeProducts", "pastClickedProducts"]
     for col in jsonListCols :
         df[str(col + "Int")] = df[col].map(jsonandintegerize)
 
 
     # raw_data = df[["positiveProductsInt", "negativeProductsInt", "pastClickedProductsInt", "pastBoughtProductsInt"]]
-    raw_data = df[["positiveProductsInt", "negativeProductsInt"]]
+    raw_data = df[["positiveProductsInt", "negativeProductsInt", "pastClickedProductsInt"]]
     trainFrame, testFrame = train_test_split(raw_data, test_size=0.2)
     train = trainFrame.as_matrix()
     test = testFrame.as_matrix()
@@ -64,9 +90,11 @@ def train(path) :
     ################################### Start model building
 
     vocabulary_size = productdict.dictSize()
-    embedding_size = 15
+    embedding_size = 10
 
-    md = model(vocabulary_size, embedding_size)
+    md = model(vocabulary_size, embedding_size,
+               pad_index=productdict.getdefaultindex(),
+               use_context=True)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
@@ -85,7 +113,7 @@ def train(path) :
     ################################### End model building
 
     ################################### Saving dict to file
-    with open('saved_models/sessionsimple-productdict.pickle', 'w+b') as handle:
+    with open('saved_models/sessionsimple-2l-productdict.pickle', 'w+b') as handle:
         pickle.dump(productdict, handle, protocol=pickle.HIGHEST_PROTOCOL)
     ################################### End saving dict to file
 
@@ -95,8 +123,6 @@ def train(path) :
 
     batch_size = 500
     num_epochs = 20
-
-    num_negative_samples = 20
 
     def iterate_minibatches(inputs, batchsize, shuffle=False):
         if shuffle:
@@ -115,15 +141,13 @@ def train(path) :
     for i in range(num_epochs) :
         print "epoch : " + str(i)
         for batch in iterate_minibatches(train, batch_size, shuffle=True):
-            positive_samples_data, negative_samples_data = splitIO(batch, md)
-            feed = {md.positive_samples : positive_samples_data, md.negative_samples : negative_samples_data}
+            feed = get_feeddict(batch, md)
             _, loss_val, summary = sess.run([md.train_step, md.loss, loss_summary], feed_dict=feed)
             # print loss_val
             summary_writer.add_summary(summary, counter)
 
-            if(counter % 1000 == 0) :
-                positive_samples_data, negative_samples_data = splitIO(test, md)
-                feed = {md.positive_samples : positive_samples_data, md.negative_samples : negative_samples_data}
+            if(counter % 100 == 0) :
+                feed = get_feeddict(test, md)
                 s1, s2, s3 = sess.run([test_loss_summary, test_accuracy_summary, test_prec_summary], feed_dict = feed)
                 summary_writer.add_summary(s1, counter)
                 summary_writer.add_summary(s2, counter)
@@ -132,7 +156,7 @@ def train(path) :
             counter = counter + 1
 
         ################################### Saving model to file
-        saver.save(sess, "saved_models/sessionsimple." + str(i), global_step = counter)
+        saver.save(sess, "saved_models/sessionsimple-2l." + str(i), global_step = counter)
         ################################### End model to file
     print "model training ended"
 

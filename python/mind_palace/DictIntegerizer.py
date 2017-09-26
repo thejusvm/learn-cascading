@@ -5,12 +5,22 @@ class DictIntegerizer :
     def __init__(self, default = None) :
         self.termdict = {}
         self.currentCount = 0
+        self.default = default
         if(default != None) :
             self.get(default)
 
     def _add_(self, term) :
         self.termdict[term] = self.currentCount
         self.currentCount = self.currentCount + 1
+
+    def getdefault(self):
+        return self.default
+
+    def getdefaultindex(self):
+        if self.default is not None :
+            return self.get(self.default)
+        else :
+            return -1
 
     def get(self, term) :
         if term not in self.termdict :

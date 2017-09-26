@@ -25,10 +25,10 @@ context = [[2.0, 4.0, 6.0, 0.0, 0.0, 0.0], [6.0, 8.0, 5.0, 7.0, 9.0, 0.0]]
 
 feed = {md.positive_samples : positive_samples_test,
         md.negative_samples : negative_samples_test,
-        md.click_context : context}
+        md.click_context_samples : context}
 
 
-for score in sess.run([md.loss_matrix], feed_dict = feed):
+for score in sess.run([md.loss_matrix, md.prec_1], feed_dict = feed):
     print score
     print "---------"
 
