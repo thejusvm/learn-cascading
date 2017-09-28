@@ -1,4 +1,10 @@
 
+train_context_pickle = '/train_context.pickle'
+
+def getTraningContextDir(model_dir) :
+    return model_dir + train_context_pickle
+
+
 class trainingcontext :
 
     def __init__(self):
@@ -20,6 +26,19 @@ class trainingcontext :
         self.date = None
         self.timestamp = None
         self.publish_summary = True
+
+    def getTrainCxtDir(self) :
+        return self.model_dir + train_context_pickle
+
+    def getProductDictDir(self) :
+        return self.model_dir + '/productdict.pickle'
+
+    def getNnDir(self, extension = None) :
+        if extension is None :
+            return self.model_dir + '/nn'
+        else :
+            return self.model_dir + "/nn." + extension
+
 
 
 

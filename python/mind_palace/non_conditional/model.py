@@ -17,7 +17,8 @@ def _nn_internal_(embeddings, ifreuse, context = None) :
 
     input_embedding = embedding_concat(embeddings, context)
 
-    input = input_embedding.get_shape()[2].value
+    lastdim = input_embedding.get_shape().ndims - 1
+    input = input_embedding.get_shape()[lastdim].value
     v1_out = 256
     v1_stddev = math.sqrt(2.0 / (input + v1_out))
     v1_kernal_initial = tf.truncated_normal_initializer(0, v1_stddev)

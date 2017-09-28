@@ -8,7 +8,8 @@ import time
 import sys
 import os
 from model import model
-from trainingcontext import  trainingcontext
+# from trainingcontext import  trainingcontext
+import  trainingcontext as tc
 
 from sklearn.model_selection import train_test_split
 from mind_palace.DictIntegerizer import DictIntegerizer
@@ -151,10 +152,11 @@ def run_train(trainCxt) :
 
     ################################### Saving dict to file
     if trainCxt.save_model :
-        os.mkdir(trainCxt.model_dir, 0777)
-        nn_model_dir = trainCxt.model_dir + '/nn'
-        product_dict_model_dir = trainCxt.model_dir + '/productdict.pickle'
-        train_context_model_dir = trainCxt.model_dir + '/train_context.pickle'
+        os.makedirs(trainCxt.model_dir)
+        # os.mkdir(trainCxt.model_dir, 0777)
+        nn_model_dir = trainCxt.getNnDir()
+        product_dict_model_dir = trainCxt.getProductDictDir()
+        train_context_model_dir = trainCxt.getTrainCxtDir()
 
         with open(product_dict_model_dir, 'w+b') as handle:
             pickle.dump(productdict, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -217,15 +219,15 @@ if __name__ == '__main__' :
     timestamp = time.localtime()
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
-    trainCxt = trainingcontext()
+    trainCxt = tc.trainingcontext()
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-00000"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
     trainCxt.num_epochs = 5
-    trainCxt.use_context = True
+    trainCxt.use_context = False
     trainCxt.min_click_context = 2
     trainCxt.save_model = True
-    trainCxt.save_model_on_epoch = True
+    trainCxt.save_model_on_epoch = False
     trainCxt.date = currentdate
     trainCxt.timestamp = timestamp
     trainCxt.embedding_size = 100
