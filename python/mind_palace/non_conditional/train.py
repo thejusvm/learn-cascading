@@ -72,6 +72,10 @@ def train(path) :
         strList = json.loads(jString)
         return map(integerize, strList)
 
+    minCountextClicks = 0
+
+    df = df[df["pastClickedProducts"].apply(lambda x: len(json.loads(x)) > minCountextClicks)]
+
     # jsonListCols = ["negativeProducts", "pastClickedProducts", "pastBoughtProducts"]
     jsonListCols = ["negativeProducts", "pastClickedProducts"]
     for col in jsonListCols :
@@ -84,17 +88,26 @@ def train(path) :
     train = trainFrame.as_matrix()
     test = testFrame.as_matrix()
 
+
+    click_len = raw_data["pastClickedProductsInt"].map(lambda x : len(x))
+    print click_len.value_counts()
+
     print "data prep done"
+
+    # sys.exit(0)
+
     ################################### End data prep
 
     ################################### Start model building
 
     vocabulary_size = productdict.dictSize()
-    embedding_size = 10
+    embedding_size = 100
 
     md = model(vocabulary_size, embedding_size,
                pad_index=productdict.getdefaultindex(),
                use_context=True)
+
+    # sys.exit(0)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())

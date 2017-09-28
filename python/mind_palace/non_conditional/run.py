@@ -4,12 +4,12 @@ import numpy as np
 from model import model, nn
 from operator import itemgetter
 
-with open('saved_models/sessionsimple-productdict.pickle', 'rb') as handle:
+with open('saved_models/sessionsimple-2l-productdict.pickle', 'rb') as handle:
     productdict = pickle.load(handle)
 
 vocabulary_size = productdict.dictSize()
-embedding_size = 15
-md = model(vocabulary_size, embedding_size)
+embedding_size = 10
+md = model(vocabulary_size, embedding_size, use_context=True)
 saver = tf.train.Saver()
 
 def computeScore(sess, i) :
@@ -19,7 +19,7 @@ def computeScore(sess, i) :
 
 with tf.Session() as sess:
     # Restore variables from disk.
-    saver.restore(sess, "./saved_models/sessionsimple.19-1440")
+    saver.restore(sess, "./saved_models/sessionsimple-2l.19-3780")
     products = productdict.getDict()
     productScore = []
     c = 0

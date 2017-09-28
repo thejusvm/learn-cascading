@@ -28,7 +28,7 @@ feed = {md.positive_samples : positive_samples_test,
         md.click_context_samples : context}
 
 
-for score in sess.run([md.loss_matrix, md.prec_1], feed_dict = feed):
+for score in sess.run([md.positive_and_context, md.negative_and_context], feed_dict = feed):
     print score
     print "---------"
 

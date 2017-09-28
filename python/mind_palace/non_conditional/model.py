@@ -1,23 +1,26 @@
 import tensorflow as tf
 import numpy as np
 
-def _nn_internal_(embeddings, ifreuse, context = None) :
-
+def embedding_concat(embeddings, context = None) :
     if context is None :
-        input_embedding = embeddings
+        return embeddings
     else :
         embedding_shape = tf.shape(embeddings)
         embedding_size = tf.size(embeddings)
         repeate_count = embedding_size / (embedding_shape[0] * embedding_shape[2])
         context_rep = tf.tile(context, [1, repeate_count])
         context_rep_reshape = tf.reshape(context_rep, embedding_shape)
-        input_embedding = tf.concat([embeddings, context_rep_reshape], 2)
+        return tf.concat([embeddings, context_rep_reshape], 2)
+
+def _nn_internal_(embeddings, ifreuse, context = None) :
+
+    input_embedding = embedding_concat(embeddings, context)
 
     dense_v1 = tf.layers.dense(inputs=input_embedding,
                                units=256,
                                activation=tf.nn.relu,
                                kernel_initializer =  tf.random_uniform_initializer(0, 1, seed = None),
-                               bias_initializer = tf.constant_initializer(100),
+                               bias_initializer = tf.constant_initializer(10),
                                # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
                                name = "layer1",
                                reuse=ifreuse)
@@ -33,7 +36,7 @@ def _nn_internal_(embeddings, ifreuse, context = None) :
                            kernel_initializer =  tf.random_uniform_initializer(0, 1),
                            bias_initializer = tf.constant_initializer(10),
                            # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
-                           reuse=ifreuse)
+                           reuse=ifreuse), input_embedding
 
 def nn(embeddings, context = None) :
     with tf.variable_scope("discriminator"):
@@ -83,8 +86,8 @@ class model :
         if use_context is False :
             self.click_embeddings_mean = None
 
-        self.positive_score = nn(self.positive_embeddings, self.click_embeddings_mean)
-        self.negative_score = nn(self.negative_embeddings, self.click_embeddings_mean)
+        self.positive_score, self.positive_and_context = nn(self.positive_embeddings, self.click_embeddings_mean)
+        self.negative_score, self.negative_and_context = nn(self.negative_embeddings, self.click_embeddings_mean)
 
         self.loss_matrix = tf.maximum(0., 1. - self.positive_score + self.negative_score)
         self.loss = tf.reduce_mean(self.loss_matrix)
