@@ -68,15 +68,7 @@ def iterate_minibatches(inputs, batchsize, shuffle=False):
 def logBreak() :
     print "------------------------------------------"
 
-################################### Start data prep
-def train(trainCxt) :
-    logBreak()
-    print "Using train context : "
-    trainCxt_dict = trainCxt.__dict__
-    for key in trainCxt_dict:
-        print str(key) + " : " + str(trainCxt_dict.get(key))
-
-    logBreak()
+def prepareData():
     filenames = glob.glob(trainCxt.data_path)
 
     list_ = []
@@ -116,9 +108,18 @@ def train(trainCxt) :
     print "data prep done"
     logBreak()
 
-    # sys.exit(0)
+    return productdict, train, test
 
-    ################################### End data prep
+def run_train(trainCxt) :
+    logBreak()
+    print "Using train context : "
+    trainCxt_dict = trainCxt.__dict__
+    for key in trainCxt_dict:
+        print str(key) + " : " + str(trainCxt_dict.get(key))
+
+    logBreak()
+
+    productdict, train, test = prepareData()
 
     ################################### Start model building
 
@@ -141,7 +142,9 @@ def train(trainCxt) :
     test_prec_summary = tf.summary.scalar("test_prec_1", md.prec_1)
 
     # merged_summary = tf.summary.merge_all()
-    summary_writer = tf.summary.FileWriter(trainCxt.summary_dir, sess.graph)
+    summary_writer = None
+    if trainCxt.publish_summary :
+        summary_writer = tf.summary.FileWriter(trainCxt.summary_dir, sess.graph)
     # test_summary_writer = tf.summary.FileWriter("/tmp/test-cdm-v1-" + timestamp, sess.graph)
 
     ################################### End model building
@@ -151,7 +154,7 @@ def train(trainCxt) :
         os.mkdir(trainCxt.model_dir, 0777)
         nn_model_dir = trainCxt.model_dir + '/nn'
         product_dict_model_dir = trainCxt.model_dir + '/productdict.pickle'
-        train_context_model_dir = trainCxt.model_dir + '/train_context'
+        train_context_model_dir = trainCxt.model_dir + '/train_context.pickle'
 
         with open(product_dict_model_dir, 'w+b') as handle:
             pickle.dump(productdict, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -175,9 +178,11 @@ def train(trainCxt) :
             feed = get_feeddict(batch, md)
             _, loss_val, summary = sess.run([md.train_step, md.loss, loss_summary], feed_dict=feed)
             # print loss_val
-            summary_writer.add_summary(summary, counter)
+            if summary_writer is not None :
+                summary_writer.add_summary(summary, counter)
 
-            if(counter % trainCxt.test_summary_publish_iters == 0) :
+
+            if summary_writer is not None and counter % trainCxt.test_summary_publish_iters == 0 :
                 feed = get_feeddict(test, md)
                 s1, s2, s3 = sess.run([test_loss_summary, test_accuracy_summary, test_prec_summary], feed_dict = feed)
                 summary_writer.add_summary(s1, counter)
@@ -194,8 +199,9 @@ def train(trainCxt) :
         if trainCxt.save_model_on_epoch and trainCxt.save_model :
             saver.save(sess, nn_model_dir + ".epoch", global_step = epoch)
             print "saved nn on epoch " + str(epoch) + "model into : " + nn_model_dir
+            logBreak()
         ################################### End model to file
-    logBreak()
+
     if trainCxt.save_model :
         nn_model_dir = trainCxt.model_dir + '/nn'
         saver.save(sess, nn_model_dir)
@@ -215,11 +221,17 @@ if __name__ == '__main__' :
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-00000"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.num_epochs = 2
+    trainCxt.num_epochs = 5
+    trainCxt.use_context = True
+    trainCxt.min_click_context = 2
     trainCxt.save_model = True
     trainCxt.save_model_on_epoch = True
+    trainCxt.date = currentdate
+    trainCxt.timestamp = timestamp
+    trainCxt.embedding_size = 100
+    trainCxt.publish_summary = False
 
-    train(trainCxt)
+    run_train(trainCxt)
 
 
 

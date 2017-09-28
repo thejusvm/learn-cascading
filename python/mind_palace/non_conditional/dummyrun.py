@@ -3,6 +3,14 @@ import time
 import numpy as np
 from model import model
 
+# model_dir = ".saved_models/run.20170928-14-01-02"
+# nn_model_dir = model_dir + '/nn'
+# product_dict_model_dir = model_dir + '/productdict.pickle'
+# train_context_model_dir = model_dir + '/train_context'
+
+with open('saved_models/sessionsimple-2l-productdict.pickle', 'rb') as handle:
+    productdict = pickle.load(handle)
+
 init = np.ones([10, 10]) * range(10)
 # print init.T
 md = model(10, 10, init_embedding = init.T)

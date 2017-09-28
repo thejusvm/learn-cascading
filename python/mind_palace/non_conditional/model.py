@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import math
 
 def embedding_concat(embeddings, context = None) :
     if context is None :
@@ -16,12 +17,16 @@ def _nn_internal_(embeddings, ifreuse, context = None) :
 
     input_embedding = embedding_concat(embeddings, context)
 
+    input = input_embedding.get_shape()[2].value
+    v1_out = 256
+    v1_stddev = math.sqrt(2.0 / (input + v1_out))
+    v1_kernal_initial = tf.truncated_normal_initializer(0, v1_stddev)
+
     dense_v1 = tf.layers.dense(inputs=input_embedding,
                                units=256,
                                activation=tf.nn.relu,
-                               kernel_initializer =  tf.random_uniform_initializer(0, 1, seed = None),
+                               kernel_initializer =  v1_kernal_initial,
                                bias_initializer = tf.constant_initializer(10),
-                               # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
                                name = "layer1",
                                reuse=ifreuse)
     # dense_v2 = tf.layers.dense(inputs=dense_v1,
@@ -32,8 +37,13 @@ def _nn_internal_(embeddings, ifreuse, context = None) :
     #                            # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
     #                            name = "layer1.5",
     #                            reuse=ifreuse)
-    return tf.layers.dense(inputs=dense_v1, units=1, activation=tf.nn.relu, name = "layer2",
-                           kernel_initializer =  tf.random_uniform_initializer(0, 1),
+
+    v2_out = 1
+    v2_stddev = math.sqrt(2 / (v1_out + v2_out))
+    v2_kernal_initial = tf.truncated_normal_initializer(0, v2_stddev)
+
+    return tf.layers.dense(inputs=dense_v1, units=v2_out, activation=tf.nn.relu, name = "layer2",
+                           kernel_initializer =  v2_kernal_initial,
                            bias_initializer = tf.constant_initializer(10),
                            # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
                            reuse=ifreuse), input_embedding

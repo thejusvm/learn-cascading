@@ -17,6 +17,9 @@ class trainingcontext :
         self.save_model_on_epoch = False
         self.save_model_num_iter =  None
         self.save_model = False
+        self.date = None
+        self.timestamp = None
+        self.publish_summary = True
 
 
 
