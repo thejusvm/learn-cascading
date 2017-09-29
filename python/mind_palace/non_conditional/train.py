@@ -10,6 +10,7 @@ import os
 from model import model
 # from trainingcontext import  trainingcontext
 import  trainingcontext as tc
+from modelconfig import modelconfig
 
 from sklearn.model_selection import train_test_split
 from mind_palace.DictIntegerizer import DictIntegerizer
@@ -35,21 +36,21 @@ def process_past_click(var_len_past_click, max_num_click_context, pad_int) :
             negative_samples_data[i][j] = var_len_past_click[i][index]
     return negative_samples_data
 
-def splitIO(batch, md) :
+def splitIO(batch, trainCxt) :
     batch_size = np.shape(batch)[0]
 
     positive_samples = np.reshape(batch[:, 0], [batch_size, 1])
 
     var_len_negative_samples = batch[:, 1]
-    negative_samples = process_negative_samples(var_len_negative_samples, md.vocabulary_size, md.num_negative_samples)
+    negative_samples = process_negative_samples(var_len_negative_samples, trainCxt.model_config.vocabulary_size, trainCxt.num_negative_samples)
 
     var_len_past_click = batch[:, 2]
-    click_context = process_past_click(var_len_past_click, md.num_click_context, md.pad_index)
+    click_context = process_past_click(var_len_past_click, trainCxt.num_click_context, trainCxt.model_config.pad_index)
 
     return positive_samples, negative_samples, click_context
 
-def get_feeddict(batch, md):
-    process_data = splitIO(batch, md)
+def get_feeddict(batch, md, trainCxt):
+    process_data = splitIO(batch, trainCxt)
     feed_keys = [md.positive_samples, md.negative_samples, md.click_context_samples]
     feed = dict(zip(feed_keys, process_data))
     return feed
@@ -111,30 +112,32 @@ def prepareData():
 
     return productdict, train, test
 
+def print_dict(dict_1) :
+    for key in dict_1:
+        print str(key) + " : " + str(dict_1.get(key))
+
 def run_train(trainCxt) :
+    modelconf = trainCxt.model_config
     logBreak()
     print "Using train context : "
-    trainCxt_dict = trainCxt.__dict__
-    for key in trainCxt_dict:
-        print str(key) + " : " + str(trainCxt_dict.get(key))
-
+    print_dict(trainCxt.__dict__)
+    logBreak()
+    print "Using model config : "
+    print_dict(modelconf.__dict__)
     logBreak()
 
     productdict, train, test = prepareData()
 
     ################################### Start model building
 
-    vocabulary_size = productdict.dictSize()
-
-    md = model(vocabulary_size, trainCxt.embedding_size,
-               pad_index = productdict.getdefaultindex(),
-               use_context = trainCxt.use_context)
+    modelconf.vocabulary_size = productdict.dictSize()
+    md = model(modelconf)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     if trainCxt.init_pad_to_zeros :
-        sess.run(md.embeddings_dict[productdict.getdefaultindex()].assign(tf.zeros([md.embedding_size])))
+        sess.run(md.embeddings_dict[productdict.getdefaultindex()].assign(tf.zeros([modelconf.embedding_size])))
 
     loss_summary = tf.summary.scalar("loss", md.loss)
 
@@ -177,7 +180,7 @@ def run_train(trainCxt) :
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         for batch in iterate_minibatches(train, trainCxt.batch_size, shuffle=True):
-            feed = get_feeddict(batch, md)
+            feed = get_feeddict(batch, md, trainCxt)
             _, loss_val, summary = sess.run([md.train_step, md.loss, loss_summary], feed_dict=feed)
             # print loss_val
             if summary_writer is not None :
@@ -185,7 +188,7 @@ def run_train(trainCxt) :
 
 
             if summary_writer is not None and counter % trainCxt.test_summary_publish_iters == 0 :
-                feed = get_feeddict(test, md)
+                feed = get_feeddict(test, md, trainCxt)
                 s1, s2, s3 = sess.run([test_loss_summary, test_accuracy_summary, test_prec_summary], feed_dict = feed)
                 summary_writer.add_summary(s1, counter)
                 summary_writer.add_summary(s2, counter)
@@ -223,15 +226,18 @@ if __name__ == '__main__' :
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-00000"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.num_epochs = 5
-    trainCxt.use_context = False
+    trainCxt.num_epochs = 2
     trainCxt.min_click_context = 2
     trainCxt.save_model = True
     trainCxt.save_model_on_epoch = False
     trainCxt.date = currentdate
     trainCxt.timestamp = timestamp
-    trainCxt.embedding_size = 100
-    trainCxt.publish_summary = False
+    trainCxt.publish_summary = True
+
+    modelconf = modelconfig(None, 100)
+    modelconf.layer_count = [1024, 512, 256]
+    modelconf.use_context = False
+    trainCxt.model_config = modelconf
 
     run_train(trainCxt)
 

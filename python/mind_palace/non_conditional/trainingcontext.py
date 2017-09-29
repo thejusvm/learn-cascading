@@ -13,9 +13,7 @@ class trainingcontext :
         self.num_epochs = 20
         self.min_click_context = 0
         self.test_size = 0.2
-        self.embedding_size = 10
         self.pad_text = "<pad>"
-        self.use_context = True
         self.init_pad_to_zeros = True
         self.summary_dir = "/tmp/sessionsimple"
         self.model_dir = "saved_models/"
@@ -26,6 +24,9 @@ class trainingcontext :
         self.date = None
         self.timestamp = None
         self.publish_summary = True
+        self.num_negative_samples = 20
+        self.num_click_context = 32
+        self.model_config = None
 
     def getTrainCxtDir(self) :
         return self.model_dir + train_context_pickle

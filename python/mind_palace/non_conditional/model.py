@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import math
+from modelconfig import modelconfig
 
 def embedding_concat(embeddings, context = None) :
     if context is None :
@@ -13,68 +14,57 @@ def embedding_concat(embeddings, context = None) :
         context_rep_reshape = tf.reshape(context_rep, embedding_shape)
         return tf.concat([embeddings, context_rep_reshape], 2)
 
-def _nn_internal_(embeddings, ifreuse, context = None) :
+def _nn_internal_(modelConf, embeddings, context = None) :
 
     input_embedding = embedding_concat(embeddings, context)
-
     lastdim = input_embedding.get_shape().ndims - 1
-    input = input_embedding.get_shape()[lastdim].value
-    v1_out = 256
-    v1_stddev = math.sqrt(2.0 / (input + v1_out))
-    v1_kernal_initial = tf.truncated_normal_initializer(0, v1_stddev)
 
-    dense_v1 = tf.layers.dense(inputs=input_embedding,
-                               units=256,
-                               activation=tf.nn.relu,
-                               kernel_initializer =  v1_kernal_initial,
-                               bias_initializer = tf.constant_initializer(10),
-                               name = "layer1",
-                               reuse=ifreuse)
-    # dense_v2 = tf.layers.dense(inputs=dense_v1,
-    #                            units=256,
-    #                            activation=tf.nn.relu,
-    #                            kernel_initializer =  tf.random_uniform_initializer(0, 1, seed = None),
-    #                            bias_initializer = tf.constant_initializer(100),
-    #                            # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
-    #                            name = "layer1.5",
-    #                            reuse=ifreuse)
+    layer_in_count = input_embedding.get_shape()[lastdim].value
+    in_layer = input_embedding
+    out_layer = None
 
-    v2_out = 1
-    v2_stddev = math.sqrt(2 / (v1_out + v2_out))
-    v2_kernal_initial = tf.truncated_normal_initializer(0, v2_stddev)
+    counter = 0
+    for num in modelConf.layer_count :
+        counter = counter + 1
+        layer_out_count = num
+        stddev = math.sqrt(2.0 / (layer_in_count + layer_out_count))
+        kernal_initial = tf.truncated_normal_initializer(0, stddev)
+        out_layer = tf.layers.dense(inputs = in_layer,
+                                   units = num,
+                                   activation=tf.nn.relu,
+                                   kernel_initializer =  kernal_initial,
+                                   bias_initializer = tf.constant_initializer(10),
+                                   name = "layer_" + str(counter))
 
-    return tf.layers.dense(inputs=dense_v1, units=v2_out, activation=tf.nn.relu, name = "layer2",
-                           kernel_initializer =  v2_kernal_initial,
-                           bias_initializer = tf.constant_initializer(10),
-                           # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1),
-                           reuse=ifreuse), input_embedding
+        print in_layer
+        print out_layer
+        print "------------------------"
 
-def nn(embeddings, context = None) :
-    with tf.variable_scope("discriminator"):
-        try :
-            return _nn_internal_(embeddings, False, context)
-        except ValueError:
-            return _nn_internal_(embeddings, True, context)
+        in_layer = out_layer
+        layer_in_count = layer_out_count
+
+
+    final_layer_initializer= tf.truncated_normal_initializer(0, 1)
+    counter = counter + 1
+    return tf.layers.dense(inputs = in_layer, units = 1, activation= None, name = "layer_" + str(counter),
+                           kernel_initializer =  final_layer_initializer,
+                           bias_initializer = tf.constant_initializer(1),
+                           # kernel_regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+                        ), input_embedding
+
+def nn(modelConf, embeddings, context = None) :
+    return _nn_internal_(modelConf, embeddings, context)
 
 class model :
 
-    def __init__(self, vocabulary_size, embedding_size,
-                 init_embedding = None,
-                 num_negative_samples = 20,
-                 num_click_context = 32,
-                 pad_index = 0,
-                 use_context = True) :
+    def __init__(self, modelConf) :
 
-        self.vocabulary_size = vocabulary_size
-        self.embedding_size = embedding_size
-        self.num_negative_samples = num_negative_samples
-        self.num_click_context = num_click_context
-        self.pad_index = pad_index
+        self.model_config = modelConf
 
-        if init_embedding is None :
-            self.embeddings_dict = tf.Variable(tf.random_uniform([vocabulary_size, embedding_size], 1.0, 2.0), dtype= tf.float32)
+        if modelConf.init_embedding_dict is None :
+            self.embeddings_dict = tf.Variable(tf.random_uniform([modelConf.vocabulary_size, modelConf.embedding_size], 1.0, 2.0), dtype= tf.float32)
         else:
-            self.embeddings_dict = tf.Variable(init_embedding, dtype = tf.float32)
+            self.embeddings_dict = tf.Variable(modelConf.init_embedding, dtype = tf.float32)
 
         self.positive_samples = tf.placeholder(tf.int32, shape=[None, 1], name="positive_samples")
         self.negative_samples = tf.placeholder(tf.int32, shape=[None, None], name="negative_samples")
@@ -94,11 +84,13 @@ class model :
         self.num_non_pad = self.num_non_pad + self.num_non_pad_zero_mask
         self.click_embeddings_mean = tf.reduce_sum(self.click_embeddings, reduction_indices = [1]) / self.num_non_pad
 
-        if use_context is False :
+        if modelConf.use_context is False :
             self.click_embeddings_mean = None
 
-        self.positive_score, self.positive_and_context = nn(self.positive_embeddings, self.click_embeddings_mean)
-        self.negative_score, self.negative_and_context = nn(self.negative_embeddings, self.click_embeddings_mean)
+        with tf.variable_scope("discriminator"):
+            self.positive_score, self.positive_and_context = nn(modelConf, self.positive_embeddings, self.click_embeddings_mean)
+            tf.get_variable_scope().reuse_variables()
+            self.negative_score, self.negative_and_context = nn(modelConf, self.negative_embeddings, self.click_embeddings_mean)
 
         self.loss_matrix = tf.maximum(0., 1. - self.positive_score + self.negative_score)
         self.loss = tf.reduce_mean(self.loss_matrix)
