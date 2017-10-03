@@ -137,8 +137,8 @@ def run_train(trainCxt) :
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    if trainCxt.init_pad_to_zeros :
-        sess.run(mod.embedding_dict()[productdict.getdefaultindex()].assign(tf.zeros([modelconf.embedding_size])))
+    # if trainCxt.init_pad_to_zeros :
+    #     sess.run(mod.embedding_dict()[productdict.getdefaultindex()].assign(tf.zeros([modelconf.embedding_size])))
 
     loss_summary = tf.summary.scalar("loss", mod.loss())
 

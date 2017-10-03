@@ -26,10 +26,6 @@ class model :
         """ :return a tensor representing the gradient descent train step, which needs to be iterated on """
         pass
 
-    def embedding_dict(self):
-        """ :return a tensor representing the loss of the fitting problem """
-        pass
-
     def score(self, products, click_context):
         """ :return score for the product under the click_context"""
         pass
