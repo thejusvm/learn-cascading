@@ -1,7 +1,8 @@
-import tensorflow as tf
-import numpy as np
 import math
-from modelconfig import modelconfig
+import tensorflow as tf
+
+from mind_palace.product_ranker.models.model import model
+
 
 def embedding_concat(embeddings, context = None) :
     if context is None :
@@ -36,10 +37,6 @@ def _nn_internal_(modelConf, embeddings, context = None) :
                                    bias_initializer = tf.constant_initializer(10),
                                    name = "layer_" + str(counter))
 
-        print in_layer
-        print out_layer
-        print "------------------------"
-
         in_layer = out_layer
         layer_in_count = layer_out_count
 
@@ -60,11 +57,11 @@ def nn(modelConf, embeddings, context = None) :
             tf.get_variable_scope().reuse_variables()
             return _nn_internal_(modelConf, embeddings, context)
 
-class max_margin_model :
+class max_margin_model(model) :
 
     def __init__(self, modelConf) :
 
-        self.model_config = modelConf # type: modelconfig
+        model.__init__(self, modelConf)
 
         if modelConf.init_embedding_dict is None :
             self.embeddings_dict = tf.Variable(tf.random_uniform([modelConf.vocabulary_size, modelConf.embedding_size], 1.0, 2.0), dtype= tf.float32)
@@ -96,7 +93,7 @@ class max_margin_model :
         self.negative_score, self.negative_and_context = nn(modelConf, self.negative_embeddings, self.click_embeddings_mean)
 
         self.loss_matrix = tf.maximum(0., 1. - self.positive_score + self.negative_score)
-        self.loss = tf.reduce_mean(self.loss_matrix)
+        self.avg_loss = tf.reduce_mean(self.loss_matrix)
 
         self.accuracy = tf.count_nonzero(self.loss_matrix, reduction_indices=[1])
         self.accuracy = tf.cast(self.accuracy, tf.float32)
@@ -109,4 +106,34 @@ class max_margin_model :
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
 
-        self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.loss)
+        self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.avg_loss)
+
+    def minimize_step(self):
+        return self.train_step
+
+    def loss(self):
+        return self.avg_loss
+
+    def poistive_label(self):
+        return self.positive_samples
+
+    def negative_label(self):
+        return self.negative_samples
+
+    def click_product_label(self):
+        return self.click_context_samples
+
+    def embedding_dict(self):
+        return self.embeddings_dict
+
+    def test_summaries(self):
+        return [["accuracy", self.accuracy],
+                ["prec-1", self.prec_1]]
+
+    def score(self, products, click_context):
+        i_embedding = tf.nn.embedding_lookup(self.embeddings_dict, products)
+        return nn(self.model_config, i_embedding, None)[0]
+
+
+
+

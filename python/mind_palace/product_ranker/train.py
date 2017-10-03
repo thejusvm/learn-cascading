@@ -2,18 +2,19 @@ import cPickle as pickle
 import glob
 import json
 import numpy as np
+import os
 import pandas as pd
 import tensorflow as tf
 import time
-import sys
-import os
-from max_margin_model import max_margin_model
-# from trainingcontext import  trainingcontext
+from sklearn.model_selection import train_test_split
+
 import  trainingcontext as tc
+import model_factory as mf
+
+from mind_palace.DictIntegerizer import DictIntegerizer
+from mind_palace.product_ranker.models.max_margin_model import max_margin_model
 from modelconfig import modelconfig
 
-from sklearn.model_selection import train_test_split
-from mind_palace.DictIntegerizer import DictIntegerizer
 
 def process_negative_samples(var_len_negative_samples, vocabulary_size, max_num_negative_samples) :
     batch_size = np.shape(var_len_negative_samples)[0]
@@ -49,9 +50,9 @@ def splitIO(batch, trainCxt) :
 
     return positive_samples, negative_samples, click_context
 
-def get_feeddict(batch, md, trainCxt):
+def get_feeddict(batch, mod, trainCxt):
     process_data = splitIO(batch, trainCxt)
-    feed_keys = [md.positive_samples, md.negative_samples, md.click_context_samples]
+    feed_keys = [mod.poistive_label(), mod.negative_label(), mod.click_product_label()]
     feed = dict(zip(feed_keys, process_data))
     return feed
 
@@ -131,21 +132,25 @@ def run_train(trainCxt) :
     ################################### Start model building
 
     modelconf.vocabulary_size = productdict.dictSize()
-    md = max_margin_model(modelconf)
+    mod = mf.get_model(modelconf)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     if trainCxt.init_pad_to_zeros :
-        sess.run(md.embeddings_dict[productdict.getdefaultindex()].assign(tf.zeros([modelconf.embedding_size])))
+        sess.run(mod.embedding_dict()[productdict.getdefaultindex()].assign(tf.zeros([modelconf.embedding_size])))
 
-    loss_summary = tf.summary.scalar("loss", md.loss)
+    loss_summary = tf.summary.scalar("loss", mod.loss())
 
-    test_loss_summary = tf.summary.scalar("test_loss", md.loss)
-    test_accuracy_summary = tf.summary.scalar("test_accuracy", md.accuracy)
-    test_prec_summary = tf.summary.scalar("test_prec_1", md.prec_1)
+    test_loss_summary = tf.summary.scalar("test_loss", mod.loss())
 
-    # merged_summary = tf.summary.merge_all()
+    summaries = mod.test_summaries()
+    test_summaries = [test_loss_summary]
+    for summary in summaries :
+        test_summary = tf.summary.scalar("test_" + summary[0], summary[1])
+        test_summaries.append(test_summary)
+    merged_summary = tf.summary.merge(test_summaries)
+
     summary_writer = None
     if trainCxt.publish_summary :
         summary_writer = tf.summary.FileWriter(trainCxt.summary_dir, sess.graph)
@@ -180,19 +185,16 @@ def run_train(trainCxt) :
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         for batch in iterate_minibatches(train, trainCxt.batch_size, shuffle=True):
-            feed = get_feeddict(batch, md, trainCxt)
-            _, loss_val, summary = sess.run([md.train_step, md.loss, loss_summary], feed_dict=feed)
+            feed = get_feeddict(batch, mod, trainCxt)
+            _, loss_val, summary = sess.run([mod.minimize_step(), mod.loss(), loss_summary], feed_dict=feed)
             # print loss_val
             if summary_writer is not None :
                 summary_writer.add_summary(summary, counter)
 
-
             if summary_writer is not None and counter % trainCxt.test_summary_publish_iters == 0 :
-                feed = get_feeddict(test, md, trainCxt)
-                s1, s2, s3 = sess.run([test_loss_summary, test_accuracy_summary, test_prec_summary], feed_dict = feed)
-                summary_writer.add_summary(s1, counter)
-                summary_writer.add_summary(s2, counter)
-                summary_writer.add_summary(s3, counter)
+                feed = get_feeddict(test, mod, trainCxt)
+                all_summary = sess.run(merged_summary, feed_dict = feed)
+                summary_writer.add_summary(all_summary, counter)
 
             if trainCxt.save_model and trainCxt.save_model_num_iter != None and counter % trainCxt.save_model_num_iter == 0:
                 saver.save(sess, nn_model_dir + ".counter" , global_step = counter)
@@ -226,7 +228,7 @@ if __name__ == '__main__' :
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-00000"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.num_epochs = 10
+    trainCxt.num_epochs = 4
     trainCxt.min_click_context = 2
     trainCxt.save_model = True
     trainCxt.save_model_on_epoch = False
@@ -235,7 +237,7 @@ if __name__ == '__main__' :
     trainCxt.publish_summary = True
     trainCxt.num_negative_samples = 30
 
-    modelconf = modelconfig(None, 100)
+    modelconf = modelconfig("max_margin_model" , None, 100)
     modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = False
     trainCxt.model_config = modelconf

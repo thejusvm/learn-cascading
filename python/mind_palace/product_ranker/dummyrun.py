@@ -1,7 +1,7 @@
-import tensorflow as tf
-import time
 import numpy as np
-from max_margin_model import max_margin_model
+import tensorflow as tf
+
+from mind_palace.product_ranker.models.max_margin_model import max_margin_model
 
 # model_dir = ".saved_models/run.20170928-14-01-02"
 # nn_model_dir = model_dir + '/nn'

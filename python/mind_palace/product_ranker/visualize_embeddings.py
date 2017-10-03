@@ -1,8 +1,9 @@
-import tensorflow as tf
-from max_margin_model import max_margin_model
-from tensorflow.contrib.tensorboard.plugins import projector
 import cPickle as pickle
 import os
+import tensorflow as tf
+from tensorflow.contrib.tensorboard.plugins import projector
+
+from mind_palace.product_ranker.models.max_margin_model import max_margin_model
 
 # # Use the same LOG_DIR where you stored your checkpoint.
 # summary_writer = tf.train.SummaryWriter(LOG_DIR)
