@@ -53,13 +53,18 @@ def _nn_internal_(modelConf, embeddings, context = None) :
                         ), input_embedding
 
 def nn(modelConf, embeddings, context = None) :
-    return _nn_internal_(modelConf, embeddings, context)
+    with tf.variable_scope("discriminator"):
+        try :
+            return _nn_internal_(modelConf, embeddings, context)
+        except ValueError:
+            tf.get_variable_scope().reuse_variables()
+            return _nn_internal_(modelConf, embeddings, context)
 
-class model :
+class max_margin_model :
 
     def __init__(self, modelConf) :
 
-        self.model_config = modelConf
+        self.model_config = modelConf # type: modelconfig
 
         if modelConf.init_embedding_dict is None :
             self.embeddings_dict = tf.Variable(tf.random_uniform([modelConf.vocabulary_size, modelConf.embedding_size], 1.0, 2.0), dtype= tf.float32)
@@ -87,10 +92,8 @@ class model :
         if modelConf.use_context is False :
             self.click_embeddings_mean = None
 
-        with tf.variable_scope("discriminator"):
-            self.positive_score, self.positive_and_context = nn(modelConf, self.positive_embeddings, self.click_embeddings_mean)
-            tf.get_variable_scope().reuse_variables()
-            self.negative_score, self.negative_and_context = nn(modelConf, self.negative_embeddings, self.click_embeddings_mean)
+        self.positive_score, self.positive_and_context = nn(modelConf, self.positive_embeddings, self.click_embeddings_mean)
+        self.negative_score, self.negative_and_context = nn(modelConf, self.negative_embeddings, self.click_embeddings_mean)
 
         self.loss_matrix = tf.maximum(0., 1. - self.positive_score + self.negative_score)
         self.loss = tf.reduce_mean(self.loss_matrix)

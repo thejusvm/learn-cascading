@@ -7,7 +7,7 @@ import tensorflow as tf
 import time
 import sys
 import os
-from model import model
+from max_margin_model import max_margin_model
 # from trainingcontext import  trainingcontext
 import  trainingcontext as tc
 from modelconfig import modelconfig
@@ -131,7 +131,7 @@ def run_train(trainCxt) :
     ################################### Start model building
 
     modelconf.vocabulary_size = productdict.dictSize()
-    md = model(modelconf)
+    md = max_margin_model(modelconf)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
@@ -226,13 +226,14 @@ if __name__ == '__main__' :
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-00000"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.num_epochs = 2
+    trainCxt.num_epochs = 10
     trainCxt.min_click_context = 2
     trainCxt.save_model = True
     trainCxt.save_model_on_epoch = False
     trainCxt.date = currentdate
     trainCxt.timestamp = timestamp
     trainCxt.publish_summary = True
+    trainCxt.num_negative_samples = 30
 
     modelconf = modelconfig(None, 100)
     modelconf.layer_count = [1024, 512, 256]

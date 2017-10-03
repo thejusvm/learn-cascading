@@ -1,5 +1,5 @@
 import tensorflow as tf
-from model import model
+from max_margin_model import max_margin_model
 from tensorflow.contrib.tensorboard.plugins import projector
 import cPickle as pickle
 import os
@@ -25,7 +25,7 @@ with open('saved_models/sessionsimple-productdict.pickle', 'rb') as handle:
 
 vocabulary_size = productdict.dictSize()
 embedding_size = 50
-md = model(vocabulary_size, embedding_size)
+md = max_margin_model(vocabulary_size, embedding_size)
 saver = tf.train.Saver()
 
 with tf.Session() as sess:

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import time
 import numpy as np
-from model import model
+from max_margin_model import max_margin_model
 
 # model_dir = ".saved_models/run.20170928-14-01-02"
 # nn_model_dir = model_dir + '/nn'
@@ -13,7 +13,7 @@ with open('saved_models/sessionsimple-2l-productdict.pickle', 'rb') as handle:
 
 init = np.ones([10, 10]) * range(10)
 # print init.T
-md = model(10, 10, init_embedding = init.T)
+md = max_margin_model(10, 10, init_embedding = init.T)
 
 # positive_samples, negative_samples, embeddings_dict, loss, train_step = getmodel(vocabulary_size, embedding_size)
 

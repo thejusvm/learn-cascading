@@ -1,12 +1,14 @@
 import cPickle as pickle
 import tensorflow as tf
 import numpy as np
-from model import model, nn
+from max_margin_model import max_margin_model, nn
 from operator import itemgetter
 import trainingcontext as tc
 import sys
 
-path = "saved_models/run.20170929-19-36-29"
+# import get_stats as gs
+
+path = "saved_models/run.20171003-12-24-14"
 
 dir = tc.getTraningContextDir(path)
 trainCxt = None
@@ -20,20 +22,19 @@ with open(trainCxt.getProductDictDir(), 'rb') as handle:
 vocabulary_size = productdict.dictSize()
 modelconf = trainCxt.model_config
 
-md = model(modelconf)
+md = max_margin_model(modelconf)
 saver = tf.train.Saver()
 
 def computeScore(sess, i) :
     i_embedding = tf.nn.embedding_lookup(md.embeddings_dict, i)
-    with tf.variable_scope("discriminator", reuse = True):
-        score = nn(modelconf, i_embedding, None)[0]
+    score = nn(modelconf, i_embedding, None)[0]
     return sess.run(score)
 
-with tf.Session() as sess:
-    saver.restore(sess, trainCxt.getNnDir())
-    for i in sess.run([md.positive_score - md.negative_score], feed_dict = { md.positive_samples : [[1], [2], [3], [4]], md.negative_samples : [[1], [2], [3], [4]], md.click_context_samples : [[0]] }) :
-        print i
-    sys.exit(0)
+# with tf.Session() as sess:
+#     saver.restore(sess, trainCxt.getNnDir())
+#     for i in sess.run([md.positive_score, md. negative_score, md.positive_score - md.negative_score], feed_dict = { md.positive_samples : [[1]], md.negative_samples : [[1, 2, 3, 4]], md.click_context_samples : [[0]] }) :
+#         print i
+#     sys.exit(0)
 
 with tf.Session() as sess:
     # Restore variables from disk.
@@ -50,6 +51,7 @@ with tf.Session() as sess:
         c = c + 1
         # if(c > 20) :
         #     break
+
 
     productScore = sorted(productScore, key=itemgetter(1), reverse=True)
     for id in productScore:
