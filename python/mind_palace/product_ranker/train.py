@@ -72,15 +72,23 @@ def logBreak() :
     print "------------------------------------------"
 
 def prepareData():
+
     filenames = glob.glob(trainCxt.data_path)
 
+    start = time.clock()
     list_ = []
     for file_ in filenames:
         df = pd.read_csv(file_, sep="\t")
         list_.append(df)
     df = pd.concat(list_)
+    print "time taken by data read : " + str(time.clock() - start)
 
+    start = time.clock()
     productdict = DictIntegerizer(default = trainCxt.pad_text)
+    trainCxt.model_config.pad_index = productdict.get(trainCxt.pad_text)
+    if trainCxt.default_click_text is not None :
+        trainCxt.model_config.default_click_index = productdict.get(trainCxt.default_click_text)
+
     integerize = lambda x : productdict.get(x)
     df["positiveProductsInt"] = df["positiveProducts"].apply(integerize)
 
@@ -108,6 +116,7 @@ def prepareData():
     print click_len.value_counts()
     logBreak()
 
+    print "time taken by data preprocess : " + str(time.clock() - start)
     print "data prep done"
     logBreak()
 
@@ -225,25 +234,22 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = tc.trainingcontext()
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-00000"
+    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-000*"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.num_epochs = 4
+    trainCxt.num_epochs = 10
     trainCxt.min_click_context = 2
     trainCxt.save_model = True
     trainCxt.save_model_on_epoch = False
     trainCxt.date = currentdate
     trainCxt.timestamp = timestamp
     trainCxt.publish_summary = True
-    trainCxt.num_negative_samples = 30
+    trainCxt.num_negative_samples = 20
 
-    modelconf = modelconfig("max_margin_model" , None, 100)
-    modelconf.layer_count = [1024, 512, 256]
-    modelconf.use_context = False
+    modelconf = modelconfig("softmax_model" , None, 50)
+    # modelconf.layer_count = [1024, 512, 256]
+    modelconf.use_context = True
+    modelconfig.reuse_context_dict = True
     trainCxt.model_config = modelconf
 
     run_train(trainCxt)
-
-
-
-

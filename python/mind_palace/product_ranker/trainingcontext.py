@@ -14,6 +14,7 @@ class trainingcontext :
         self.min_click_context = 0
         self.test_size = 0.2
         self.pad_text = "<pad>"
+        self.default_click_text = "<defaultclick>"
         self.init_pad_to_zeros = True
         self.summary_dir = "/tmp/sessionsimple"
         self.model_dir = "saved_models/"
