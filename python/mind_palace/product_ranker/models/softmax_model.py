@@ -31,9 +31,10 @@ class softmax_model(model) :
             self.softmax_bias = tf.Variable(softmax_bias, dtype = tf.float32)
 
         self.click_context_samples = tf.placeholder(tf.int32, shape=[None, None])
-        self.num_click_context_samples = tf.shape(self.click_context_samples)[0]
-        self._default_click_pad = tf.reshape(tf.tile([self.modelConf.default_click_index], [self.num_click_context_samples]), [self.num_click_context_samples, 1])
         if self.modelConf.default_click_index is not None :
+            # Adding a dummy click product to each of the list of clicks
+            self.num_click_context_samples = tf.shape(self.click_context_samples)[0]
+            self._default_click_pad = tf.reshape(tf.tile([self.modelConf.default_click_index], [self.num_click_context_samples]), [self.num_click_context_samples, 1])
             self.click_context_samples_padded = tf.concat([self._default_click_pad, self.click_context_samples], 1)
         else:
             self.click_context_samples_padded = self.click_context_samples
@@ -45,7 +46,7 @@ class softmax_model(model) :
             else :
                 self.click_embeddings_mean = None
         else :
-            self.click_embeddings_mean = self.click_padder.click_embeddings_mean
+            self.click_embeddings_mean = self.click_padder.tensor_embeddings_mean
 
         self.click_embeddings_mean = tf.expand_dims(self.click_embeddings_mean, 1)
 
@@ -83,7 +84,7 @@ class softmax_model(model) :
         positive_weights = tf.nn.embedding_lookup(self.softmax_weights, products)
         positive_bias = tf.nn.embedding_lookup(self.softmax_bias, products)
         click_padder = padding_handler(click_context, self.context_dict)
-        click_embeddings_mean = click_padder.click_embeddings_mean
+        click_embeddings_mean = click_padder.tensor_embeddings_mean
         positive_logits = tf.reduce_sum(tf.multiply(click_embeddings_mean, positive_weights), reduction_indices=[2]) + positive_bias
         positive_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(positive_logits), logits=positive_logits)
         return positive_xent

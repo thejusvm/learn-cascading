@@ -77,7 +77,7 @@ class max_margin_model(model) :
 
         self.click_context_samples = tf.placeholder(tf.int32, shape=[None, None])
         self.click_padder = padding_handler(self.click_context_samples, self.embeddings_dict)
-        self.click_embeddings_mean = self.click_padder.click_embeddings_mean
+        self.click_embeddings_mean = self.click_padder.tensor_embeddings_mean
 
         if modelConf.use_context is False :
             self.click_embeddings_mean = None

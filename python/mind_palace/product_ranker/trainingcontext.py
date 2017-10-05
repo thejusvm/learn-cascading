@@ -11,7 +11,7 @@ class trainingcontext :
         self.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB"
         self.batch_size = 500
         self.num_epochs = 20
-        self.min_click_context = 0
+        self.min_click_context = 0 # Minimum number of context click to consider it for training
         self.test_size = 0.2
         self.pad_text = "<pad>"
         self.default_click_text = "<defaultclick>"
