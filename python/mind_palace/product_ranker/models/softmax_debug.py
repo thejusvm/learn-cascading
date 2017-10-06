@@ -13,7 +13,7 @@ init_bias = range(10) + np.ones(10)
 # print init_emb.T
 # print init_weight.T
 
-mdl_conf = modelconfig("softmax_margin", vocab_size=10, embedding_size=5)
+mdl_conf = modelconfig("softmax_model", vocab_size=10, embedding_size=5)
 mdl_conf.use_context = True
 mdl_conf.default_click_index = 1
 
@@ -24,15 +24,15 @@ sess.run(tf.global_variables_initializer())
 
 sess.run(md.context_dict[1].assign(np.ones([mdl_conf.embedding_size]) * 3))
 
-positive_samples_test = [[2.0], [4.0]]
+positive_samples_test = [2.0, 4.0]
 negative_samples_test = [[0.0,0.0,0.0, 4.0, 3.0, 6.0], [0.0, 6.0, 8.0, 5.0, 7.0, 9.0]]
 context = [[2, 4, 6, 0, 0, 0], [6, 8, 5, 7, 9, 0], [0, 0, 0, 0, 0, 0]]
 
-feed = {md.positive_samples : positive_samples_test,
-        md.negative_samples : negative_samples_test,
-        md.click_context_samples : context}
+feed = {md.poistive_label(): positive_samples_test,
+        md.negative_label() : negative_samples_test,
+        md.click_product_label() : context}
 
-for score in sess.run([md.click_padder._num_non_pad, md.click_padder.padded_tensor], feed_dict = feed):
+for score in sess.run([md.positive_samples], feed_dict = feed):
     print score
     print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))

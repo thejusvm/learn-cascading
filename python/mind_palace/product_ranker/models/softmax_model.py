@@ -50,7 +50,8 @@ class softmax_model(model) :
 
         self.click_embeddings_mean = tf.expand_dims(self.click_embeddings_mean, 1)
 
-        self.positive_samples = tf.placeholder(tf.int32, shape=[None, 1], name="positive_samples")
+        self.positive_samples_input = tf.placeholder(tf.int32, shape=[None], name="positive_samples")
+        self.positive_samples = tf.expand_dims(self.positive_samples_input, [1])
         self.batch_size = tf.shape(self.positive_samples)[0]
         self.positive_weights = tf.nn.embedding_lookup(self.softmax_weights, self.positive_samples)
         self.positive_bias = tf.nn.embedding_lookup(self.softmax_bias, self.positive_samples)
@@ -96,7 +97,7 @@ class softmax_model(model) :
         return self.negative_samples
 
     def poistive_label(self):
-        return self.positive_samples
+        return self.positive_samples_input
 
     def minimize_step(self):
         return self.train_step

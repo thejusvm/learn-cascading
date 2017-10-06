@@ -8,14 +8,12 @@ def getTraningContextDir(model_dir) :
 class trainingcontext :
 
     def __init__(self):
-        self.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB"
+        self.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed"
         self.batch_size = 500
         self.num_epochs = 20
         self.min_click_context = 0 # Minimum number of context click to consider it for training
-        self.test_size = 0.2
         self.pad_text = "<pad>"
         self.default_click_text = "<defaultclick>"
-        self.init_pad_to_zeros = True
         self.summary_dir = "/tmp/sessionsimple"
         self.model_dir = "saved_models/"
         self.test_summary_publish_iters = 100
@@ -28,6 +26,15 @@ class trainingcontext :
         self.num_negative_samples = 20
         self.num_click_context = 32
         self.model_config = None
+
+        #train_v1 args (file train.py)
+        self.test_size = 0.2
+
+
+        #train_v2 only args (file train_v2.py)
+        self.productdict_path = None
+        self.train_path = None
+        self.test_path = None
 
     def getTrainCxtDir(self) :
         return self.model_dir + train_context_pickle

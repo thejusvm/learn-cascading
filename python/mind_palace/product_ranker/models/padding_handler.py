@@ -17,7 +17,6 @@ class padding_handler :
         """
 
     def __init__(self, padded_tensor, embeddings_dict, padding_index = 0):
-        print padded_tensor.get_shape()
         self.padded_tensor = padded_tensor
         self._padding_mask = tf.not_equal(self.padded_tensor, padding_index)
         self._padding_mask = tf.cast(self._padding_mask, tf.float32)

@@ -1,19 +1,15 @@
 import cPickle as pickle
-import glob
-import json
 import numpy as np
 import os
-import pandas as pd
 import tensorflow as tf
 import time
-from sklearn.model_selection import train_test_split
 
-import  trainingcontext as tc
 import model_factory as mf
-
-from mind_palace.DictIntegerizer import DictIntegerizer
-from mind_palace.product_ranker.models.max_margin_model import max_margin_model
+import  trainingcontext as tc
+from mind_palace.product_ranker.models.model import model
 from modelconfig import modelconfig
+from prepare_data import preparedata
+from trainingcontext import trainingcontext
 
 
 def process_negative_samples(var_len_negative_samples, vocabulary_size, max_num_negative_samples) :
@@ -38,9 +34,8 @@ def process_past_click(var_len_past_click, max_num_click_context, pad_int) :
     return negative_samples_data
 
 def splitIO(batch, trainCxt) :
-    batch_size = np.shape(batch)[0]
 
-    positive_samples = np.reshape(batch[:, 0], [batch_size, 1])
+    positive_samples = batch[:, 0]
 
     var_len_negative_samples = batch[:, 1]
     negative_samples = process_negative_samples(var_len_negative_samples, trainCxt.model_config.vocabulary_size, trainCxt.num_negative_samples)
@@ -71,63 +66,14 @@ def iterate_minibatches(inputs, batchsize, shuffle=False):
 def logBreak() :
     print "------------------------------------------"
 
-def prepareData():
-
-    filenames = glob.glob(trainCxt.data_path)
-
-    start = time.clock()
-    list_ = []
-    for file_ in filenames:
-        df = pd.read_csv(file_, sep="\t")
-        list_.append(df)
-    df = pd.concat(list_)
-    print "time taken by data read : " + str(time.clock() - start)
-
-    start = time.clock()
-    productdict = DictIntegerizer(default = trainCxt.pad_text)
-    trainCxt.model_config.pad_index = productdict.get(trainCxt.pad_text)
-    if trainCxt.default_click_text is not None :
-        trainCxt.model_config.default_click_index = productdict.get(trainCxt.default_click_text)
-
-    integerize = lambda x : productdict.get(x)
-    df["positiveProductsInt"] = df["positiveProducts"].apply(integerize)
-
-    def jsonandintegerize(jString) :
-        strList = json.loads(jString)
-        return map(integerize, strList)
-
-    df = df[df["pastClickedProducts"].apply(lambda x: len(json.loads(x)) > trainCxt.min_click_context)]
-
-    # jsonListCols = ["negativeProducts", "pastClickedProducts", "pastBoughtProducts"]
-    jsonListCols = ["negativeProducts", "pastClickedProducts"]
-    for col in jsonListCols :
-        df[str(col + "Int")] = df[col].map(jsonandintegerize)
-
-
-    # raw_data = df[["positiveProductsInt", "negativeProductsInt", "pastClickedProductsInt", "pastBoughtProductsInt"]]
-    raw_data = df[["positiveProductsInt", "negativeProductsInt", "pastClickedProductsInt"]]
-    trainFrame, testFrame = train_test_split(raw_data, test_size = trainCxt.test_size)
-    train = trainFrame.as_matrix()
-    test = testFrame.as_matrix()
-
-
-    click_len = raw_data["pastClickedProductsInt"].map(lambda x : len(x))
-    print "histogram of num context clicks : "
-    print click_len.value_counts()
-    logBreak()
-
-    print "time taken by data preprocess : " + str(time.clock() - start)
-    print "data prep done"
-    logBreak()
-
-    return productdict, train, test
 
 def print_dict(dict_1) :
     for key in dict_1:
         print str(key) + " : " + str(dict_1.get(key))
 
 def run_train(trainCxt) :
-    modelconf = trainCxt.model_config
+    """:type trainCxt : trainingcontext"""
+    modelconf = trainCxt.model_config #type: modelconfig
     logBreak()
     print "Using train context : "
     print_dict(trainCxt.__dict__)
@@ -136,12 +82,21 @@ def run_train(trainCxt) :
     print_dict(modelconf.__dict__)
     logBreak()
 
-    productdict, train, test = prepareData()
+    productdict, trainFrame, testFrame = preparedata(trainCxt.data_path, pad_text=trainCxt.pad_text,
+                                           default_click_text= trainCxt.default_click_text,
+                                           test_size= trainCxt.test_size,
+                                           min_click_context= trainCxt.min_click_context)
+    train = trainFrame.as_matrix()
+    test = testFrame.as_matrix()
+
+    modelconfig.pad_index = productdict.get(trainCxt.pad_text)
+    if trainCxt.default_click_text is not None :
+        modelconfig.default_click_index = productdict.get(trainCxt.default_click_text)
 
     ################################### Start model building
 
     modelconf.vocabulary_size = productdict.dictSize()
-    mod = mf.get_model(modelconf)
+    mod = mf.get_model(modelconf) #type: model
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
