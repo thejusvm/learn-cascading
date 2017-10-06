@@ -84,6 +84,8 @@ if __name__ == '__main__' :
     raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB" + "/part-*"
     productdict, train, test = preparedata(raw_data_path, test_size=0.1)
 
+
+
     processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed.10split"
     os.makedirs(processed_data_path)
 
@@ -92,7 +94,7 @@ if __name__ == '__main__' :
         pickle.dump(productdict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     train_file = get_train_path(processed_data_path)
-    test_file = get_train_path(processed_data_path)
+    test_file = get_test_path(processed_data_path)
 
     train.to_csv(train_file, sep = "\t", index=False)
     test.to_csv(test_file, sep = "\t", index=False)

@@ -35,6 +35,7 @@ class trainingcontext :
         self.productdict_path = None
         self.train_path = None
         self.test_path = None
+        self.max_test_size = 100000000
 
     def getTrainCxtDir(self) :
         return self.model_dir + train_context_pickle
