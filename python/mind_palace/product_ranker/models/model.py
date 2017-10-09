@@ -1,4 +1,4 @@
-from mind_palace.product_ranker.modelconfig import modelconfig
+from mind_palace.product_ranker.models.modelconfig import modelconfig
 
 
 class model :

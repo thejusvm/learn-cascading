@@ -2,9 +2,8 @@ import cPickle as pickle
 import tensorflow as tf
 from operator import itemgetter
 
-import trainingcontext as tc
-import model_factory as mf
-import modelconfig
+from mind_palace.product_ranker.models import model_factory as mf
+from mind_palace.product_ranker.training import trainingcontext as tc
 
 # import get_stats as gs
 

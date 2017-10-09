@@ -1,7 +1,9 @@
 import tensorflow as tf
-from mind_palace.product_ranker.modelconfig import modelconfig
+
+from mind_palace.commons.padding_handler import padding_handler
+from mind_palace.product_ranker.models.modelconfig import modelconfig
 from model import model
-from padding_handler import padding_handler
+
 
 class softmax_model(model) :
 

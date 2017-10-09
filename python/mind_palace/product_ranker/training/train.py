@@ -4,11 +4,11 @@ import os
 import tensorflow as tf
 import time
 
-import model_factory as mf
 import  trainingcontext as tc
+from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
-from modelconfig import modelconfig
-from prepare_data import preparedata
+from mind_palace.product_ranker.models.modelconfig import modelconfig
+from mind_palace.product_ranker.prepare_data import preparedata
 from trainingcontext import trainingcontext
 
 

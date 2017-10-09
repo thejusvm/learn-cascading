@@ -9,7 +9,7 @@ import time
 from sklearn.model_selection import train_test_split
 import trainingcontext as tc
 from trainingcontext import trainingcontext
-from prepare_data import get_train_path, get_test_path, get_productdict_path
+from mind_palace.product_ranker.prepare_data import get_train_path, get_test_path, get_productdict_path
 
 
 def int_json(s) :

@@ -1,7 +1,7 @@
 import math
 import tensorflow as tf
 
-from padding_handler import padding_handler
+from mind_palace.commons.padding_handler import padding_handler
 from mind_palace.product_ranker.models.model import model
 
 

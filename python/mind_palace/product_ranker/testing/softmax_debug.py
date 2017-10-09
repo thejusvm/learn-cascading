@@ -1,10 +1,8 @@
 import numpy as np
 import tensorflow as tf
-import sys
-from mind_palace.product_ranker.modelconfig import modelconfig
-from softmax_model import softmax_model
 
-
+from mind_palace.product_ranker.models.modelconfig import modelconfig
+from mind_palace.product_ranker.models.softmax_model import softmax_model
 
 init_emb = np.ones([5, 10]) * range(10)
 init_weight = np.ones([5, 10]) * range(10)

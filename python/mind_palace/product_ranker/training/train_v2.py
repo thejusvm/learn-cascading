@@ -1,16 +1,16 @@
+import cPickle as pickle
 import json
 import numpy as np
+import os
 import tensorflow as tf
 import time
-import os
 from functools import partial
-import cPickle as pickle
 
-import model_factory as mf
 import  trainingcontext as tc
+from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
-from modelconfig import modelconfig
-from prepare_data import get_train_path, get_test_path, get_productdict_path, get_productdict
+from mind_palace.product_ranker.models.modelconfig import modelconfig
+from mind_palace.product_ranker.prepare_data import get_train_path, get_test_path, get_productdict_path, get_productdict
 from trainingcontext import trainingcontext
 
 
@@ -124,7 +124,6 @@ def train(train_cxt) :
     test_dataset = dataset
     dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.batch(trainCxt.batch_size)
-    # dataset = dataset.repeat()
 
     feed_keys = mod.place_holders()
 
