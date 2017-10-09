@@ -9,6 +9,7 @@ import cascading.operation.regex.RegexFilter;
 import cascading.pipe.*;
 import cascading.pipe.assembly.Discard;
 import cascading.pipe.assembly.Retain;
+import cascading.pipe.joiner.InnerJoin;
 import cascading.scheme.Scheme;
 import cascading.scheme.hadoop.TextDelimited;
 import cascading.tap.SinkMode;
@@ -19,10 +20,12 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import com.flipkart.learn.cascading.cdm_data_selection.CPRRow;
 import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
+import com.flipkart.learn.cascading.cdm_data_selection.VerticalFromCMSJson;
 import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.google.common.collect.Lists;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.Serializable;
@@ -85,12 +88,10 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
     public static final String NUM_CLICKS = "numClicks";
     public static final String NUM_BUYS = "numBuys";
 
-    @Override
-    public FlowDef getFlowDefinition(Map<String, String> options) {
-        Tap inputData = new GlobHfs( (Scheme)new AvroScheme(), options.get("input"));
 
-        Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
+
+    private Pipe getCDMPipe() {
         Pipe cdmPipe = new Pipe("cdmPipe");
 
         cdmPipe = new Each(cdmPipe, Fields.ALL, new CPRRow(DataFields.cdmOutputFields), Fields.RESULTS);
@@ -101,9 +102,31 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Fields buyIntentFields = new Fields(_BUYNOWCLICKS, _ADDTOCARTCLICKS);
         cdmPipe = new Each(cdmPipe, buyIntentFields, new ExpressionFunction(new Fields(_BUYINTENT), _BUYNOWCLICKS + "+" + _ADDTOCARTCLICKS, Float.class), Fields.ALL);
         cdmPipe = new Discard(cdmPipe, buyIntentFields);
+        return cdmPipe;
+    }
 
-//        String _INVERTPRODUCTCARDCLICKS = "inv_productcardClicks";
-//        cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTCARDCLICKS), new ExpressionFunction(new Fields(_INVERTPRODUCTCARDCLICKS), "1 - " + _PRODUCTCARDCLICKS, Float.class), Fields.ALL);
+    private Pipe getCmsPipe() {
+        Pipe cmsPipe = new Pipe("cmsPipe");
+        cmsPipe = new Each(cmsPipe, Fields.ALL,
+                new VerticalFromCMSJson(new String[]{DataFields._FSN, DataFields._BRAND, DataFields._VERTICAL}));
+        return cmsPipe;
+    }
+
+    @Override
+    public FlowDef getFlowDefinition(Map<String, String> options) {
+        Tap inputData = new GlobHfs( (Scheme)new AvroScheme(), options.get("input"));
+        Tap cmsData = new GlobHfs(new TextDelimited(new Fields(DataFields._FSN, DataFields._CMS), false, "\t"),
+                options.get("cmsInput"));
+
+
+        Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
+
+        Pipe cdmRawPipe = getCDMPipe();
+        Pipe cmsPipe = getCmsPipe();
+
+        Pipe cdmPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
+                new Fields(DataFields._FSN),
+                new InnerJoin());
 
         cdmPipe = new GroupBy(cdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
@@ -116,8 +139,6 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         cdmPipe = new JsonEncodeEach(cdmPipe, userStats);
         cdmPipe = new JsonEncodeEach(cdmPipe, userDayStats);
         cdmPipe = new JsonEncodeEach(cdmPipe, userContext);
-//        cdmPipe = new Discard(cdmPipe, userContext);
-//        cdmPipe = new Discard(cdmPipe, new Fields(_INVERTPRODUCTCARDCLICKS));
 //
 //        Fields mergeKeys = new Fields(_ACCOUNTID, _DEVICEID, _PLATFORM, _SESSIONID, _VISITORID);
 //        Fields productFields = new Fields(_PRODUCTID,
@@ -134,7 +155,8 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 //
 
         return FlowDef.flowDef().setName(options.get("flowName"))
-                .addSource(cdmPipe, inputData)
+                .addSource(cdmRawPipe, inputData)
+                .addSource(cmsPipe, cmsData)
                 .addTailSink(cdmPipe, outputTap)
                 .setAssertionLevel(AssertionLevel.VALID);
     }

@@ -38,7 +38,7 @@ public class CPRDataFlow implements CascadingFlows {
 
         Pipe cmsPipe = new Pipe("cmsPipe");
         cmsPipe = new Each(cmsPipe, Fields.ALL,
-                new VerticalFromCMSJson(new Fields(DataFields._FSN, DataFields._BRAND, DataFields._VERTICAL)));
+                new VerticalFromCMSJson(new String[]{DataFields._FSN, DataFields._BRAND, DataFields._VERTICAL}));
 
         Pipe cdmPipe = new Pipe("cdmPipe");
 

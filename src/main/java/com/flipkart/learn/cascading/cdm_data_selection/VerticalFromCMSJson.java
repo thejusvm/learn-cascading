@@ -20,34 +20,26 @@ import java.util.List;
  */
 public class VerticalFromCMSJson extends BaseOperation implements Function {
 
-    public VerticalFromCMSJson(Fields outputFields) {
-        super(outputFields);
+    private String[] attributes;
+
+    public VerticalFromCMSJson(String[] attributes) {
+        super(new Fields(attributes));
+        this.attributes = attributes;
     }
 
     @Override
     public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
         TupleEntry arguments = functionCall.getArguments();
-        String fsn = arguments.getString(DataFields._FSN);
         String cmsJson = arguments.getString(DataFields._CMS);
 
         try {
             JSONObject json = new JSONObject(cmsJson);
-            String verticalName = json.getJSONArray("vertical").getString(0);
-            String brand = "";
-            if (json.has("brand")) {
-                brand = json.getJSONArray("brand").getString(0);
-            }
             Tuple result = new Tuple();
-            result.add(fsn);
-            result.add(brand);
-            result.add(verticalName);
-//            if(verticalName.equalsIgnoreCase("t_shirt")){
-//                functionCall.getOutputCollector().add(result);
-//            }
-            List<String> verticalsWhitelist = Arrays.asList("watch", "sari", "television", "computer", "power_bank", "shoe", "t_shirt");
-            if(verticalsWhitelist.contains(verticalName.toLowerCase())){
-                functionCall.getOutputCollector().add(result);
+            for (String attribute : attributes) {
+                String attributeValue = json.getJSONArray(attribute).getString(0);
+                result.add(attributeValue);
             }
+            functionCall.getOutputCollector().add(result);
         } catch (JSONException e) {
             e.printStackTrace();
         }
