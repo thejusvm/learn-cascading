@@ -126,7 +126,7 @@ def train(train_cxt) :
     dataset = dataset.batch(trainCxt.batch_size)
     # dataset = dataset.repeat()
 
-    feed_keys = [mod.poistive_label(), mod.negative_label(), mod.click_product_label()]
+    feed_keys = mod.place_holders()
 
     test_feed = None
     if summary_writer is not None :
@@ -188,11 +188,6 @@ def train(train_cxt) :
 
     ################################### End model training
 
-
-
-
-
-
 if __name__ == '__main__' :
     timestamp = time.localtime()
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
@@ -201,8 +196,8 @@ if __name__ == '__main__' :
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed.10split"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.num_epochs = 20
-    trainCxt.min_click_context = 2
+    trainCxt.num_epochs = 25
+    trainCxt.min_click_context = 0
     trainCxt.save_model = True
     trainCxt.save_model_on_epoch = False
     trainCxt.date = currentdate

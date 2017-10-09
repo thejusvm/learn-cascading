@@ -47,7 +47,7 @@ def splitIO(batch, trainCxt) :
 
 def get_feeddict(batch, mod, trainCxt):
     process_data = splitIO(batch, trainCxt)
-    feed_keys = [mod.poistive_label(), mod.negative_label(), mod.click_product_label()]
+    feed_keys = mod.place_holders()
     feed = dict(zip(feed_keys, process_data))
     return feed
 

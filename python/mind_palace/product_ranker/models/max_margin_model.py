@@ -107,14 +107,8 @@ class max_margin_model(model) :
     def loss(self):
         return self.avg_loss
 
-    def poistive_label(self):
-        return self.positive_samples
-
-    def negative_label(self):
-        return self.negative_samples
-
-    def click_product_label(self):
-        return self.click_context_samples
+    def place_holders(self):
+        return [self.positive_samples, self.negative_samples, self.click_context_samples]
 
     def test_summaries(self):
         return [["accuracy", self.accuracy],

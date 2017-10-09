@@ -6,16 +6,8 @@ class model :
     def __init__(self, model_config) :
         self.model_config = model_config # type: modelconfig
 
-    def poistive_label(self):
-        """ :return the placeholder to attach the positive label (into feed dict)"""
-        pass
-
-    def negative_label(self):
-        """ :return the placeholder to attach the negative labels (into feed dict)"""
-        pass
-
-    def click_product_label(self):
-        """ :return the placeholder to attach the click product label (into feed dict)"""
+    def place_holders(self):
+        """:return the list of placeholders in attach data to"""
         pass
 
     def loss(self):

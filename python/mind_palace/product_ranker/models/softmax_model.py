@@ -74,12 +74,11 @@ class softmax_model(model) :
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
 
-
-    def click_product_label(self):
-        return self.click_context_samples
+        self.positive_probability = tf.sigmoid(self.positive_logits)
+        self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
     def test_summaries(self):
-        return [["prec-1", self.prec_1]]
+        return [["prec-1", self.prec_1], ["probability", self.positive_mean_probability]]
 
     def score(self, products, click_context):
         positive_weights = tf.nn.embedding_lookup(self.softmax_weights, products)
@@ -90,14 +89,11 @@ class softmax_model(model) :
         positive_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(positive_logits), logits=positive_logits)
         return positive_xent
 
+    def place_holders(self):
+        return [self.positive_samples_input, self.negative_samples, self.click_context_samples]
+
     def loss(self):
         return self.nce_loss
-
-    def negative_label(self):
-        return self.negative_samples
-
-    def poistive_label(self):
-        return self.positive_samples_input
 
     def minimize_step(self):
         return self.train_step
