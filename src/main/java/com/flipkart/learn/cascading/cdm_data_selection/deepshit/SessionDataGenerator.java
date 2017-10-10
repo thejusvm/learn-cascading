@@ -88,6 +88,15 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
     public static final String NUM_CLICKS = "numClicks";
     public static final String NUM_BUYS = "numBuys";
 
+    public static final String[] CMS_ATTRIBUTES = {DataFields._VERTICAL, DataFields._BRAND};
+    public static final List<String> PRODUCT_ATTRIBUTES;
+
+    static {
+        List<String> attributeKeys = ImmutableList.copyOf(CMS_ATTRIBUTES);
+        attributeKeys = new LinkedList<>(attributeKeys);
+        attributeKeys.add(DataFields._PRODUCTID);
+        PRODUCT_ATTRIBUTES = attributeKeys;
+    }
 
 
 
@@ -123,8 +132,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
         Pipe cdmRawPipe = getCDMPipe();
 
-        String[] attributeNames = {DataFields._VERTICAL, DataFields._BRAND};
-        Pipe cmsPipe = getCmsPipe(attributeNames);
+        Pipe cmsPipe = getCmsPipe(CMS_ATTRIBUTES);
 
         Pipe cdmCmsPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
                 new Fields(DataFields._FSN),
@@ -135,12 +143,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
 
-
-        List<String> attributeKeys = ImmutableList.copyOf(attributeNames);
-        attributeKeys = new LinkedList<>(attributeKeys);
-        attributeKeys.add(DataFields._PRODUCTID);
-
-        Pipe sessionPipe = new Every(cdmCmsPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), attributeKeys), Fields.ALL);
+        Pipe sessionPipe = new Every(cdmCmsPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), PRODUCT_ATTRIBUTES), Fields.ALL);
         sessionPipe = new Each(sessionPipe, userStats, new ExpandUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
         sessionPipe = new Each(sessionPipe, new Fields(NUM_CLICKS), new RegexFilter("^[^0]$"));
         sessionPipe = new JsonEncodeEach(sessionPipe, userStats);

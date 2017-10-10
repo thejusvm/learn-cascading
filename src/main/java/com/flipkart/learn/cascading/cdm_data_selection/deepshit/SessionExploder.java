@@ -48,7 +48,7 @@ public class SessionExploder implements SimpleFlow {
         Fields expodedFields = new Fields(RANDOM_ID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
         pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields, regex), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
-        pipe = new JsonEncodeEach(pipe, new Fields(NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
+        pipe = new JsonEncodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
         pipe = new GroupBy(pipe, new Fields(RANDOM_ID));
         pipe = new Discard(pipe, new Fields(RANDOM_ID));
         return pipe;
@@ -67,8 +67,8 @@ public class SessionExploder implements SimpleFlow {
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             SearchSessions sessionsContainer = (SearchSessions) functionCall.getArguments().getObject(0);
             Collection<SearchSession> sessions = sessionsContainer.getSessions().values();
-            List<String> pastClick = Collections.emptyList();
-            List<String> pastBought = Collections.emptyList();
+            Map<String, Map<String, String>> pastClick = Collections.emptyMap();
+            Map<String, Map<String, String>> pastBought = Collections.emptyMap();
             for (SearchSession session : sessions) {
                 long timestamp = session.getTimestamp();
                 List<ProductObj> impressionProducts = session.getProducts();
@@ -86,32 +86,40 @@ public class SessionExploder implements SimpleFlow {
                     ArrayList<ProductObj> impressionsSorted = new ArrayList<>(impressionProducts);
                     impressionsSorted
                             .sort(Comparator.comparingInt(o -> Math.abs(clickedProductPos - o.getPosition())));
-                    List<String> finalPastClick = pastClick;
-//                    List<String> finalPastBought = pastBought;
+                    Map<String, Map<String, String>> finalPastClick = pastClick;
+//                    Map<String, Map<String, String>> finalPastBought = pastBought;
                     List negativeForClicked = impressionsSorted
                             .stream()
                             .filter(product -> product.getProductId().matches(regex))
                             .filter(product -> !product.isClick()) // removing if the product has been clicked
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
-                            .filter(product -> !finalPastClick.contains(product.getProductId())) // removed if the product had been clicked in the history
-//                            .filter(product -> !finalPastBought.contains(product.getProductId()))
+                            .filter(product -> !finalPastClick.keySet().contains(product.getProductId())) // removed if the product had been clicked in the history
+//                            .filter(product -> !finalPastBought.keySet().contains(product.getProductId()))
                             .filter(product -> clickedProduct.getPosition() + 2 >= product.getPosition()) // removing if the product's position is 2 greater than the clicked product
-                            .map(ProductObj::getProductId)
+                            .map(ProductObj::getAttributes)
                             .limit(numProducts)
                             .collect(Collectors.toList());
-                    pastClick = new ArrayList<>(pastClick);
-                    functionCall.getOutputCollector().add(new Tuple(UUID.randomUUID().toString(), timestamp, findingMethod, ACTION_CLICK, pastClick, pastBought, clickedProduct.getProductId(), negativeForClicked));
+                    pastClick = new LinkedHashMap<>(pastClick);
+                    functionCall.getOutputCollector().add(
+                            new Tuple(UUID.randomUUID().toString(),
+                                    timestamp,
+                                    findingMethod,
+                                    ACTION_CLICK,
+                                    pastClick.values(),
+                                    pastBought.values(),
+                                    clickedProduct.getAttributes(),
+                                    negativeForClicked));
                 }
 
-                pastClick = new ArrayList<>(pastClick);
+                pastClick = new LinkedHashMap<>(pastClick);
                 for (ProductObj clickedProduct : clickedProducts) {
-                    pastClick.add(clickedProduct.getProductId());
+                    pastClick.put(clickedProduct.getProductId(), clickedProduct.getAttributes());
                 }
 
                 boughtProducts = boughtProducts.stream().filter(product -> product.getProductId().matches(regex)).collect(Collectors.toList());
-                pastBought = new ArrayList<>(pastBought);
+                pastBought = new LinkedHashMap<>(pastBought);
                 for (ProductObj boughtProduct : boughtProducts) {
-                    pastBought.add(boughtProduct.getProductId());
+                    pastBought.put(boughtProduct.getProductId(), boughtProduct.getAttributes());
                 }
 
             }
@@ -121,7 +129,7 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/test-session.1", "data/test-session-exploded.1", "JWS.*"};
+            args = new String[]{"data/session-2017-0801.1000", "data/sessionexplode-2017-0801.1000", "MOB.*"};
         }
 
         String prefix = args.length > 2 ? args[2] : null;
