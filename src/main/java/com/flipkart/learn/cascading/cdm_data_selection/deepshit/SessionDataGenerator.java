@@ -9,7 +9,7 @@ import cascading.operation.regex.RegexFilter;
 import cascading.pipe.*;
 import cascading.pipe.assembly.Discard;
 import cascading.pipe.assembly.Retain;
-import cascading.pipe.joiner.InnerJoin;
+import cascading.pipe.joiner.LeftJoin;
 import cascading.scheme.Scheme;
 import cascading.scheme.hadoop.TextDelimited;
 import cascading.tap.SinkMode;
@@ -25,7 +25,7 @@ import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.Serializable;
@@ -105,10 +105,10 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         return cdmPipe;
     }
 
-    private Pipe getCmsPipe() {
+    private Pipe getCmsPipe(String[] attributeNames) {
         Pipe cmsPipe = new Pipe("cmsPipe");
-        cmsPipe = new Each(cmsPipe, Fields.ALL,
-                new VerticalFromCMSJson(new String[]{DataFields._FSN, DataFields._BRAND, DataFields._VERTICAL}));
+        cmsPipe = new Each(cmsPipe, new Fields(DataFields._CMS),
+                new VerticalFromCMSJson(attributeNames), Fields.SWAP);
         return cmsPipe;
     }
 
@@ -122,57 +122,58 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
         Pipe cdmRawPipe = getCDMPipe();
-        Pipe cmsPipe = getCmsPipe();
 
-        Pipe cdmPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
+        String[] attributeNames = {DataFields._VERTICAL, DataFields._BRAND};
+        Pipe cmsPipe = getCmsPipe(attributeNames);
+
+        Pipe cdmCmsPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
                 new Fields(DataFields._FSN),
-                new InnerJoin());
+                new LeftJoin());
 
-        cdmPipe = new GroupBy(cdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
+        cdmCmsPipe = new GroupBy(cdmCmsPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
 
-        cdmPipe = new Every(cdmPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext)), Fields.ALL);
-        cdmPipe = new Each(cdmPipe, userStats, new ExplodeUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
-        cdmPipe = new Each(cdmPipe, new Fields(NUM_CLICKS), new RegexFilter("^[^0]$"));
-        cdmPipe = new JsonEncodeEach(cdmPipe, userStats);
-        cdmPipe = new JsonEncodeEach(cdmPipe, userDayStats);
-        cdmPipe = new JsonEncodeEach(cdmPipe, userContext);
-//
-//        Fields mergeKeys = new Fields(_ACCOUNTID, _DEVICEID, _PLATFORM, _SESSIONID, _VISITORID);
-//        Fields productFields = new Fields(_PRODUCTID,
-//                _FINDINGMETHOD,
-//                _TIMESTAMP,
-//                _PRODUCTCARDCLICKS,
-//                _PRODUCTPAGEVIEWS,
-//                _ADDTOCARTCLICKS,
-//                _BUYNOWCLICKS,
-//                _POSITION);
-//
-//        Fields aggregatedProductData = new Fields("aggregatedProductData");
-//        cdmPipe = new Every(cdmPipe, productFields, new MapAggregator(aggregatedProductData), Fields.merge(mergeKeys, aggregatedProductData));
-//
+
+        List<String> attributeKeys = ImmutableList.copyOf(attributeNames);
+        attributeKeys = new LinkedList<>(attributeKeys);
+        attributeKeys.add(DataFields._PRODUCTID);
+
+        Pipe sessionPipe = new Every(cdmCmsPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), attributeKeys), Fields.ALL);
+        sessionPipe = new Each(sessionPipe, userStats, new ExpandUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
+        sessionPipe = new Each(sessionPipe, new Fields(NUM_CLICKS), new RegexFilter("^[^0]$"));
+        sessionPipe = new JsonEncodeEach(sessionPipe, userStats);
+        sessionPipe = new JsonEncodeEach(sessionPipe, userDayStats);
+        sessionPipe = new JsonEncodeEach(sessionPipe, userContext);
 
         return FlowDef.flowDef().setName(options.get("flowName"))
                 .addSource(cdmRawPipe, inputData)
                 .addSource(cmsPipe, cmsData)
-                .addTailSink(cdmPipe, outputTap)
+                .addTailSink(sessionPipe, outputTap)
                 .setAssertionLevel(AssertionLevel.VALID);
     }
 
     public static void main(String[] args) {
-        args = new String[3];
-        args[0] = "flowName=session-data";
-        args[1] = "input=data/cdm-2017-0801.1000.avro";
-        args[2] = "output=data/session-2017-0801.1000";
+        if(args.length == 0) {
+            args = new String[] {
+                    "flowName=session-data",
+                    "input=data/cdm-2017-0801.1000.avro",
+                    "output=data/session-2017-0801.1000",
+                    "cmsInput=data/catalog-data.MOB"
+            };
+        }
+
         CascadingRunner.main(args);
     }
 
     private static class SessionDataAggregator extends BaseOperation<UserContext> implements Aggregator<UserContext>, Serializable {
 
-        public SessionDataAggregator(Fields outputFields) {
+        private final List<String> attributeNames;
+
+        public SessionDataAggregator(Fields outputFields, List<String> attributeNames) {
             super(outputFields);
+            this.attributeNames = attributeNames;
         }
 
         @Override
@@ -197,8 +198,13 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             float click = aggregatorCall.getArguments().getFloat(_PRODUCTCARDCLICKS);
             float buy = aggregatorCall.getArguments().getFloat(_BUYINTENT);
 
+            Map<String, String> productAttributes = new LinkedHashMap<>();
+            for (String attributeName : attributeNames) {
+                String attributeValue = aggregatorCall.getArguments().getString(attributeName);
+                productAttributes.put(attributeName, attributeValue);
+            }
 
-            userContext.addProduct(sqid, new ProductObj(productId, timestamp, pos, click, buy, findingmethod));
+            userContext.addProduct(sqid, new ProductObj(productId, timestamp, pos, click, buy, findingmethod, productAttributes));
         }
 
         @Override
@@ -211,10 +217,10 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         }
     }
 
-    private class ExplodeUserStats extends BaseOperation implements Function, Serializable {
+    private class ExpandUserStats extends BaseOperation implements Function, Serializable {
 
 
-        public ExplodeUserStats(Fields fields) {
+        public ExpandUserStats(Fields fields) {
             super(fields);
         }
 

@@ -34,6 +34,17 @@ public class CPRRow extends BaseOperation implements Function {
         //this.compoundFields = compoundFields;
     }
 
+//    private Double getDoubleData(TupleEntry entry, String level1Key, String level2Key, double defaultVal) {
+//        Tuple tuple = (Tuple) entry.getObject(level1Key);
+//        if(tuple != null) {
+//            Optional<AvroSchemaReader.NodeIndex> l2KeyIndex = avroSchemaReader.getIndex(level1Key, level2Key);
+//            Integer l2KeyIdx = l2KeyIndex.get().getIdx();
+//            double value = tuple.getDouble(l2KeyIdx);
+//            return value;
+//        }
+//        return defaultVal;
+//    }
+
     @Override
     public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
         TupleEntry entry = functionCall.getArguments();

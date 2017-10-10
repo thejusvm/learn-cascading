@@ -27,6 +27,9 @@ public class DataFields {
     public static final String _PRODUCTCARDATTRIBUTES = "productCardAttributes";
     public static final String _POSITION = "position";
 
+    //product card listing attributes
+    public static final String _PRODUCTCARDLISTSINGATTRIBUTES = "productCardListingAttributes";
+
     //product page attributestimestamp
     public static final String _PRODUCTPAGEATTRIBUTES = "productPageAttributes";
     public static final String _FETCHID = "fetchId";

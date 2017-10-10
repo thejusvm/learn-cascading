@@ -6,6 +6,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Created by thejus on 13/9/17.
@@ -33,12 +34,16 @@ class ProductObj implements Serializable {
     @JsonProperty(value = "findingmethod")
     private String findingmethod;
 
+    @JsonProperty(value = "attributes")
+    private Map<String, String> attributes;
+
     public ProductObj(@JsonProperty(value = "productId") String productId,
                       @JsonProperty(value = "timestamp") long timestamp,
                       @JsonProperty(value = "position") int position,
                       @JsonProperty(value = "click") float click,
                       @JsonProperty(value = "buy") float buy,
-                      @JsonProperty(value = "findingmethod") String findingmethod) {
+                      @JsonProperty(value = "findingmethod") String findingmethod,
+                      @JsonProperty(value = "attributes") Map<String, String> attributes) {
         this.productId = productId;
         this.timestamp = timestamp;
         this.date = format.format(new Date(timestamp));
@@ -46,6 +51,7 @@ class ProductObj implements Serializable {
         this.click = click;
         this.buy = buy;
         this.findingmethod = findingmethod;
+        this.attributes = attributes;
     }
 
     private static SimpleDateFormat format = new SimpleDateFormat("dd/MM/YY HH:mm:ss.SSSZ");
@@ -86,6 +92,10 @@ class ProductObj implements Serializable {
 
     public int getPosition() {
         return position;
+    }
+
+    public Map<String, String> getAttributes() {
+        return attributes;
     }
 
     @Override
