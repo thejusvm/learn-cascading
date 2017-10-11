@@ -9,12 +9,9 @@ import cascading.pipe.Pipe;
 import cascading.tuple.Fields;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlowRunner;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.Serializable;
-import java.util.Set;
 
 /**
  * Decodes the first column as a json Map and looks for the "query" field.
@@ -22,18 +19,18 @@ import java.util.Set;
  */
 public class FilterByPrefix implements SimpleFlow {
 
-    private String prefixes;
+    private String regex;
     private int queryField = 0;
 
-    public FilterByPrefix(int queryField, String prefixes) {
+    public FilterByPrefix(int queryField, String regex) {
         this.queryField = queryField;
-        this.prefixes = prefixes;
+        this.regex = regex;
     }
 
     @Override
     public Pipe getPipe() {
         Pipe pipe = new Pipe("filter");
-        pipe = new Each(pipe, Fields.ALL, new QueryIn(queryField, prefixes));
+        pipe = new Each(pipe, Fields.ALL, new QueryIn(queryField, regex));
         return pipe;
     }
 
@@ -50,22 +47,22 @@ public class FilterByPrefix implements SimpleFlow {
 
         private static ObjectMapper objectMapper = new ObjectMapper();
         private int queryField;
-        private String prefixes;
+        private String regex;
 
-        public QueryIn(int queryField, String prefixes) {
+        public QueryIn(int queryField, String regex) {
             this.queryField = queryField;
-            this.prefixes = prefixes;
+            this.regex = regex;
         }
 
         @Override
         public boolean isRemove(FlowProcess flowProcess, FilterCall filterCall) {
             String fieldData = (String) filterCall.getArguments().getObject(queryField, String.class);
-            boolean startsWith = fieldData.startsWith(prefixes);
-            if(startsWith) {
-                System.out.println("true");
-            } else {
-                System.out.println("false");
-            }
+            boolean startsWith = fieldData.matches(regex);
+//            if(startsWith) {
+//                System.out.println("true");
+//            } else {
+//                System.out.println("false");
+//            }
             return !startsWith;
         }
     }

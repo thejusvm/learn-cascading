@@ -3,11 +3,13 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 import cascading.avro.AvroScheme;
 import cascading.flow.FlowDef;
 import cascading.flow.FlowProcess;
+import cascading.flow.planner.Scope;
 import cascading.operation.*;
 import cascading.operation.expression.ExpressionFunction;
 import cascading.operation.regex.RegexFilter;
 import cascading.pipe.*;
 import cascading.pipe.assembly.Discard;
+import cascading.pipe.assembly.Rename;
 import cascading.pipe.assembly.Retain;
 import cascading.pipe.joiner.LeftJoin;
 import cascading.scheme.Scheme;
@@ -24,10 +26,12 @@ import com.flipkart.learn.cascading.cdm_data_selection.VerticalFromCMSJson;
 import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
+import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.util.Pair;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -88,16 +92,6 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
     public static final String NUM_CLICKS = "numClicks";
     public static final String NUM_BUYS = "numBuys";
 
-    public static final String[] CMS_ATTRIBUTES = {DataFields._VERTICAL, DataFields._BRAND};
-    public static final List<String> PRODUCT_ATTRIBUTES;
-
-    static {
-        List<String> attributeKeys = ImmutableList.copyOf(CMS_ATTRIBUTES);
-        attributeKeys = new LinkedList<>(attributeKeys);
-        attributeKeys.add(DataFields._PRODUCTID);
-        PRODUCT_ATTRIBUTES = attributeKeys;
-    }
-
 
 
     private Pipe getCDMPipe() {
@@ -114,25 +108,31 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         return cdmPipe;
     }
 
-    private Pipe getCmsPipe(String[] attributeNames) {
-        Pipe cmsPipe = new Pipe("cmsPipe");
-        cmsPipe = new Each(cmsPipe, new Fields(DataFields._CMS),
-                new VerticalFromCMSJson(attributeNames), Fields.SWAP);
-        return cmsPipe;
+    private String[] getAttributeFields(String cmsInput) {
+        String[] attributes;
+        try {
+            String cmsInputFile = HdfsUtils.listFiles(cmsInput, 1).get(0);
+            List<String> fields = HdfsUtils.nextLines(cmsInputFile, 1);
+            attributes = fields.get(0).split("\t");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return attributes;
     }
 
     @Override
     public FlowDef getFlowDefinition(Map<String, String> options) {
         Tap inputData = new GlobHfs( (Scheme)new AvroScheme(), options.get("input"));
-        Tap cmsData = new GlobHfs(new TextDelimited(new Fields(DataFields._FSN, DataFields._CMS), false, "\t"),
-                options.get("cmsInput"));
-
+        String cmsInput = options.get("cmsInput");
+        Tap cmsData = new GlobHfs(new TextDelimited(Fields.ALL, true, "\t"), cmsInput);
+        String[] attributes = getAttributeFields(cmsInput);
 
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
         Pipe cdmRawPipe = getCDMPipe();
 
-        Pipe cmsPipe = getCmsPipe(CMS_ATTRIBUTES);
+        Pipe cmsPipe = new Pipe("attributePipe");
+        cmsPipe = new Rename(cmsPipe, new Fields(DataFields._PRODUCTID), new Fields(DataFields._FSN));
 
         Pipe cdmCmsPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
                 new Fields(DataFields._FSN),
@@ -143,7 +143,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
 
-        Pipe sessionPipe = new Every(cdmCmsPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), PRODUCT_ATTRIBUTES), Fields.ALL);
+        Pipe sessionPipe = new Every(cdmCmsPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), attributes), Fields.ALL);
         sessionPipe = new Each(sessionPipe, userStats, new ExpandUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
         sessionPipe = new Each(sessionPipe, new Fields(NUM_CLICKS), new RegexFilter("^[^0]$"));
         sessionPipe = new JsonEncodeEach(sessionPipe, userStats);
@@ -163,7 +163,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                     "flowName=session-data",
                     "input=data/cdm-2017-0801.1000.avro",
                     "output=data/session-2017-0801.1000",
-                    "cmsInput=data/catalog-data.MOB"
+                    "cmsInput=data/product-attributes.MOB"
             };
         }
 
@@ -172,9 +172,9 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
     private static class SessionDataAggregator extends BaseOperation<UserContext> implements Aggregator<UserContext>, Serializable {
 
-        private final List<String> attributeNames;
+        private final String[] attributeNames;
 
-        public SessionDataAggregator(Fields outputFields, List<String> attributeNames) {
+        public SessionDataAggregator(Fields outputFields, String[] attributeNames) {
             super(outputFields);
             this.attributeNames = attributeNames;
         }
