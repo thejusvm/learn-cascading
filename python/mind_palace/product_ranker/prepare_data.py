@@ -85,7 +85,7 @@ def prepare_data(raw_data_path,
         counter += 1
         logBreak()
 
-    return dict
+    return productdict
 
 
 if __name__ == '__main__' :

@@ -5,6 +5,7 @@ import os
 import tensorflow as tf
 import time
 from functools import partial
+import glob
 
 import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
@@ -12,6 +13,7 @@ from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig
 from mind_palace.product_ranker.prepare_data import get_train_path, get_test_path, get_productdict_path, get_productdict
 from trainingcontext import trainingcontext
+
 
 
 def int_json(s) :
@@ -106,7 +108,7 @@ def train(train_cxt) :
         with open(train_context_model_dir, 'w+b') as handle:
             pickle.dump(trainCxt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        print "saved productdict and trainCxt into " + trainCxt.model_dir
+        print "saved trainCxt into " + trainCxt.model_dir
         logBreak()
     ################################### End saving dict to file
 
@@ -131,7 +133,7 @@ def train(train_cxt) :
     if summary_writer is not None :
         test_dataset = test_dataset.batch(train_cxt.max_test_size) # hack to reuse the same code as training. no method in Dataset to say batch all in one go
         test_iterator = test_dataset.make_initializable_iterator()
-        sess.run(test_iterator.initializer, feed_dict={filenames: [train_cxt.test_path]})
+        sess.run(test_iterator.initializer, feed_dict={filenames: train_cxt.test_path})
         test_next_element = test_iterator.get_next()
         test_processed_data = sess.run(test_next_element)
         print "test set size : " + str(len(test_processed_data[0]))
@@ -146,7 +148,7 @@ def train(train_cxt) :
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         iterator = dataset.make_initializable_iterator()
-        sess.run(iterator.initializer, feed_dict={filenames: [train_cxt.train_path]})
+        sess.run(iterator.initializer, feed_dict={filenames: train_cxt.train_path})
 
         next_element = iterator.get_next()
         while True :
@@ -192,7 +194,7 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = tc.trainingcontext()
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed.10split"
+    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
     trainCxt.num_epochs = 25
@@ -203,9 +205,14 @@ if __name__ == '__main__' :
     trainCxt.timestamp = timestamp
     trainCxt.publish_summary = True
     trainCxt.num_negative_samples = 20
+    trainCxt.test_size = 0.1
 
-    trainCxt.train_path = get_train_path(trainCxt.data_path)
-    trainCxt.test_path = get_test_path(trainCxt.data_path)
+    dataFiles = glob.glob(trainCxt.data_path + "/part-*")
+    numFiles = len(dataFiles)
+    trainSize = int(numFiles * (1 - trainCxt.test_size))
+    trainCxt.train_path = dataFiles[:trainSize]
+    trainCxt.test_path = dataFiles[trainSize:]
+
     trainCxt.productdict_path = get_productdict_path(trainCxt.data_path)
 
     modelconf = modelconfig("softmax_model" , 1000, 50)

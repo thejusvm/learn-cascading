@@ -26,8 +26,6 @@ class trainingcontext :
         self.num_negative_samples = 20
         self.num_click_context = 32
         self.model_config = None
-
-        #train_v1 args (file train.py)
         self.test_size = 0.2
 
 
