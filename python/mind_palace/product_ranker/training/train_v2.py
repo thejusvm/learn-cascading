@@ -11,7 +11,7 @@ import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig
-from mind_palace.product_ranker.prepare_data import get_train_path, get_test_path, get_productdict_path, get_productdict
+from mind_palace.product_ranker.prepare_data import get_train_path, get_test_path, get_attributedict_path, get_productdict
 from trainingcontext import trainingcontext
 
 
@@ -213,7 +213,7 @@ if __name__ == '__main__' :
     trainCxt.train_path = dataFiles[:trainSize]
     trainCxt.test_path = dataFiles[trainSize:]
 
-    trainCxt.productdict_path = get_productdict_path(trainCxt.data_path)
+    trainCxt.productdict_path = get_attributedict_path(trainCxt.data_path)
 
     modelconf = modelconfig("softmax_model" , 1000, 50)
     # modelconf.layer_count = [1024, 512, 256]

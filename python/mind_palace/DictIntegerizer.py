@@ -2,7 +2,8 @@
 
 class DictIntegerizer :
 
-    def __init__(self, default = None) :
+    def __init__(self, name= "dict", default = None) :
+        self.name = name
         self.termdict = {}
         self.currentCount = 0
         self.default = default
@@ -35,3 +36,6 @@ class DictIntegerizer :
 
     def __eq__(self, other):
         return self.termdict == other.termdict and self.currentCount == other.currentCount
+
+    def __str__(self):
+        return self.name + ":" + str(self.currentCount)
