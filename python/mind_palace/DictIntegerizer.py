@@ -8,7 +8,8 @@ class DictIntegerizer :
         self.currentCount = 0
         self.default = default
         if(default != None) :
-            self.get(default)
+            for item in default:
+                self.get(item)
 
     def _add_(self, term) :
         self.termdict[term] = self.currentCount

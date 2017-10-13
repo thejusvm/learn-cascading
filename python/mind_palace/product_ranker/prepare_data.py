@@ -8,8 +8,8 @@ from mind_palace.DictIntegerizer import DictIntegerizer
 import cPickle as pickle
 import os
 import sys
+import mind_palace.product_ranker.constants as CONST
 
-missing_data_key = "<missing-val>"
 
 def logBreak() :
     print "------------------------------------------"
@@ -21,7 +21,7 @@ def integerize(attributes, attribute_dicts, products_attributes) :
         if attribute in products_attributes :
             attribute_val = products_attributes[attribute]
         else :
-            attribute_val = missing_data_key
+            attribute_val = CONST.MISSING_DATA_VAL
         attribute_integerized = attribute_dict.get(attribute_val)
         attributes_integerized.append(attribute_integerized)
     return attributes_integerized
@@ -55,14 +55,14 @@ def integerize_single_val_column(df, column_name, new_column_prefix, attributes,
     integerized_cols = df[column_name].apply(integerize_single)
     for i in range(len(attributes)) :
         attribute = attributes[i]
-        df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : x[i])
+        df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i]))
 
 def integerize_multi_val_column(df, column_name, new_column_prefix, attributes, attribute_dicts) :
     integerize_multiple = lambda y: np.array(map(lambda x: integerize(attributes, attribute_dicts, x), json.loads(y))).T
     integerized_cols = df[column_name].apply(integerize_multiple)
     for i in range(len(attributes)) :
         attribute = attributes[i]
-        df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : x[i] if len(x) > 0 else [])
+        df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i].tolist() if len(x) > 0 else []))
 
 def process_row(df, attributes, attribute_dicts):
     integerize_single_val_column(df, "positiveProducts", "positive", attributes, attribute_dicts)
@@ -77,8 +77,7 @@ def process_file(data_path,
     df = pd.read_csv(data_path, sep="\t")
     start = time.clock()
     process_row(df, attributes, attribute_dicts)
-    key_prefixes = ["positive", "negative", "clicked", "bought"]
-    necessaryKeys = cross_attribute_prefix(attributes, key_prefixes)
+    necessaryKeys = cross_attribute_prefix(attributes, CONST.OUTPUTS_PER_ATTRIBUTE)
     data = df[necessaryKeys]
     print "time taken by data preprocess : " + str(time.clock() - start)
     return data
@@ -92,27 +91,21 @@ def get_train_path(data_path):
 def get_test_path(data_path):
     return data_path + "/test.tsv"
 
-def get_productdict(data_path) :
+def get_attributedict(data_path) :
     with open(data_path, 'rb') as handle:
         return pickle.load(handle)
 
-def new_dictintegerizer(attribute, default_click_text, pad_text):
-    dict_i = DictIntegerizer(default=pad_text, name=attribute)
-    dict_i.get(pad_text)
-    dict_i.get(missing_data_key)
-    if default_click_text is not None:
-        dict_i.get(default_click_text)
+def new_dictintegerizer(attribute, deafult_dicy_keys):
+    dict_i = DictIntegerizer(default=deafult_dicy_keys, name=attribute)
     return dict_i
 
 def prepare_data(raw_data_path,
                  processed_data_path,
                  attributes,
-                 pad_text ="<pad>",
-                 default_click_text = "<defaultclick>"):
-
+                 default_dict_keys = None):
     attribute_dicts = {}
     for attribute in attributes :
-        attributedict = new_dictintegerizer(attribute, default_click_text, pad_text)
+        attributedict = new_dictintegerizer(attribute, default_dict_keys)
         attribute_dicts[attribute] = attributedict
 
     filenames = glob.glob(raw_data_path)
@@ -136,12 +129,12 @@ def prepare_data(raw_data_path,
 
 if __name__ == '__main__' :
     raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB" + "/part-*"
-    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.processed"
+    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.processed.1"
     os.makedirs(processed_data_path)
 
     attributes = ["productId", "brand", "vertical"]
 
-    dicts = prepare_data(raw_data_path, processed_data_path, attributes)
+    dicts = prepare_data(raw_data_path, processed_data_path, attributes, default_dict_keys=CONST.DEFAULT_DICT_KEYS)
     product_dict_file = get_attributedict_path(processed_data_path)
 
     start = time.clock()

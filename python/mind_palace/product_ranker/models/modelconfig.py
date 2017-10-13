@@ -1,4 +1,5 @@
 
+
 class modelconfig :
 
     def __init__(self, model_name, vocab_size, embedding_size):
@@ -6,6 +7,7 @@ class modelconfig :
         self.vocabulary_size = vocab_size
         self.embedding_size = embedding_size
 
+        self.attributes_config = None
         self.default_click_index = None
         self.pad_index = 0
         self.use_context = True

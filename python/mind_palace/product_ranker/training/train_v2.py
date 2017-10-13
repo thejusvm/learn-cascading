@@ -6,13 +6,15 @@ import tensorflow as tf
 import time
 from functools import partial
 import glob
+import sys
 
 import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig
-from mind_palace.product_ranker.prepare_data import get_train_path, get_test_path, get_attributedict_path, get_productdict
+from mind_palace.product_ranker.prepare_data import get_attributedict_path, get_attributedict
 from trainingcontext import trainingcontext
+import mind_palace.product_ranker.constants as CONST
 
 
 
@@ -42,13 +44,22 @@ def hanle_clicks(clicks, num_click_context, pad_int):
     return merged
 
 
-def _parse_line(train_cxt, line) :
-     positive, negatives, context_clicks =  line.split('\t')
-     negatives = int_json(negatives)
-     clicks = int_json(context_clicks)
-     negatives = handle_negatives(negatives, trainCxt.num_negative_samples, train_cxt.model_config.vocabulary_size)
-     clicks = hanle_clicks(clicks, trainCxt.num_click_context, trainCxt.model_config.pad_index)
-     return [int(positive), negatives, clicks]
+def _parse_line(trainCxt, attributes_config, line) :
+    line_split =  line.split('\t')
+
+    return_features = []
+    counter = 0
+    for attribute_config in attributes_config :
+        num_fields_per_attribute = len(CONST.OUTPUTS_PER_ATTRIBUTE)
+        positive = int(line_split[num_fields_per_attribute * counter + 0])
+        negatives = int_json(line_split[num_fields_per_attribute * counter + 1])
+        clicks = int_json(line_split[num_fields_per_attribute * counter + 2])
+        counter += 1
+        negatives = handle_negatives(negatives, trainCxt.num_negative_samples, attribute_config[CONST.ATTRIBUTE_VOCAB_SIZE_KEY])
+        clicks = hanle_clicks(clicks, trainCxt.num_click_context, CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT))
+        return_features += [positive,  negatives, clicks]
+    return return_features
+
 
 def logBreak() :
     print "------------------------------------------"
@@ -71,12 +82,12 @@ def train(train_cxt) :
 
     ################################### Start model building
 
-    productdict = get_productdict(train_cxt.productdict_path)
-    modelconfig.pad_index = productdict.get(trainCxt.pad_text)
-    if trainCxt.default_click_text is not None :
-        modelconfig.default_click_index = productdict.get(trainCxt.default_click_text)
+    attribute_dicts = get_attributedict(train_cxt.attributedict_path)
+    for attribute_config in modelconfig.attributes_config :
+        attribute_name = attribute_config[CONST.ATTRIBUTE_NAME_KEY]
+        attribute_dict = attribute_dicts[attribute_name]
+        attribute_config[CONST.ATTRIBUTE_VOCAB_SIZE_KEY] = attribute_dict.dictSize()
 
-    modelconf.vocabulary_size = productdict.dictSize()
     mod = mf.get_model(modelconf) #type: model
 
     sess = tf.Session()
@@ -122,7 +133,11 @@ def train(train_cxt) :
         lambda filename: (
             tf.contrib.data.TextLineDataset(filename)
                 .skip(1)))
-    dataset = dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt), [line], [tf.int64, tf.int64, tf.int64])))
+
+    num_attributes = len(modelconfig.attributes_config)
+    output_type = [tf.int64 for _ in range(num_attributes * 3)]
+    dataset = dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconfig.attributes_config), [line],
+                                                         output_type)))
     test_dataset = dataset
     dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.batch(trainCxt.batch_size)
@@ -194,7 +209,7 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = tc.trainingcontext()
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed"
+    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.processed.1"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
     trainCxt.num_epochs = 25
@@ -205,7 +220,7 @@ if __name__ == '__main__' :
     trainCxt.timestamp = timestamp
     trainCxt.publish_summary = True
     trainCxt.num_negative_samples = 20
-    trainCxt.test_size = 0.1
+    trainCxt.test_size = 0.025
 
     dataFiles = glob.glob(trainCxt.data_path + "/part-*")
     numFiles = len(dataFiles)
@@ -213,12 +228,17 @@ if __name__ == '__main__' :
     trainCxt.train_path = dataFiles[:trainSize]
     trainCxt.test_path = dataFiles[trainSize:]
 
-    trainCxt.productdict_path = get_attributedict_path(trainCxt.data_path)
+    trainCxt.attributedict_path = get_attributedict_path(trainCxt.data_path)
 
     modelconf = modelconfig("softmax_model" , 1000, 50)
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
     modelconfig.reuse_context_dict = True
+    modelconfig.attributes_config = [
+        {CONST.ATTRIBUTE_NAME_KEY : "productId", CONST.ATTRIBUTE_EMMBEDDING_SIZE_KEY : 10},
+        {CONST.ATTRIBUTE_NAME_KEY : "brand", CONST.ATTRIBUTE_EMMBEDDING_SIZE_KEY : 10},
+        {CONST.ATTRIBUTE_NAME_KEY : "vertical", CONST.ATTRIBUTE_EMMBEDDING_SIZE_KEY : 10}]
+
     trainCxt.model_config = modelconf
     train(trainCxt)
 

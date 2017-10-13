@@ -1,9 +1,9 @@
 
+
 train_context_pickle = '/train_context.pickle'
 
 def getTraningContextDir(model_dir) :
     return model_dir + train_context_pickle
-
 
 class trainingcontext :
 
@@ -12,8 +12,6 @@ class trainingcontext :
         self.batch_size = 500
         self.num_epochs = 20
         self.min_click_context = 0 # Minimum number of context click to consider it for training
-        self.pad_text = "<pad>"
-        self.default_click_text = "<defaultclick>"
         self.summary_dir = "/tmp/sessionsimple"
         self.model_dir = "saved_models/"
         self.test_summary_publish_iters = 100
@@ -30,7 +28,7 @@ class trainingcontext :
 
 
         #train_v2 only args (file train_v2.py)
-        self.productdict_path = None
+        self.attributedict_path = None
         self.train_path = None
         self.test_path = None
         self.max_test_size = 100000000
