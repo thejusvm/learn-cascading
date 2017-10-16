@@ -9,31 +9,47 @@ from model import model
 class softmax_model(model) :
 
     def __init__(self, modelConf):
-
-        self.modelConf = modelConf # type: modelconfig
-
         model.__init__(self, modelConf)
+        self.modelConf = modelConf # type: modelconfig
+        self.placeholders = []
+        self.per_attribute_embeddings = []
+        self.per_attribute_positive_weights = []
+        self.per_attribute_positive_bias = []
+        self.per_attribute_negative_weights = []
+        self.per_attribute_negative_bias = []
+        self.per_attribute_click_embedding = []
 
-        product_embeddings = AttributeEmbeddings(modelConf, self.modelConf.attributes_config[0])
+        attributes_config = self.modelConf.attributes_config
+        for attribute_config in attributes_config :
+            attribute_embeddings = AttributeEmbeddings(modelConf, attribute_config)
 
-        self.context_embedding = product_embeddings.context_embedding
-        self.click_input = product_embeddings.click_input
+            self.per_attribute_positive_weights.append(attribute_embeddings.positive_weights)
+            self.per_attribute_positive_bias.append(attribute_embeddings.positive_bias)
 
-        self.positive_input = product_embeddings.positive_input
-        self.positive_weights = product_embeddings.positive_weights
-        self.positive_bias = product_embeddings.positive_bias
+            self.per_attribute_negative_weights.append(attribute_embeddings.negative_weights)
+            self.per_attribute_negative_bias.append(attribute_embeddings.negative_bias)
 
-        self.negative_input = product_embeddings.negative_input
-        self.negative_weights = product_embeddings.negative_weights
-        self.negative_bias = product_embeddings.negative_bias
+            self.per_attribute_click_embedding.append(attribute_embeddings.context_embedding)
 
-        self.batch_size = tf.shape(self.positive_input)[0]
+            self.per_attribute_embeddings.append(attribute_embeddings)
+            self.placeholders += [attribute_embeddings.positive_input,
+                                  attribute_embeddings.negative_input,
+                                  attribute_embeddings.click_input]
 
-        self.positive_logits = tf.reduce_sum(tf.multiply(self.context_embedding, self.positive_weights), reduction_indices=[2]) + self.positive_bias
+        self.click_embeddings = tf.concat(self.per_attribute_click_embedding, 2)
+        self.positive_weights = tf.concat(self.per_attribute_positive_weights, 2)
+        self.positive_bias = tf.concat(self.per_attribute_positive_bias, 1)
+        self.negative_weights = tf.concat(self.per_attribute_negative_weights, 2)
+        self.negative_bias = tf.concat(self.per_attribute_negative_bias, 1)
+
+        self.context_embedding = self.click_embeddings
+        self.batch_size = tf.shape(self.positive_weights)[0]
+
+        self.positive_logits = tf.reduce_sum(tf.multiply(self.context_embedding, self.positive_weights), reduction_indices=[2]) #+ self.positive_bias
         self.positive_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.positive_logits), logits=self.positive_logits)
 
         self.negative_weights_multiply_context = tf.multiply(self.context_embedding, self.negative_weights)
-        self.negative_logits = tf.reduce_sum(self.negative_weights_multiply_context, reduction_indices=[2]) + self.negative_bias
+        self.negative_logits = tf.reduce_sum(self.negative_weights_multiply_context, reduction_indices=[2]) #+ self.negative_bias
         self.negative_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.negative_logits), logits=self.negative_logits)
         self.nce_loss = (tf.reduce_sum(self.positive_xent) + tf.reduce_sum(self.negative_xent)) / tf.cast(self.batch_size, tf.float32)
         self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.nce_loss)
@@ -48,13 +64,12 @@ class softmax_model(model) :
         self.positive_probability = tf.sigmoid(self.positive_logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
-        self.placeholders = [self.positive_input, self.negative_input, self.click_input]
 
     def test_summaries(self):
         return [["prec-1", self.prec_1], ["probability", self.positive_mean_probability]]
 
     def score(self, products, click_context):
-        product_embeddings = AttributeEmbeddings(self.modelConf, self.modelConf.attributes_config[0], self.override_embedding_dicts)
+        product_embeddings = AttributeEmbeddings(self.modelConf, self.modelConf.attributes_config[0])
         positive_weights = tf.nn.embedding_lookup(product_embeddings.softmax_weights, products)
         positive_bias = tf.nn.embedding_lookup(product_embeddings.softmax_bias, products)
         click_padder = padding_handler(click_context, product_embeddings.context_dict)
@@ -106,7 +121,7 @@ class AttributeEmbeddings :
             self.softmax_bias = tf.Variable(tf.random_uniform([self.vocab_size], -1, 1), name="sm_b")
         else:
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
-        self.click_input = tf.placeholder(tf.int32, shape=[None, None])
+        self.click_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_click_input")
         self.click_context_samples = self.click_input
         if modelConf.enable_default_click:
             # Adding a dummy click product to each of the list of clicks
@@ -131,12 +146,12 @@ class AttributeEmbeddings :
         self.context_embedding = self.click_embeddings_mean
 
 
-        self.positive_input = tf.placeholder(tf.int32, shape=[None], name="positive_samples")
+        self.positive_input = tf.placeholder(tf.int32, shape=[None], name = self.attribute_name + "_positive_input")
         self.positive_samples = tf.expand_dims(self.positive_input, [1])
         self.positive_weights = tf.nn.embedding_lookup(self.softmax_weights, self.positive_samples)
         self.positive_bias = tf.nn.embedding_lookup(self.softmax_bias, self.positive_samples)
 
-        self.negative_input = tf.placeholder(tf.int32, shape=[None, None], name="negative_samples")
+        self.negative_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_negative_input")
         self.negative_samples = self.negative_input
         self.negative_weights = tf.nn.embedding_lookup(self.softmax_weights, self.negative_samples)
         self.negative_bias = tf.nn.embedding_lookup(self.softmax_bias, self.negative_samples)

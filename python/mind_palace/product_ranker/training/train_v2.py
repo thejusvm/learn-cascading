@@ -11,6 +11,7 @@ import sys
 import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
+from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from mind_palace.product_ranker.prepare_data import get_attributedict_path, get_attributedict
 from trainingcontext import trainingcontext
@@ -157,9 +158,7 @@ def train(train_cxt) :
         logBreak()
         test_feed = dict(zip(feed_keys, test_processed_data))
 
-
     print "model training started"
-
 
     counter = 0
     for epoch in range(trainCxt.num_epochs) :
@@ -236,9 +235,8 @@ if __name__ == '__main__' :
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
     modelconf.reuse_context_dict = True
-    modelconf.attributes_config = [AttributeConfig("productId", 10),
-                                   AttributeConfig("brand", 10),
-                                   AttributeConfig("vertical", 10)]
+    modelconf.attributes_config = [AttributeConfig("productId", 40), AttributeConfig("brand", 25), AttributeConfig("vertical", 5)]
+    # modelconf.attributes_config = [AttributeConfig("productId", 50)]
 
     trainCxt.model_config = modelconf
     train(trainCxt)
