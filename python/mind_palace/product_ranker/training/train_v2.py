@@ -11,7 +11,7 @@ import sys
 import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
-from mind_palace.product_ranker.models.modelconfig import modelconfig
+from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from mind_palace.product_ranker.prepare_data import get_attributedict_path, get_attributedict
 from trainingcontext import trainingcontext
 import mind_palace.product_ranker.constants as CONST
@@ -50,12 +50,13 @@ def _parse_line(trainCxt, attributes_config, line) :
     return_features = []
     counter = 0
     for attribute_config in attributes_config :
+        attribute_config = attribute_config #type: AttributeConfig
         num_fields_per_attribute = len(CONST.OUTPUTS_PER_ATTRIBUTE)
         positive = int(line_split[num_fields_per_attribute * counter + 0])
         negatives = int_json(line_split[num_fields_per_attribute * counter + 1])
         clicks = int_json(line_split[num_fields_per_attribute * counter + 2])
         counter += 1
-        negatives = handle_negatives(negatives, trainCxt.num_negative_samples, attribute_config[CONST.ATTRIBUTE_VOCAB_SIZE_KEY])
+        negatives = handle_negatives(negatives, trainCxt.num_negative_samples, attribute_config.vocab_size)
         clicks = hanle_clicks(clicks, trainCxt.num_click_context, CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT))
         return_features += [positive,  negatives, clicks]
     return return_features
@@ -72,6 +73,7 @@ def print_dict(dict_1) :
 def train(train_cxt) :
     """@type traincxt: trainingcontext"""
 
+    modelconf = trainCxt.model_config
     logBreak()
     print "Using train context : "
     print_dict(trainCxt.__dict__)
@@ -83,10 +85,10 @@ def train(train_cxt) :
     ################################### Start model building
 
     attribute_dicts = get_attributedict(train_cxt.attributedict_path)
-    for attribute_config in modelconfig.attributes_config :
-        attribute_name = attribute_config[CONST.ATTRIBUTE_NAME_KEY]
+    for attribute_config in modelconf.attributes_config :
+        attribute_name = attribute_config.name
         attribute_dict = attribute_dicts[attribute_name]
-        attribute_config[CONST.ATTRIBUTE_VOCAB_SIZE_KEY] = attribute_dict.dictSize()
+        attribute_config.vocab_size = attribute_dict.dictSize()
 
     mod = mf.get_model(modelconf) #type: model
 
@@ -134,9 +136,9 @@ def train(train_cxt) :
             tf.contrib.data.TextLineDataset(filename)
                 .skip(1)))
 
-    num_attributes = len(modelconfig.attributes_config)
+    num_attributes = len(modelconf.attributes_config)
     output_type = [tf.int64 for _ in range(num_attributes * 3)]
-    dataset = dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconfig.attributes_config), [line],
+    dataset = dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconf.attributes_config), [line],
                                                          output_type)))
     test_dataset = dataset
     dataset = dataset.shuffle(buffer_size=10000)
@@ -230,14 +232,13 @@ if __name__ == '__main__' :
 
     trainCxt.attributedict_path = get_attributedict_path(trainCxt.data_path)
 
-    modelconf = modelconfig("softmax_model" , 1000, 50)
+    modelconf = modelconfig("softmax_model")
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
-    modelconfig.reuse_context_dict = True
-    modelconfig.attributes_config = [
-        {CONST.ATTRIBUTE_NAME_KEY : "productId", CONST.ATTRIBUTE_EMMBEDDING_SIZE_KEY : 10},
-        {CONST.ATTRIBUTE_NAME_KEY : "brand", CONST.ATTRIBUTE_EMMBEDDING_SIZE_KEY : 10},
-        {CONST.ATTRIBUTE_NAME_KEY : "vertical", CONST.ATTRIBUTE_EMMBEDDING_SIZE_KEY : 10}]
+    modelconf.reuse_context_dict = True
+    modelconf.attributes_config = [AttributeConfig("productId", 10),
+                                   AttributeConfig("brand", 10),
+                                   AttributeConfig("vertical", 10)]
 
     trainCxt.model_config = modelconf
     train(trainCxt)

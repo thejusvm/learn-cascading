@@ -21,7 +21,7 @@ def integerize(attributes, attribute_dicts, products_attributes) :
         if attribute in products_attributes :
             attribute_val = products_attributes[attribute]
         else :
-            attribute_val = CONST.MISSING_DATA_VAL
+            attribute_val = CONST.MISSING_DATA_TEXT
         attribute_integerized = attribute_dict.get(attribute_val)
         attributes_integerized.append(attribute_integerized)
     return attributes_integerized
