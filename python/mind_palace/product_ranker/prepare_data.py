@@ -128,8 +128,8 @@ def prepare_data(raw_data_path,
 
 
 if __name__ == '__main__' :
-    raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB" + "/part-*"
-    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.processed.1"
+    raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large" + "/part-*"
+    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.processed"
     os.makedirs(processed_data_path)
 
     attributes = ["productId", "brand", "vertical"]

@@ -161,10 +161,15 @@ def train(train_cxt) :
     print "model training started"
 
     counter = 0
+    tf_epoch = tf.constant(0)
+    epoch_summary = tf.summary.scalar("epoch", tf_epoch)
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         iterator = dataset.make_initializable_iterator()
         sess.run(iterator.initializer, feed_dict={filenames: train_cxt.train_path})
+
+        summary = sess.run(epoch_summary)
+        summary_writer.add_summary(summary, counter)
 
         next_element = iterator.get_next()
         while True :
@@ -187,12 +192,14 @@ def train(train_cxt) :
             except tf.errors.OutOfRangeError:
                 break
 
+        tf_epoch = tf_epoch + 1
+
         ################################### Saving model to file
         if trainCxt.save_model_on_epoch and trainCxt.save_model :
             saver.save(sess, nn_model_dir + ".epoch", global_step = epoch)
             print "saved nn on epoch " + str(epoch) + "model into : " + nn_model_dir
             logBreak()
-            ################################### End model to file
+        ################################### End model to file
 
     if trainCxt.save_model :
         nn_model_dir = trainCxt.model_dir + '/nn'
@@ -210,7 +217,7 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = tc.trainingcontext()
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.processed.1"
+    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.processed"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
     trainCxt.num_epochs = 25
@@ -221,7 +228,7 @@ if __name__ == '__main__' :
     trainCxt.timestamp = timestamp
     trainCxt.publish_summary = True
     trainCxt.num_negative_samples = 20
-    trainCxt.test_size = 0.025
+    trainCxt.test_size = 0.03
 
     dataFiles = glob.glob(trainCxt.data_path + "/part-*")
     numFiles = len(dataFiles)
@@ -235,7 +242,7 @@ if __name__ == '__main__' :
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
     modelconf.reuse_context_dict = True
-    modelconf.attributes_config = [AttributeConfig("productId", 40), AttributeConfig("brand", 25), AttributeConfig("vertical", 5)]
+    modelconf.attributes_config = [AttributeConfig("productId", 50), AttributeConfig("brand", 45), AttributeConfig("vertical", 5)]
     # modelconf.attributes_config = [AttributeConfig("productId", 50)]
 
     trainCxt.model_config = modelconf

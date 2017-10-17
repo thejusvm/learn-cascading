@@ -61,12 +61,24 @@ class softmax_model(model) :
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
 
+        self.less_than = tf.cast(tf.less(self.positive_logits, self.negative_logits), tf.float32)
+        self.rank_per_record = tf.reduce_sum(self.less_than, reduction_indices = [1])
+        self.rank_per_record = self.rank_per_record + 1
+        self.mean_rank = tf.reduce_mean(self.rank_per_record)
+
+        self.reciprocal_rank_per_record = 1 / tf.cast(self.rank_per_record, tf.float32)
+        self.mean_reciprocal_rank = tf.reduce_mean(self.reciprocal_rank_per_record)
+
+
         self.positive_probability = tf.sigmoid(self.positive_logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
 
     def test_summaries(self):
-        return [["prec-1", self.prec_1], ["probability", self.positive_mean_probability]]
+        return [["prec-1", self.prec_1],
+                ["probability", self.positive_mean_probability],
+                ["mean_rank", self.mean_rank],
+                ["mean_reciprocal_rank", self.mean_reciprocal_rank]]
 
     def score(self, products, click_context):
         product_embeddings = AttributeEmbeddings(self.modelConf, self.modelConf.attributes_config[0])
