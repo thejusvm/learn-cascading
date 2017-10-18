@@ -161,15 +161,10 @@ def train(train_cxt) :
     print "model training started"
 
     counter = 0
-    tf_epoch = tf.constant(0)
-    epoch_summary = tf.summary.scalar("epoch", tf_epoch)
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         iterator = dataset.make_initializable_iterator()
         sess.run(iterator.initializer, feed_dict={filenames: train_cxt.train_path})
-
-        summary = sess.run(epoch_summary)
-        summary_writer.add_summary(summary, counter)
 
         next_element = iterator.get_next()
         while True :
@@ -191,8 +186,6 @@ def train(train_cxt) :
                 counter = counter + 1
             except tf.errors.OutOfRangeError:
                 break
-
-        tf_epoch = tf_epoch + 1
 
         ################################### Saving model to file
         if trainCxt.save_model_on_epoch and trainCxt.save_model :
@@ -217,7 +210,7 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = tc.trainingcontext()
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.processed"
+    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.processed"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
     trainCxt.num_epochs = 25
