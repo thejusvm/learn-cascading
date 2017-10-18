@@ -18,7 +18,7 @@ class model :
         """ :return a tensor representing the gradient descent train step, which needs to be iterated on """
         pass
 
-    def score(self, products, click_context):
+    def score(self):
         """ :return score for the product under the click_context"""
         pass
 

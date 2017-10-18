@@ -36,8 +36,8 @@ class trainingcontext :
     def getTrainCxtDir(self) :
         return self.model_dir + train_context_pickle
 
-    def getProductDictDir(self) :
-        return self.model_dir + '/productdict.pickle'
+    # def getProductDictDir(self) :
+    #     return self.model_dir + '/productdict.pickle'
 
     def getNnDir(self, extension = None) :
         if extension is None :

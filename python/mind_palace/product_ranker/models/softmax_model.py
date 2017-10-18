@@ -45,18 +45,18 @@ class softmax_model(model) :
         self.context_embedding = self.click_embeddings
         self.batch_size = tf.shape(self.positive_weights)[0]
 
-        self.positive_logits = tf.reduce_sum(tf.multiply(self.context_embedding, self.positive_weights), reduction_indices=[2]) #+ self.positive_bias
+        self.positive_logits = tf.reduce_sum(tf.multiply(self.context_embedding, self.positive_weights), reduction_indices=[2]) + self.positive_bias
         self.positive_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.positive_logits), logits=self.positive_logits)
+        self.positive_score_vector = tf.reshape(self.positive_logits, [tf.size(self.positive_logits)])
 
         self.negative_weights_multiply_context = tf.multiply(self.context_embedding, self.negative_weights)
-        self.negative_logits = tf.reduce_sum(self.negative_weights_multiply_context, reduction_indices=[2]) #+ self.negative_bias
+        self.negative_logits = tf.reduce_sum(self.negative_weights_multiply_context, reduction_indices=[2]) + self.negative_bias
         self.negative_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.negative_logits), logits=self.negative_logits)
         self.nce_loss = (tf.reduce_sum(self.positive_xent) + tf.reduce_sum(self.negative_xent)) / tf.cast(self.batch_size, tf.float32)
         self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.nce_loss)
 
         self.max_negative_score = tf.reduce_max(self.negative_logits, reduction_indices = [1])
         self.max_negative_score = tf.reshape(self.max_negative_score, [tf.size(self.max_negative_score)])
-        self.positive_score_vector = tf.reshape(self.positive_logits, [tf.size(self.positive_logits)])
 
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
@@ -80,15 +80,8 @@ class softmax_model(model) :
                 ["mean_rank", self.mean_rank],
                 ["mean_reciprocal_rank", self.mean_reciprocal_rank]]
 
-    def score(self, products, click_context):
-        product_embeddings = AttributeEmbeddings(self.modelConf, self.modelConf.attributes_config[0])
-        positive_weights = tf.nn.embedding_lookup(product_embeddings.softmax_weights, products)
-        positive_bias = tf.nn.embedding_lookup(product_embeddings.softmax_bias, products)
-        click_padder = padding_handler(click_context, product_embeddings.context_dict)
-        click_embeddings_mean = click_padder.tensor_embeddings_mean
-        positive_logits = tf.reduce_sum(tf.multiply(click_embeddings_mean, positive_weights), reduction_indices=[2]) + positive_bias
-        positive_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(positive_logits), logits=positive_logits)
-        return positive_xent
+    def score(self):
+        return [self.positive_score_vector, self.positive_xent, self.positive_probability]
 
     def place_holders(self):
         return self.placeholders
@@ -108,7 +101,7 @@ class AttributeEmbeddings :
         :type modelConf: modelconfig
         :type attribute_config: AttributeConfig
         """
-
+        modelConf.enable_default_click = False
         default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
         self.attribute_config = attribute_config
         self.attribute_name = attribute_config.name
@@ -146,7 +139,7 @@ class AttributeEmbeddings :
             self.click_context_samples_padded = self.click_context_samples
         self.click_padder = padding_handler(self.click_context_samples_padded, self.context_dict)
         if modelConf.use_context is False:
-            if default_click_index is not None:
+            if modelConf.enable_default_click:
                 self.click_embeddings_mean = tf.nn.embedding_lookup(self.context_dict,
                                                                     [default_click_index])
             else:

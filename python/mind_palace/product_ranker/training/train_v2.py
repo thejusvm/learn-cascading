@@ -8,13 +8,12 @@ from functools import partial
 import glob
 import sys
 
-import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from mind_palace.product_ranker.prepare_data import get_attributedict_path, get_attributedict
-from trainingcontext import trainingcontext
+from mind_palace.product_ranker.training.trainingcontext import trainingcontext
 import mind_palace.product_ranker.constants as CONST
 
 
@@ -39,8 +38,10 @@ def handle_negatives(negatives, num_negatives, vocab_size):
     return merged
 
 
-def hanle_clicks(clicks, num_click_context, pad_int):
+def hanle_clicks(clicks, num_click_context, pad_int, default_click_index):
     clicks_padded = np.ones(num_click_context, dtype = np.int) * pad_int
+    if not clicks:
+        clicks = [default_click_index]
     merged = handle_padding(clicks, clicks_padded)
     return merged
 
@@ -58,7 +59,9 @@ def _parse_line(trainCxt, attributes_config, line) :
         clicks = int_json(line_split[num_fields_per_attribute * counter + 2])
         counter += 1
         negatives = handle_negatives(negatives, trainCxt.num_negative_samples, attribute_config.vocab_size)
-        clicks = hanle_clicks(clicks, trainCxt.num_click_context, CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT))
+        pad_index = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
+        default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
+        clicks = hanle_clicks(clicks, trainCxt.num_click_context, pad_index, default_click_index)
         return_features += [positive,  negatives, clicks]
     return return_features
 
@@ -209,14 +212,14 @@ if __name__ == '__main__' :
     timestamp = time.localtime()
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
-    trainCxt = tc.trainingcontext()
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.processed"
+    trainCxt = trainingcontext()
+    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.processed"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
     trainCxt.num_epochs = 25
     trainCxt.min_click_context = 0
     trainCxt.save_model = True
-    trainCxt.save_model_on_epoch = False
+    trainCxt.save_model_num_iter = 1000
     trainCxt.date = currentdate
     trainCxt.timestamp = timestamp
     trainCxt.publish_summary = True
@@ -234,9 +237,10 @@ if __name__ == '__main__' :
     modelconf = modelconfig("softmax_model")
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
-    modelconf.reuse_context_dict = True
-    modelconf.attributes_config = [AttributeConfig("productId", 50), AttributeConfig("brand", 45), AttributeConfig("vertical", 5)]
-    # modelconf.attributes_config = [AttributeConfig("productId", 50)]
+    modelconf.enable_default_click = False
+    modelconf.reuse_context_dict = False
+    # modelconf.attributes_config = [AttributeConfig("productId", 50), AttributeConfig("brand", 45), AttributeConfig("vertical", 5)]
+    modelconf.attributes_config = [AttributeConfig("productId", 50)]
 
     trainCxt.model_config = modelconf
     train(trainCxt)

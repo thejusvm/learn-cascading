@@ -15,7 +15,7 @@ init_bias = range(10) + np.ones(10)
 
 mdl_conf = modelconfig("softmax_model")
 mdl_conf.use_context = True
-mdl_conf.default_click_index = 1
+mdl_conf.enable_default_click = False
 embedding_dicts = EmbeddingDicts(context_dict=init_emb.T, softmax_weights=init_weight.T, softmax_bias=init_bias)
 mdl_conf.attributes_config = [AttributeConfig("pid", 5, 10, override_embeddings=embedding_dicts)]
 
@@ -26,13 +26,13 @@ sess.run(tf.global_variables_initializer())
 
 positive_samples_test = [1.0, 4.0]
 negative_samples_test = [[0.0,0.0,0.0, 4.0, 3.0, 6.0], [0.0, 6.0, 8.0, 5.0, 7.0, 9.0]]
-context = [[2, 0, 0, 0, 0, 0], [6, 8, 5, 7, 9, 0]]
+context = [[0, 0, 0, 0, 0, 0], [6, 8, 5, 7, 0, 0]]
 
 feed_keys = md.place_holders()
 feed_vals = [positive_samples_test, negative_samples_test, context]
 feed = dict(zip(feed_keys, feed_vals))
 
-for score in sess.run([md.positive_logits, md.positive_probability], feed_dict = feed):
+for score in sess.run([md.per_attribute_click_embedding, md.positive_logits, md.positive_probability], feed_dict = feed):
     print score
     print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))

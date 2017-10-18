@@ -29,11 +29,16 @@ class DictIntegerizer :
             self._add_(term)
         return self.termdict[term]
 
+    def only_get(self, term, missing_val = -1):
+        if term not in self.termdict :
+            return missing_val
+        return self.termdict[term]
+
     def getDict(self) :
-        return self.termdict;
+        return self.termdict
 
     def dictSize(self) :
-        return len(self.termdict);
+        return len(self.termdict)
 
     def __eq__(self, other):
         return self.termdict == other.termdict and self.currentCount == other.currentCount
