@@ -45,10 +45,14 @@ def hanle_clicks(clicks, num_click_context, pad_int, default_click_index):
     merged = handle_padding(clicks, clicks_padded)
     return merged
 
+def filter_min_context_click(min_click_count, line) :
+    line_split =  line.split('\t')
+    click_data = json.loads(line_split[2])
+    allow = len(click_data) >= min_click_count
+    return allow
 
 def _parse_line(trainCxt, attributes_config, line) :
     line_split =  line.split('\t')
-
     return_features = []
     counter = 0
     for attribute_config in attributes_config :
@@ -142,6 +146,8 @@ def train(train_cxt) :
 
     num_attributes = len(modelconf.attributes_config)
     output_type = [tf.int64 for _ in range(num_attributes * 3)]
+    dataset = dataset.filter(lambda line :
+                             tf.py_func(partial(filter_min_context_click, trainCxt.min_click_context), [line], [tf.bool]))
     dataset = dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconf.attributes_config), [line],
                                                          output_type)))
     test_dataset = dataset
