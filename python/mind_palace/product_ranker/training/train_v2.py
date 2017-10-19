@@ -247,7 +247,7 @@ if __name__ == '__main__' :
     modelconf = modelconfig("softmax_model")
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
-    modelconf.enable_default_click = True
+    modelconf.enable_default_click = False
     modelconf.reuse_context_dict = False
     # modelconf.attributes_config = [AttributeConfig("productId", 50), AttributeConfig("brand", 45), AttributeConfig("vertical", 5)]
     modelconf.attributes_config = [AttributeConfig("productId", 50)]

@@ -1,4 +1,4 @@
-
+import tensorflow as tf
 
 train_context_pickle = '/train_context.pickle'
 
@@ -41,7 +41,7 @@ class trainingcontext :
 
     def getNnDir(self, extension = None) :
         if extension is None :
-            return self.model_dir + '/nn'
+            return tf.train.latest_checkpoint(self.model_dir)
         else :
             return self.model_dir + "/nn." + extension
 
