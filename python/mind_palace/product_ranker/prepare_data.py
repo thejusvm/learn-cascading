@@ -75,6 +75,7 @@ def process_file(data_path,
                  attribute_dicts,
                  min_click_context = 0):
     df = pd.read_csv(data_path, sep="\t")
+    df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search")]
     start = time.clock()
     process_row(df, attributes, attribute_dicts)
     necessaryKeys = cross_attribute_prefix(attributes, CONST.OUTPUTS_PER_ATTRIBUTE)
@@ -129,7 +130,7 @@ def prepare_data(raw_data_path,
 
 if __name__ == '__main__' :
     raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large" + "/part-*"
-    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.processed"
+    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
     os.makedirs(processed_data_path)
 
     attributes = ["productId", "brand", "vertical"]
