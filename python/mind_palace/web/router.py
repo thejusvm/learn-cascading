@@ -41,7 +41,7 @@ def enrich(each_product) :
 def score():
     args = request.args
     if "clicked" not in args :
-        clicked_products = [CONST.DEFAULT_CLICK_TEXT]
+        clicked_products = []
     else :
         clicked_arg = args['clicked']
         clicked_products = clicked_arg.split(",")

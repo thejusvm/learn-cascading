@@ -64,6 +64,12 @@ class Scorer :
             # Restore variables from disk.
             self.saver.restore(sess, self.trainCxt.getNnDir(extension=self.nn_version))
 
+            if not clicked_products :
+                if self.model_conf.enable_default_click :
+                    clicked_products = [CONST.DEFAULT_CLICK_TEXT]
+                else :
+                    clicked_products = [0]
+
             score = self.mod.score()
             feed_keys = self.mod.place_holders()
 

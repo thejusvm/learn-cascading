@@ -38,10 +38,11 @@ def handle_negatives(negatives, num_negatives, vocab_size):
     return merged
 
 
-def hanle_clicks(clicks, num_click_context, pad_int, default_click_index):
+def handle_clicks(clicks, num_click_context, pad_int, default_click_index=-1):
     clicks_padded = np.ones(num_click_context, dtype = np.int) * pad_int
     if not clicks:
-        clicks = [default_click_index]
+        if default_click_index is not -1 :
+            clicks = [default_click_index]
     merged = handle_padding(clicks, clicks_padded)
     return merged
 
@@ -64,8 +65,11 @@ def _parse_line(trainCxt, attributes_config, line) :
         counter += 1
         negatives = handle_negatives(negatives, trainCxt.num_negative_samples, attribute_config.vocab_size)
         pad_index = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
-        default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
-        clicks = hanle_clicks(clicks, trainCxt.num_click_context, pad_index, default_click_index)
+        if trainCxt.model_config.enable_default_click :
+            default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
+        else:
+            default_click_index = -1
+        clicks = handle_clicks(clicks, trainCxt.num_click_context, pad_index, default_click_index)
         return_features += [positive,  negatives, clicks]
     return return_features
 
@@ -219,18 +223,18 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = trainingcontext()
+    trainCxt.timestamp = timestamp
+    trainCxt.date = currentdate
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.processed"
     trainCxt.model_dir = "saved_models/run." + currentdate
     trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
+    trainCxt.test_size = 0.03
     trainCxt.num_epochs = 25
+    trainCxt.num_negative_samples = 20
     trainCxt.min_click_context = 0
+    trainCxt.publish_summary = True
     trainCxt.save_model = True
     trainCxt.save_model_num_iter = 1000
-    trainCxt.date = currentdate
-    trainCxt.timestamp = timestamp
-    trainCxt.publish_summary = True
-    trainCxt.num_negative_samples = 20
-    trainCxt.test_size = 0.03
 
     dataFiles = glob.glob(trainCxt.data_path + "/part-*")
     numFiles = len(dataFiles)
@@ -243,7 +247,7 @@ if __name__ == '__main__' :
     modelconf = modelconfig("softmax_model")
     # modelconf.layer_count = [1024, 512, 256]
     modelconf.use_context = True
-    modelconf.enable_default_click = False
+    modelconf.enable_default_click = True
     modelconf.reuse_context_dict = False
     # modelconf.attributes_config = [AttributeConfig("productId", 50), AttributeConfig("brand", 45), AttributeConfig("vertical", 5)]
     modelconf.attributes_config = [AttributeConfig("productId", 50)]

@@ -101,7 +101,6 @@ class AttributeEmbeddings :
         :type modelConf: modelconfig
         :type attribute_config: AttributeConfig
         """
-        modelConf.enable_default_click = False
         default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
         self.attribute_config = attribute_config
         self.attribute_name = attribute_config.name
@@ -128,22 +127,22 @@ class AttributeEmbeddings :
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
         self.click_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_click_input")
         self.click_context_samples = self.click_input
-        if modelConf.enable_default_click:
-            # Adding a dummy click product to each of the list of clicks
-            self.num_click_context_samples = tf.shape(self.click_context_samples)[0]
-            self._default_click_pad = tf.reshape(
-                tf.tile([default_click_index], [self.num_click_context_samples]),
-                [self.num_click_context_samples, 1])
-            self.click_context_samples_padded = tf.concat([self._default_click_pad, self.click_context_samples], 1)
-        else:
-            self.click_context_samples_padded = self.click_context_samples
+        # if modelConf.enable_default_click:
+        #     # Adding a dummy click product to each of the list of clicks
+        #     self.num_click_context_samples = tf.shape(self.click_context_samples)[0]
+        #     self._default_click_pad = tf.reshape(
+        #         tf.tile([default_click_index], [self.num_click_context_samples]),
+        #         [self.num_click_context_samples, 1])
+        #     self.click_context_samples_padded = tf.concat([self._default_click_pad, self.click_context_samples], 1)
+        # else:
+        self.click_context_samples_padded = self.click_context_samples
         self.click_padder = padding_handler(self.click_context_samples_padded, self.context_dict)
         if modelConf.use_context is False:
-            if modelConf.enable_default_click:
-                self.click_embeddings_mean = tf.nn.embedding_lookup(self.context_dict,
-                                                                    [default_click_index])
-            else:
-                self.click_embeddings_mean = None
+            # if modelConf.enable_default_click:
+            #     self.click_embeddings_mean = tf.nn.embedding_lookup(self.context_dict,
+            #                                                         [default_click_index])
+            # else:
+            self.click_embeddings_mean = None
         else:
             self.click_embeddings_mean = self.click_padder.tensor_embeddings_mean
         self.click_embeddings_mean = tf.expand_dims(self.click_embeddings_mean, 1)
