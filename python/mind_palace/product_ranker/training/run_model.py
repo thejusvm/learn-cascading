@@ -2,6 +2,7 @@ import cPickle as pickle
 import tensorflow as tf
 import mind_palace.product_ranker.constants as CONST
 import numpy as np
+import collections
 
 from mind_palace.product_ranker.models.modelconfig import modelconfig
 from mind_palace.product_ranker.models.model import model
@@ -77,9 +78,11 @@ class Scorer :
                     feed_values += [[ranking_attributes[i][j]], [[]], [clicked_attributes[:, j]]]
                 feed = dict(zip(feed_keys, feed_values))
                 pid_score = sess.run(score, feed_dict = feed)
-                result.append([pid, i, ranking_attributes[i][0], float(pid_score[0][0]), float(pid_score[1][0][0]), float(pid_score[2][0][0])])
+                result.append([pid, i, float(pid_score[0][0]), float(pid_score[1][0][0]), float(pid_score[2][0][0])])
 
-            product_score = sorted(result, key=itemgetter(3), reverse=True)
+            response_keys = ['product_id', 'original_rank', 'logit', 'xent', 'probability']
+            product_score = sorted(result, key=itemgetter(2), reverse=True)
+            product_score = map(lambda x : collections.OrderedDict(zip(response_keys, x)), product_score)
             return product_score
 
     def print_score(self, products_to_rank, clicked_products):
@@ -90,7 +93,7 @@ class Scorer :
 
 if __name__ == '__main__' :
     model_path = "saved_models/run.20171018-18-53-05"
-    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
+    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-00000"
     nn_version = 'counter-7000'
     rm = Scorer(model_path, nn_version, attributes_path)
     products_to_rank = ["MOBEQ98MNXHY4RU9", "MOBES9G5SJHYT9QX", "MOBEQ98TABTWXGTD", "MOBEWN63JHHEXPTD", "MOBEXNP9FJ9K5K53", "MOBEX9WXUSZVYHET", "MOBET6RH4XSXKM7D", "MOBEQ98TWG8X4HH3", "MOBECCA5FHQD43KA", "MOBEWN63NBDSMVPG", "MOBEU9WRGVXDPBSF", "MOBEU9WRZFFUYAXJ", "MOBEU9WRZHRVWXTK", "MOBEMK62PN2HU7EE", "MOBEX9WXZCZHWXUZ", "MOBEWXHUSBXVJ7NZ", "MOBET6RHXVZBJFNT", "MOBESDYMGHC37GCS", "MOBEN2YYKU9386TQ", "MOBEN2YYQH8PSYXG", "MOBECCA5Y5HBYR3Q", "MOBECCA5SMRSKCNY", "MOBEG4XWMBDGZVEX", "MOBEG4XWDK4WBGNU", "MOBEV7YDBCAFG3ZH", "MOBEN2XYK8WFEGM8", "MOBEJFHUFVAJ45YA", "MOBEJFHUGPWTZFQJ", "MOBEV7YD3CFBTENW", "MOBEVKFTCFFU2FE7", "MOBETM9FZWW5UEZG", "MOBEUF42PGDRYCQA", "MOBEUF424KXTP9CT", "MOBEUF42VHXZSQV7", "MOBEQ98T82CYVHGZ", "MOBETM93F7DGJNN5", "MOBETMH3ZYNDPVVC", "MOBEU35JUQMQQHWK", "MOBEU35JAZKVWRPV", "MOBESDYCQD3FJCFW", "MOBEZEMYH7FQBGBQ", "MOBEZENFZBPW8UMF", "MOBEKGT2HGDGADFW", "MOBEMK62JSRHU85T", "MOBEZPVEGADXHMHT", "MOBEZPVENHEVMQDZ", "MOBEQRYTXZXC8FZZ", "MOBETM93HMBGUQKH", "MOBEXHHKDHSA9UZC", "MOBECCA5BJUVUGNP", "MOBEHZTGXSGG2GRX", "MOBEK4ABQFH3SSP7", "MOBE9TGVE7ZBRAEN"]
