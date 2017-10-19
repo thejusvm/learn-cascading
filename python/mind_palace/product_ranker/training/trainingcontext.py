@@ -1,4 +1,5 @@
 import tensorflow as tf
+import glob
 
 train_context_pickle = '/train_context.pickle'
 
@@ -9,6 +10,7 @@ class trainingcontext :
 
     def __init__(self):
         self.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed"
+        self.product_attributes_path = None
         self.batch_size = 500
         self.num_epochs = 20
         self.min_click_context = 0 # Minimum number of context click to consider it for training
@@ -25,6 +27,7 @@ class trainingcontext :
         self.num_click_context = 32
         self.model_config = None
         self.test_size = 0.2
+        self.negative_sample_independent = False
 
 
         #train_v2 only args (file train_v2.py)
@@ -41,7 +44,10 @@ class trainingcontext :
 
     def getNnDir(self, extension = None) :
         if extension is None :
-            return tf.train.latest_checkpoint(self.model_dir)
+            nndir = tf.train.latest_checkpoint(self.model_dir)
+            if nndir is None :
+                nndir = self.model_dir + "/nn"
+            return nndir
         else :
             return self.model_dir + "/nn." + extension
 
