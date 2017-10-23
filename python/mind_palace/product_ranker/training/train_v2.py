@@ -14,7 +14,7 @@ from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from mind_palace.product_ranker.integerize_clickstream import get_attributedict_path, get_attributedict
-from mind_palace.product_ranker.training.trainingcontext import trainingcontext
+from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
 from product_attributes_dataset import ProductAttributesDataset
 
 
@@ -25,6 +25,10 @@ def print_dict(dict_1) :
     for key in dict_1:
         print str(key) + " : " + str(dict_1.get(key))
 
+def save_traincxt(trainCxt) :
+    train_context_model_dir = trainCxt.getTrainCxtDir()
+    with open(train_context_model_dir, 'w+b') as handle:
+        pickle.dump(trainCxt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def train(train_cxt) :
     """@type traincxt: trainingcontext"""
@@ -73,12 +77,10 @@ def train(train_cxt) :
     ################################### Saving dict to file
 
     if trainCxt.save_model :
-        os.makedirs(trainCxt.model_dir)
+        if not os.path.exists(trainCxt.model_dir):
+            os.makedirs(trainCxt.model_dir)
         nn_model_dir = trainCxt.getNnDir()
-        train_context_model_dir = trainCxt.getTrainCxtDir()
-
-        with open(train_context_model_dir, 'w+b') as handle:
-            pickle.dump(trainCxt, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        save_traincxt(trainCxt)
 
         print "saved trainCxt into " + trainCxt.model_dir
         logBreak()
@@ -87,6 +89,14 @@ def train(train_cxt) :
     ################################### Start model training
 
     saver = tf.train.Saver()
+    if os.path.exists(trainCxt.model_dir):
+        nn_dir = tf.train.latest_checkpoint(trainCxt.model_dir)
+        if nn_dir is not None :
+            saver.restore(sess, nn_dir)
+            print "restoring model from : " + nn_dir
+        else:
+            print "no model to restore from : " + trainCxt.model_dir
+    logBreak()
 
     if trainCxt.restore_model_dir is not None and os.path.isdir(trainCxt.restore_model_dir) :
         restore_nn_dir = tf.train.latest_checkpoint(trainCxt.restore_model_dir)
@@ -122,7 +132,6 @@ def train(train_cxt) :
     dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.batch_size,
                                  shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
 
-    counter = 0
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         dataset.initialize_iterator(sess,train_cxt.train_path)
@@ -133,23 +142,25 @@ def train(train_cxt) :
                 feed = dict(zip(feed_keys, processed_data))
                 _, loss_val, summary = sess.run([mod.minimize_step(), mod.loss(), loss_summary], feed_dict=feed)
                 if summary_writer is not None :
-                    summary_writer.add_summary(summary, counter)
+                    summary_writer.add_summary(summary, trainCxt.train_counter)
 
-                if summary_writer is not None and test_feed is not None and counter % trainCxt.test_summary_publish_iters == 0 :
+                if summary_writer is not None and test_feed is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
                     all_summary = sess.run(merged_summary, feed_dict = test_feed)
-                    summary_writer.add_summary(all_summary, counter)
+                    summary_writer.add_summary(all_summary, trainCxt.train_counter)
 
-                if trainCxt.save_model and trainCxt.save_model_num_iter != None and counter % trainCxt.save_model_num_iter == 0:
-                    saver.save(sess, nn_model_dir + ".counter" , global_step = counter)
-                    print "saved nn model on counter " + str(counter) + " into : " + nn_model_dir
+                if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
+                    saver.save(sess, nn_model_dir + ".counter" , global_step = trainCxt.train_counter)
+                    save_traincxt(trainCxt)
+                    print "saved nn model on counter " + str(trainCxt.train_counter) + " into : " + nn_model_dir
 
-                counter = counter + 1
+                trainCxt.train_counter = trainCxt.train_counter + 1
             except tf.errors.OutOfRangeError:
                 break
 
         ################################### Saving model to file
         if trainCxt.save_model_on_epoch and trainCxt.save_model :
             saver.save(sess, nn_model_dir + ".epoch", global_step = epoch)
+            save_traincxt(trainCxt)
             print "saved nn on epoch " + str(epoch) + "model into : " + nn_model_dir
             logBreak()
         ################################### End model to file
@@ -157,6 +168,7 @@ def train(train_cxt) :
     if trainCxt.save_model :
         nn_model_dir = trainCxt.model_dir + '/nn'
         saver.save(sess, nn_model_dir)
+        save_traincxt(trainCxt)
         print "saved nn model into : " + nn_model_dir
         logBreak()
 
@@ -166,42 +178,52 @@ def train(train_cxt) :
     ################################### End model training
 
 if __name__ == '__main__' :
-    timestamp = time.localtime()
-    currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
-    trainCxt = trainingcontext()
-    trainCxt.date = currentdate
-    trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
-    trainCxt.product_attributes_path = glob.glob("/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search")
-    trainCxt.model_dir = "saved_models/run." + currentdate
-    trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
-    trainCxt.test_size = 0.03
-    trainCxt.num_epochs = 25
-    trainCxt.num_negative_samples = 20
-    trainCxt.min_click_context = 0
-    trainCxt.publish_summary = True
-    trainCxt.save_model = True
-    trainCxt.save_model_num_iter = 1000
-    trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
+    restore_model_path = None
+    # restore_model_path = "saved_models/run.20171023-17-01-09"
+    if restore_model_path is not None :
+        dir = getTraningContextDir(restore_model_path)
+        print "loading training context : " + dir
+        with open(dir, 'rb') as handle:
+            trainCxt = pickle.load(handle)
+    else :
 
-    dataFiles = glob.glob(trainCxt.data_path + "/part-*")
-    numFiles = len(dataFiles)
-    trainSize = int(numFiles * (1 - trainCxt.test_size))
-    trainCxt.train_path = dataFiles[:trainSize]
-    trainCxt.test_path = dataFiles[trainSize:]
-    trainCxt.negative_samples_source = "random"
+        timestamp = time.localtime()
+        currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
-    trainCxt.attributedict_path = get_attributedict_path(trainCxt.data_path)
+        trainCxt = trainingcontext()
+        trainCxt.date = currentdate
+        trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
+        trainCxt.product_attributes_path = glob.glob("/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search")
+        trainCxt.model_dir = "saved_models/run." + currentdate
+        trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
+        trainCxt.test_size = 0.03
+        trainCxt.num_epochs = 25
+        trainCxt.num_negative_samples = 20
+        trainCxt.min_click_context = 0
+        trainCxt.publish_summary = True
+        trainCxt.save_model = True
+        trainCxt.save_model_num_iter = 1000
+        trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
 
-    modelconf = modelconfig("softmax_model")
-    # modelconf.layer_count = [1024, 512, 256]
-    modelconf.use_context = True
-    modelconf.enable_default_click = False
-    modelconf.reuse_context_dict = False
-    # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15), AttributeConfig("vertical", 5)]
-    # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
-    modelconf.attributes_config = [AttributeConfig("productId", 50)]
+        dataFiles = glob.glob(trainCxt.data_path + "/part-*")
+        numFiles = len(dataFiles)
+        trainSize = int(numFiles * (1 - trainCxt.test_size))
+        trainCxt.train_path = dataFiles[:trainSize]
+        trainCxt.test_path = dataFiles[trainSize:]
+        trainCxt.negative_samples_source = "random"
 
-    trainCxt.model_config = modelconf
+        trainCxt.attributedict_path = get_attributedict_path(trainCxt.data_path)
+
+        modelconf = modelconfig("softmax_model")
+        # modelconf.layer_count = [1024, 512, 256]
+        modelconf.use_context = True
+        modelconf.enable_default_click = False
+        modelconf.reuse_context_dict = False
+        # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15), AttributeConfig("vertical", 5)]
+        # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
+        modelconf.attributes_config = [AttributeConfig("productId", 50)]
+        trainCxt.model_config = modelconf
+
     train(trainCxt)
 

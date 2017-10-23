@@ -29,6 +29,7 @@ class trainingcontext :
         self.test_size = 0.2
         self.negative_samples_source = 'random' #possible values : random/productAttributes
         self.restore_model_dir = None
+        self.train_counter = 0
 
 
         #train_v2 only args (file train_v2.py)
@@ -45,9 +46,7 @@ class trainingcontext :
 
     def getNnDir(self, extension = None) :
         if extension is None :
-            nndir = tf.train.latest_checkpoint(self.model_dir)
-            if nndir is None :
-                nndir = self.model_dir + "/nn"
+            nndir = self.model_dir + "/nn"
             return nndir
         else :
             return self.model_dir + "/nn." + extension

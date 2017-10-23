@@ -61,7 +61,10 @@ class Scorer :
     def score(self, products_to_rank, clicked_products, nn_version=None):
         with tf.Session() as sess:
             # Restore variables from disk.
-            nn_dir = self.trainCxt.getNnDir(extension=nn_version)
+            if nn_version is None :
+                nn_dir = tf.train.latest_checkpoint(self.trainCxt.model_dir)
+            else :
+                nn_dir = self.trainCxt.getNnDir(extension=nn_version)
             print "restoring tf model from : " + nn_dir
             self.saver.restore(sess, nn_dir)
 
