@@ -64,7 +64,7 @@ def _parse_line(trainCxt, attributes_config, sess, attributes_dataset, line) :
         return_features += [positive,  negatives, clicks]
     return return_features
 
-class ClickThroughDataSet :
+class ClickstreamDataset :
 
     def __init__(self,
                  train_cxt,

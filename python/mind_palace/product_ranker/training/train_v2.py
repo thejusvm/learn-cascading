@@ -7,7 +7,7 @@ import time
 from functools import partial
 import glob
 import sys
-from click_through_dataset import ClickThroughDataSet
+from clickstream_dataset import ClickstreamDataset
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
@@ -97,8 +97,8 @@ def train(train_cxt) :
     attributes_dataset.initialize_iterator(sess, trainCxt.product_attributes_path)
 
     # HACK : Using extremely large batch_size, to reuse the same code as training. no method in Dataset to say batch all in one go
-    test_dataset = ClickThroughDataSet(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.max_test_size,
-                                       shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
+    test_dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.max_test_size,
+                                      shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
 
     feed_keys = mod.place_holders()
 
@@ -114,8 +114,8 @@ def train(train_cxt) :
 
     print "model training started"
 
-    dataset = ClickThroughDataSet(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.batch_size,
-                                       shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
+    dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.batch_size,
+                                 shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
 
     counter = 0
     for epoch in range(trainCxt.num_epochs) :
@@ -194,6 +194,7 @@ if __name__ == '__main__' :
     modelconf.enable_default_click = False
     modelconf.reuse_context_dict = False
     # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15), AttributeConfig("vertical", 5)]
+    # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
     modelconf.attributes_config = [AttributeConfig("productId", 50)]
 
     trainCxt.model_config = modelconf
