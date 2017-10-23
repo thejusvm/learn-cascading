@@ -1,9 +1,16 @@
 import tensorflow as tf
 import json
+import time
 from mind_palace.DictIntegerizer import DictIntegerizer
 import glob
+import sys
 import numpy as np
 import mind_palace.product_ranker.constants as CONST
+
+"""
+    Takes the output of prepare_product_attributes and wraps it with a tensorflow Dataset.
+    returns tuples of integer representation for each attribute.
+"""
 
 deafult_unavaileble_index = CONST.DEFAULT_DICT_KEYS.index(CONST.MISSING_DATA_TEXT)
 
@@ -50,8 +57,19 @@ class ProductAttributesDataset:
 def integerized_attributes(attributes, attributes_path, num_rows, index_field):
     index_field_attributes_index = attributes.index(index_field)
     features = ProductAttributesDataset(attributes)
+    # features = ProductAttributesDataset(attributes, repeat=True, batch_size=20)
+
+
     sess = tf.Session()
     sess.run(features.iterator.initializer, feed_dict={features.filenames : attributes_path})
+
+    # for i in range(500):
+    #     start = time.clock()
+    #     data = sess.run(features.next_element)
+    #     print time.clock() - start
+    # sys.exit(1)
+
+
     num_attributes = len(attributes)
     all_data = np.ones(shape=[num_rows, num_attributes], dtype=int) * -1
     for i in range(len(CONST.DEFAULT_DICT_KEYS)) :

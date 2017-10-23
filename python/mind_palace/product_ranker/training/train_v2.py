@@ -7,79 +7,15 @@ import time
 from functools import partial
 import glob
 import sys
+from click_through_dataset import ClickThroughDataSet
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
-from mind_palace.product_ranker.prepare_data import get_attributedict_path, get_attributedict
+from mind_palace.product_ranker.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext
-import mind_palace.product_ranker.constants as CONST
-from ProductAttributesDataset import ProductAttributesDataset
-
-
-def int_json(s) :
-    loads = json.loads(s)
-    return map(lambda x : int(x), loads)
-
-def _handle_shit(x, y, z) :
-    return x, y, z
-
-
-def handle_padding(data, underlying_array) :
-    datalen = len(data)
-    num = min(datalen, len(underlying_array))
-    underlying_array[:num] = data[:num]
-    return underlying_array
-
-def handle_negatives(negatives, negative_random):
-    merged = handle_padding(negatives, negative_random)
-    return merged
-
-
-def handle_clicks(clicks, num_click_context, pad_int, default_click_index=-1):
-    clicks_padded = np.ones(num_click_context, dtype = np.int) * pad_int
-    if not clicks:
-        if default_click_index is not -1 :
-            clicks = [default_click_index]
-    merged = handle_padding(clicks, clicks_padded)
-    return merged
-
-def filter_min_context_click(min_click_count, line) :
-    line_split =  line.split('\t')
-    click_data = json.loads(line_split[2])
-    allow = len(click_data) >= min_click_count
-    return allow
-
-def _parse_line(trainCxt, attributes_config, sess, attributes_dataset, line) :
-    line_split =  line.split('\t')
-    return_features = []
-    num_attributes = len(attributes_config)
-
-    start = time.clock()
-    if trainCxt.negative_sample_independent :
-        negative_samples = np.ndarray([num_attributes, trainCxt.num_negative_samples], dtype=int)
-        for i in range(num_attributes):
-            negative_samples[i] = np.random.randint(attributes_config[i].vocab_size, size = (trainCxt.num_negative_samples))
-        negative_samples = negative_samples.T
-    else :
-        negative_samples = sess.run(attributes_dataset.next_element)
-    # print "fetch one random sample batch : " + str(time.clock() - start)
-
-    for counter in range(num_attributes) :
-        num_fields_per_attribute = len(CONST.OUTPUTS_PER_ATTRIBUTE)
-        positive = int(line_split[num_fields_per_attribute * counter + 0])
-        negatives = int_json(line_split[num_fields_per_attribute * counter + 1])
-        clicks = int_json(line_split[num_fields_per_attribute * counter + 2])
-        negatives = handle_negatives(negatives, negative_samples[:, counter])
-        pad_index = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
-        if trainCxt.model_config.enable_default_click :
-            default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
-        else:
-            default_click_index = -1
-        clicks = handle_clicks(clicks, trainCxt.num_click_context, pad_index, default_click_index)
-        return_features += [positive,  negatives, clicks]
-    return return_features
+from product_attributes_dataset import ProductAttributesDataset
 
 
 def logBreak() :
@@ -128,6 +64,8 @@ def train(train_cxt) :
 
     summary_writer = None
     if trainCxt.publish_summary :
+        print "creating summary writer, publishing summaries to : " + train_cxt.summary_dir
+        logBreak()
         summary_writer = tf.summary.FileWriter(trainCxt.summary_dir, sess.graph)
 
     ################################### End model building
@@ -157,49 +95,36 @@ def train(train_cxt) :
                                                   repeat=True,
                                                   shuffle=True)
     attributes_dataset.initialize_iterator(sess, trainCxt.product_attributes_path)
-    filenames = tf.placeholder(tf.string, shape=[None])
-    dataset = tf.contrib.data.Dataset.from_tensor_slices(filenames)
-    dataset = dataset.flat_map(
-        lambda filename: (
-            tf.contrib.data.TextLineDataset(filename)
-                .skip(1)))
 
-    output_type = [tf.int64 for _ in range(num_attributes * 3)]
-    dataset = dataset.filter(lambda line :
-                             tf.py_func(partial(filter_min_context_click, trainCxt.min_click_context), [line], [tf.bool]))
-    dataset = dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconf.attributes_config, sess, attributes_dataset), [line],
-                                                         output_type)))
-    test_dataset = dataset
-    dataset = dataset.shuffle(buffer_size=10000)
-    dataset = dataset.batch(trainCxt.batch_size)
+    # HACK : Using extremely large batch_size, to reuse the same code as training. no method in Dataset to say batch all in one go
+    test_dataset = ClickThroughDataSet(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.max_test_size,
+                                       shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
 
     feed_keys = mod.place_holders()
 
     test_feed = None
     if summary_writer is not None :
-        print "training data generation started"
+        print "test data generation started"
         start = time.clock()
-        test_dataset = test_dataset.batch(trainCxt.max_test_size) # hack to reuse the same code as training. no method in Dataset to say batch all in one go
-        test_iterator = test_dataset.make_initializable_iterator()
-        sess.run(test_iterator.initializer, feed_dict={filenames: train_cxt.test_path})
-        test_next_element = test_iterator.get_next()
-        test_processed_data = sess.run(test_next_element)
+        test_dataset.initialize_iterator(sess, ctr_data_path=train_cxt.test_path)
+        test_processed_data = sess.run(test_dataset.get_next)
         print "test set size : " + str(len(test_processed_data[0])) + " in " + str(time.clock() - start)
         logBreak()
         test_feed = dict(zip(feed_keys, test_processed_data))
 
     print "model training started"
 
+    dataset = ClickThroughDataSet(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.batch_size,
+                                       shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
+
     counter = 0
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
-        iterator = dataset.make_initializable_iterator()
-        sess.run(iterator.initializer, feed_dict={filenames: train_cxt.train_path})
+        dataset.initialize_iterator(sess,train_cxt.train_path)
 
-        next_element = iterator.get_next()
         while True :
             try :
-                processed_data = sess.run(next_element)
+                processed_data = sess.run(dataset.get_next)
                 feed = dict(zip(feed_keys, processed_data))
                 _, loss_val, summary = sess.run([mod.minimize_step(), mod.loss(), loss_summary], feed_dict=feed)
                 if summary_writer is not None :
@@ -259,7 +184,7 @@ if __name__ == '__main__' :
     trainSize = int(numFiles * (1 - trainCxt.test_size))
     trainCxt.train_path = dataFiles[:trainSize]
     trainCxt.test_path = dataFiles[trainSize:]
-    trainCxt.negative_sample_independent = True
+    trainCxt.negative_samples_source = "random"
 
     trainCxt.attributedict_path = get_attributedict_path(trainCxt.data_path)
 

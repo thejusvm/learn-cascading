@@ -27,7 +27,7 @@ class trainingcontext :
         self.num_click_context = 32
         self.model_config = None
         self.test_size = 0.2
-        self.negative_sample_independent = False
+        self.negative_samples_source = 'random' #possible values : random/productAttributes
 
 
         #train_v2 only args (file train_v2.py)

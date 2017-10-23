@@ -7,6 +7,16 @@ import json
 import mind_palace.product_ranker.constants as CONST
 
 
+"""
+    Converts a file containing product attributes and integerizes it.
+    Each row of the file represents a product with all its attributes tab seperated.
+    Dumps out a file containg the integer mapping for each attribute, tab seperated.
+    Uses a pickled DictIntegerizer for source of integer mappings
+
+    TODO : should be able to create its own instance of dictIntegerizer
+"""
+
+
 deafult_unavaileble_index = CONST.DEFAULT_DICT_KEYS.index(CONST.MISSING_DATA_TEXT)
 
 def map_to_ints(attribute_dicts, values) :

@@ -10,6 +10,14 @@ import os
 import sys
 import mind_palace.product_ranker.constants as CONST
 
+"""
+    Given a file containing the click through data with product attributes,
+    this file integerizes the data with different integer dictionary for each attribute.
+    It uses DictIntegerizer class to assign a unique integer for every unique value of the attribute.
+
+    TODO : this code currently instantiates a new DictIntegerizer for each attribute,
+    it needs to support taking a dict in the form of a pickled file and integerizing using it.
+"""
 
 def logBreak() :
     print "------------------------------------------"

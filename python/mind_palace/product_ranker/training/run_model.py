@@ -9,7 +9,7 @@ from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.training import trainingcontext as tc
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext
-from ProductAttributesDataset import integerized_attributes
+from product_attributes_dataset import integerized_attributes
 from mind_palace.DictIntegerizer import DictIntegerizer
 from operator import itemgetter
 

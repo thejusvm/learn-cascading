@@ -8,7 +8,7 @@ import  trainingcontext as tc
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig
-from mind_palace.product_ranker.prepare_data import preparedata
+from mind_palace.product_ranker.integerize_clickstream import preparedata
 from trainingcontext import trainingcontext
 
 
