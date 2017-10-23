@@ -88,7 +88,12 @@ def train(train_cxt) :
 
     saver = tf.train.Saver()
 
-    num_attributes = len(modelconf.attributes_config)
+    if trainCxt.restore_model_dir is not None and os.path.isdir(trainCxt.restore_model_dir) :
+        restore_nn_dir = tf.train.latest_checkpoint(trainCxt.restore_model_dir)
+        print "restoring tf model from : " + restore_nn_dir
+        saver.restore(sess, restore_nn_dir)
+        logBreak()
+
     attributes = map(lambda x : x.name, modelconf.attributes_config)
     attributes_dataset = ProductAttributesDataset(attributes,
                                                   batch_size=trainCxt.num_negative_samples,
@@ -165,7 +170,6 @@ if __name__ == '__main__' :
     currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
     trainCxt = trainingcontext()
-    trainCxt.timestamp = timestamp
     trainCxt.date = currentdate
     trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
     trainCxt.product_attributes_path = glob.glob("/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search")
@@ -178,6 +182,7 @@ if __name__ == '__main__' :
     trainCxt.publish_summary = True
     trainCxt.save_model = True
     trainCxt.save_model_num_iter = 1000
+    trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
 
     dataFiles = glob.glob(trainCxt.data_path + "/part-*")
     numFiles = len(dataFiles)

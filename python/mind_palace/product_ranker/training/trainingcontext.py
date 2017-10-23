@@ -28,6 +28,7 @@ class trainingcontext :
         self.model_config = None
         self.test_size = 0.2
         self.negative_samples_source = 'random' #possible values : random/productAttributes
+        self.restore_model_dir = None
 
 
         #train_v2 only args (file train_v2.py)
