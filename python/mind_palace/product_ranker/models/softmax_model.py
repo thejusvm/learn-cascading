@@ -45,8 +45,8 @@ class softmax_model(model) :
         self.context_embedding = self.click_embeddings
         self.batch_size = tf.shape(self.positive_weights)[0]
 
-        self.positive_sigmoid = sigmoid(self.positive_weights, self.positive_bias, self.context_embedding)
-        self.negative_sigmoid = sigmoid(self.negative_weights, self.negative_bias, self.context_embedding)
+        self.positive_sigmoid = sigmoid(self.positive_weights, self.positive_bias, self.context_embedding, True)
+        self.negative_sigmoid = sigmoid(self.negative_weights, self.negative_bias, self.context_embedding, False)
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_sigmoid.xent) + tf.reduce_sum(self.negative_sigmoid.xent)) / tf.cast(self.batch_size, tf.float32)
         self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.sigmoid_loss)
@@ -90,12 +90,16 @@ class softmax_model(model) :
         return self.train_step
 
 class sigmoid :
-    def __init__(self, weights, bias, context_embedding):
+    def __init__(self, weights, bias, context_embedding, positive = True):
         self.modified_bias = tf.reduce_sum(bias, reduction_indices=[1])
         self.modified_bias = tf.expand_dims(self.modified_bias, 1)
         self.weights_cross_context = tf.reduce_sum(tf.multiply(context_embedding, weights), reduction_indices=[2])
         self.logits = self.weights_cross_context + self.modified_bias
-        self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.logits), logits=self.logits)
+        if positive :
+            labels = tf.ones_like(self.logits)
+        else :
+            labels = tf.zeros_like(self.logits)
+        self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=self.logits)
 
 class AttributeEmbeddings :
 
