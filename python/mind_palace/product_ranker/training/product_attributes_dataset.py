@@ -5,6 +5,7 @@ from mind_palace.DictIntegerizer import DictIntegerizer
 import glob
 import sys
 import numpy as np
+import pandas as pd
 import mind_palace.product_ranker.constants as CONST
 
 """
@@ -54,46 +55,33 @@ class ProductAttributesDataset:
     def initialize_iterator(self, sess, attributes_path):
         sess.run(self.iterator.initializer, feed_dict={self.filenames : attributes_path})
 
-def integerized_attributes(attributes, attributes_path, num_rows, index_field):
+def integerized_attributes(attributes, attributes_path, index_field):
     index_field_attributes_index = attributes.index(index_field)
-    features = ProductAttributesDataset(attributes)
-    # features = ProductAttributesDataset(attributes, repeat=True, batch_size=20)
-
-
-    sess = tf.Session()
-    sess.run(features.iterator.initializer, feed_dict={features.filenames : attributes_path})
-
-    # for i in range(500):
-    #     start = time.clock()
-    #     data = sess.run(features.next_element)
-    #     print time.clock() - start
-    # sys.exit(1)
-
-
-    num_attributes = len(attributes)
-    all_data = np.ones(shape=[num_rows, num_attributes], dtype=int) * -1
-    for i in range(len(CONST.DEFAULT_DICT_KEYS)) :
-        all_data[i] = np.ones(num_attributes, dtype=int) * i
-    while True :
-        try :
-            data = sess.run(features.next_element)
-            index_field_int = data[index_field_attributes_index]
-            if index_field_int != -1 :
-                all_data[index_field_int] = data
-        except tf.errors.OutOfRangeError:
-            break
-    return all_data
+    num_defaults = len(CONST.DEFAULT_DICT_KEYS)
+    df = pd.read_csv(attributes_path, sep="\t", index_col=index_field_attributes_index, header=None, names=attributes[1:])
+    index_attribute = attributes[0]
+    df[index_attribute] = df.index
+    df=df[attributes]
+    max_val = max(df[index_attribute])
+    df.drop_duplicates(inplace=True)
+    df.reindex(range(max_val), fill_value=-1)
+    for i in range(num_defaults) :
+        num_attributes = len(attributes)
+        df.loc[i] = np.ones(num_attributes) * i
+    df.sort_values(index_attribute, inplace=True)
+    return df.as_matrix()
 
 if __name__ == '__main__' :
 
-    attributes_path = glob.glob("/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search")
+    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
     attributes = ["productId", "brand", "vertical"]
 
-    all_data =  integerized_attributes(attributes, attributes_path, 7756, "productId")
+    all_data =  integerized_attributes(attributes, attributes_path, "productId")
     for i in range(len(all_data)) :
         pid_data = all_data[i][0]
         if pid_data == -1 :
-            print i
+            print ": " + i
+    print all_data[1]
     print all_data[56]
     print all_data[99]
     print all_data[108]

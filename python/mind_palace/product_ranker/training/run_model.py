@@ -41,7 +41,7 @@ class Scorer :
 
         index_field = "productId"
         self.pid_dict = attribute_dict[index_field] #type: DictIntegerizer
-        self.product_attributes = integerized_attributes(self.attributes, self.trainCxt.product_attributes_path, self.pid_dict.currentCount, index_field)
+        self.product_attributes = integerized_attributes(self.attributes, self.trainCxt.product_attributes_path, index_field)
         self.missing_data_index = CONST.DEFAULT_DICT_KEYS.index(CONST.MISSING_DATA_TEXT)
         print "loaded model, ready to run now"
 

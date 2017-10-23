@@ -7,7 +7,7 @@ import time
 from functools import partial
 import glob
 import sys
-from clickstream_dataset import ClickstreamDataset
+from training_data_generator import ClickstreamDataset
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
@@ -17,6 +17,13 @@ from mind_palace.product_ranker.integerize_clickstream import get_attributedict_
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
 from product_attributes_dataset import ProductAttributesDataset
 
+
+"""
+    generates training data with
+        * random negative samples padded
+        * click context padded with appropriate CONST.PAD_TEXT index
+    Operates on top of output of integerize_clickstream
+"""
 
 def logBreak() :
     print "------------------------------------------"
@@ -221,8 +228,9 @@ if __name__ == '__main__' :
         modelconf.enable_default_click = False
         modelconf.reuse_context_dict = False
         # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15), AttributeConfig("vertical", 5)]
-        # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
-        modelconf.attributes_config = [AttributeConfig("productId", 50)]
+        modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
+        trainCxt.negative_samples_source = "productAttributes"
+        # modelconf.attributes_config = [AttributeConfig("productId", 50)]
         trainCxt.model_config = modelconf
 
     train(trainCxt)
