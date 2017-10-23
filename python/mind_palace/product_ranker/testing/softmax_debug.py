@@ -33,7 +33,8 @@ feed_keys = md.place_holders()
 feed_vals = [positive_samples_test, negative_samples_test, context, positive_samples_test, negative_samples_test, context]
 feed = dict(zip(feed_keys, feed_vals))
 
-for score in sess.run([md.positive_sigmoid.xent, md.negative_sigmoid.xent], feed_dict = feed):
+ps = md.negative_sigmoid
+for score in sess.run([ps.weights_cross_context_sum, ps.modified_bias, ps.logits, ps.xent], feed_dict = feed):
     print score
     print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))

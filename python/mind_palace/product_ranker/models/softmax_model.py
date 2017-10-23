@@ -91,10 +91,14 @@ class softmax_model(model) :
 
 class sigmoid :
     def __init__(self, weights, bias, context_embedding, positive = True):
-        self.modified_bias = tf.reduce_sum(bias, reduction_indices=[1])
-        self.modified_bias = tf.expand_dims(self.modified_bias, 1)
-        self.weights_cross_context = tf.reduce_sum(tf.multiply(context_embedding, weights), reduction_indices=[2])
-        self.logits = self.weights_cross_context + self.modified_bias
+        self.weights = weights
+        self.bias = bias
+        self.context_embedding = context_embedding
+        self.postive = positive
+        self.modified_bias = tf.reduce_sum(self.bias, reduction_indices=[1])
+        self.weights_cross_context = tf.multiply(self.context_embedding, self.weights)
+        self.weights_cross_context_sum = tf.reduce_sum(self.weights_cross_context, reduction_indices=[2])
+        self.logits = self.weights_cross_context_sum + self.modified_bias
         if positive :
             labels = tf.ones_like(self.logits)
         else :
@@ -148,11 +152,13 @@ class AttributeEmbeddings :
         self.positive_samples = tf.expand_dims(self.positive_input, [1])
         self.positive_weights = tf.nn.embedding_lookup(self.softmax_weights, self.positive_samples)
         self.positive_bias = tf.nn.embedding_lookup(self.softmax_bias, self.positive_samples)
+        self.positive_bias = tf.expand_dims(self.positive_bias, [1])
 
         self.negative_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_negative_input")
         self.negative_samples = self.negative_input
         self.negative_weights = tf.nn.embedding_lookup(self.softmax_weights, self.negative_samples)
         self.negative_bias = tf.nn.embedding_lookup(self.softmax_bias, self.negative_samples)
+        self.negative_bias = tf.expand_dims(self.negative_bias, [1])
 
 
 
