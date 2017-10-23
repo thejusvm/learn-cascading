@@ -45,23 +45,20 @@ class softmax_model(model) :
         self.context_embedding = self.click_embeddings
         self.batch_size = tf.shape(self.positive_weights)[0]
 
-        self.positive_logits = tf.reduce_sum(tf.multiply(self.context_embedding, self.positive_weights), reduction_indices=[2]) + self.positive_bias
-        self.positive_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.positive_logits), logits=self.positive_logits)
-        self.positive_score_vector = tf.reshape(self.positive_logits, [tf.size(self.positive_logits)])
+        self.positive_sigmoid = sigmoid(self.positive_weights, self.positive_bias, self.context_embedding)
+        self.negative_sigmoid = sigmoid(self.negative_weights, self.negative_bias, self.context_embedding)
 
-        self.negative_weights_multiply_context = tf.multiply(self.context_embedding, self.negative_weights)
-        self.negative_logits = tf.reduce_sum(self.negative_weights_multiply_context, reduction_indices=[2]) + self.negative_bias
-        self.negative_xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.negative_logits), logits=self.negative_logits)
-        self.nce_loss = (tf.reduce_sum(self.positive_xent) + tf.reduce_sum(self.negative_xent)) / tf.cast(self.batch_size, tf.float32)
-        self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.nce_loss)
+        self.sigmoid_loss = (tf.reduce_sum(self.positive_sigmoid.xent) + tf.reduce_sum(self.negative_sigmoid.xent)) / tf.cast(self.batch_size, tf.float32)
+        self.train_step = tf.train.AdamOptimizer(1e-3).minimize(self.sigmoid_loss)
 
-        self.max_negative_score = tf.reduce_max(self.negative_logits, reduction_indices = [1])
+        self.max_negative_score = tf.reduce_max(self.negative_sigmoid.logits, reduction_indices = [1])
         self.max_negative_score = tf.reshape(self.max_negative_score, [tf.size(self.max_negative_score)])
 
+        self.positive_score_vector = tf.reshape(self.positive_sigmoid.logits, [tf.size(self.positive_sigmoid.logits)])
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
 
-        self.less_than = tf.cast(tf.less(self.positive_logits, self.negative_logits), tf.float32)
+        self.less_than = tf.cast(tf.less(self.positive_sigmoid.logits, self.negative_sigmoid.logits), tf.float32)
         self.rank_per_record = tf.reduce_sum(self.less_than, reduction_indices = [1])
         self.rank_per_record = self.rank_per_record + 1
         self.mean_rank = tf.reduce_mean(self.rank_per_record)
@@ -70,7 +67,7 @@ class softmax_model(model) :
         self.mean_reciprocal_rank = tf.reduce_mean(self.reciprocal_rank_per_record)
 
 
-        self.positive_probability = tf.sigmoid(self.positive_logits)
+        self.positive_probability = tf.sigmoid(self.positive_sigmoid.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
 
@@ -81,18 +78,24 @@ class softmax_model(model) :
                 ["mean_reciprocal_rank", self.mean_reciprocal_rank]]
 
     def score(self):
-        return [self.positive_score_vector, self.positive_xent, self.positive_probability]
+        return [self.positive_score_vector, self.positive_sigmoid.xent, self.positive_probability]
 
     def place_holders(self):
         return self.placeholders
 
     def loss(self):
-        return self.nce_loss
+        return self.sigmoid_loss
 
     def minimize_step(self):
         return self.train_step
 
-
+class sigmoid :
+    def __init__(self, weights, bias, context_embedding):
+        self.modified_bias = tf.reduce_sum(bias, reduction_indices=[1])
+        self.modified_bias = tf.expand_dims(self.modified_bias, 1)
+        self.weights_cross_context = tf.reduce_sum(tf.multiply(context_embedding, weights), reduction_indices=[2])
+        self.logits = self.weights_cross_context + self.modified_bias
+        self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.logits), logits=self.logits)
 
 class AttributeEmbeddings :
 
@@ -127,28 +130,15 @@ class AttributeEmbeddings :
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
         self.click_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_click_input")
         self.click_context_samples = self.click_input
-        # if modelConf.enable_default_click:
-        #     # Adding a dummy click product to each of the list of clicks
-        #     self.num_click_context_samples = tf.shape(self.click_context_samples)[0]
-        #     self._default_click_pad = tf.reshape(
-        #         tf.tile([default_click_index], [self.num_click_context_samples]),
-        #         [self.num_click_context_samples, 1])
-        #     self.click_context_samples_padded = tf.concat([self._default_click_pad, self.click_context_samples], 1)
-        # else:
         self.click_context_samples_padded = self.click_context_samples
         self.click_padder = padding_handler(self.click_context_samples_padded, self.context_dict)
         if modelConf.use_context is False:
-            # if modelConf.enable_default_click:
-            #     self.click_embeddings_mean = tf.nn.embedding_lookup(self.context_dict,
-            #                                                         [default_click_index])
-            # else:
             self.click_embeddings_mean = None
         else:
             self.click_embeddings_mean = self.click_padder.tensor_embeddings_mean
         self.click_embeddings_mean = tf.expand_dims(self.click_embeddings_mean, 1)
 
         self.context_embedding = self.click_embeddings_mean
-
 
         self.positive_input = tf.placeholder(tf.int32, shape=[None], name = self.attribute_name + "_positive_input")
         self.positive_samples = tf.expand_dims(self.positive_input, [1])
