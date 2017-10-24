@@ -82,6 +82,7 @@ if __name__ == '__main__' :
 
     with open(output_path, mode="w+b") as writer :
         flush_counter = 0
+        writer.write("\t".join(attributes) + '\n')
         while True :
             try :
                 data = sess.run(features.next_element)

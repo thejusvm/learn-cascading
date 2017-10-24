@@ -7,7 +7,7 @@ import time
 from functools import partial
 import glob
 import sys
-from training_data_generator import ClickstreamDataset
+from clickstream_dataset import ClickstreamDataset
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
@@ -15,7 +15,7 @@ from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from mind_palace.product_ranker.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
-from product_attributes_dataset import ProductAttributesDataset
+from product_attributes_dataset import ProductAttributesDataset, integerized_attributes
 
 
 """
@@ -112,15 +112,11 @@ def train(train_cxt) :
         logBreak()
 
     attributes = map(lambda x : x.name, modelconf.attributes_config)
-    attributes_dataset = ProductAttributesDataset(attributes,
-                                                  batch_size=trainCxt.num_negative_samples,
-                                                  repeat=True,
-                                                  shuffle=True)
-    attributes_dataset.initialize_iterator(sess, trainCxt.product_attributes_path)
+    product_to_attributes = integerized_attributes(attributes, trainCxt.product_attributes_path, attributes[0])
 
     # HACK : Using extremely large batch_size, to reuse the same code as training. no method in Dataset to say batch all in one go
     test_dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.max_test_size,
-                                      shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
+                                      shuffle=False, product_to_attributes=product_to_attributes)
 
     feed_keys = mod.place_holders()
 
@@ -137,7 +133,7 @@ def train(train_cxt) :
     print "model training started"
 
     dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.batch_size,
-                                 shuffle=False, sess=sess, attributes_dataset=attributes_dataset)
+                                 shuffle=False, product_to_attributes=product_to_attributes)
 
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
@@ -201,7 +197,7 @@ if __name__ == '__main__' :
         trainCxt = trainingcontext()
         trainCxt.date = currentdate
         trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
-        trainCxt.product_attributes_path = glob.glob("/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search")
+        trainCxt.product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
         trainCxt.model_dir = "saved_models/run." + currentdate
         trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
         trainCxt.test_size = 0.03

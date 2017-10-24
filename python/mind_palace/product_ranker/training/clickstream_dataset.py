@@ -34,19 +34,20 @@ def filter_min_context_click(min_click_count, line) :
     allow = len(click_data) >= min_click_count
     return allow
 
-def _parse_line(trainCxt, attributes_config, sess, attributes_dataset, line) :
+def _parse_line(trainCxt, attributes_config, product_to_attributes, line) :
     line_split =  line.split('\t')
     return_features = []
     num_attributes = len(attributes_config)
 
-    start = time.clock()
+    # start = time.clock()
     if trainCxt.negative_samples_source == 'random' :
         negative_samples = np.ndarray([num_attributes, trainCxt.num_negative_samples], dtype=int)
         for i in range(num_attributes):
             negative_samples[i] = np.random.randint(attributes_config[i].vocab_size, size = (trainCxt.num_negative_samples))
         negative_samples = negative_samples.T
     else :
-        negative_samples = sess.run(attributes_dataset.next_element)
+        random_ints = np.random.randint(len(product_to_attributes), size=trainCxt.num_negative_samples)
+        negative_samples = product_to_attributes[random_ints, :]
     # print "fetch one random sample batch : " + str(time.clock() - start)
 
     for counter in range(num_attributes) :
@@ -71,8 +72,7 @@ class ClickstreamDataset :
                  min_click_context = 0,
                  batch_size = None,
                  shuffle = True,
-                 sess = None,
-                 attributes_dataset = None):
+                 product_to_attributes = None):
         modelconf = train_cxt.model_config
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.Dataset.from_tensor_slices(self.filenames)
@@ -85,7 +85,7 @@ class ClickstreamDataset :
         self.output_type = [tf.int64 for _ in range(num_attributes * 3)]
         self.dataset = self.dataset.filter(lambda line :
                                  tf.py_func(partial(filter_min_context_click, min_click_context), [line], [tf.bool]))
-        self.dataset = self.dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconf.attributes_config, sess, attributes_dataset), [line],
+        self.dataset = self.dataset.map(lambda line : tuple(tf.py_func(partial(_parse_line, train_cxt, modelconf.attributes_config, product_to_attributes), [line],
                                                              self.output_type)))
 
         if shuffle :

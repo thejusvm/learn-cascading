@@ -56,20 +56,21 @@ class ProductAttributesDataset:
         sess.run(self.iterator.initializer, feed_dict={self.filenames : attributes_path})
 
 def integerized_attributes(attributes, attributes_path, index_field):
-    index_field_attributes_index = attributes.index(index_field)
     num_defaults = len(CONST.DEFAULT_DICT_KEYS)
-    df = pd.read_csv(attributes_path, sep="\t", index_col=index_field_attributes_index, header=None, names=attributes[1:])
+    col_types = dict(zip(attributes, [np.int32 for _ in range(len(attributes))]))
+    df = pd.read_csv(attributes_path, sep="\t", index_col=index_field, usecols=attributes, dtype=col_types)
     index_attribute = attributes[0]
     df[index_attribute] = df.index
     df=df[attributes]
     max_val = max(df[index_attribute])
     df.drop_duplicates(inplace=True)
-    df.reindex(range(max_val), fill_value=-1)
+    df.reindex(range(max_val), fill_value = -1)
+    num_attributes = len(attributes)
     for i in range(num_defaults) :
-        num_attributes = len(attributes)
         df.loc[i] = np.ones(num_attributes) * i
     df.sort_values(index_attribute, inplace=True)
-    return df.as_matrix()
+    matrix = df.as_matrix()
+    return matrix.astype(int)
 
 if __name__ == '__main__' :
 
@@ -80,7 +81,7 @@ if __name__ == '__main__' :
     for i in range(len(all_data)) :
         pid_data = all_data[i][0]
         if pid_data == -1 :
-            print ": " + i
+            print i
     print all_data[1]
     print all_data[56]
     print all_data[99]
