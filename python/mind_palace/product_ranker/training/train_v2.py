@@ -141,9 +141,13 @@ def train(train_cxt) :
 
         while True :
             try :
+                start = time.clock()
                 processed_data = sess.run(dataset.get_next)
+                print str(trainCxt.train_counter) + " fetching batch took : " + str(time.clock() - start)
                 feed = dict(zip(feed_keys, processed_data))
+                start = time.clock()
                 _, loss_val, summary = sess.run([mod.minimize_step(), mod.loss(), loss_summary], feed_dict=feed)
+                print str(trainCxt.train_counter) + " processing one batch took : " + str(time.clock() - start)
                 if summary_writer is not None :
                     summary_writer.add_summary(summary, trainCxt.train_counter)
 
