@@ -199,7 +199,7 @@ if __name__ == '__main__' :
         trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
         trainCxt.product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
         trainCxt.model_dir = "saved_models/run." + currentdate
-        trainCxt.summary_dir = "/tmp/sessionsimple." + currentdate
+        trainCxt.summary_dir = "summary/sessionsimple." + currentdate
         trainCxt.test_size = 0.03
         trainCxt.num_epochs = 25
         trainCxt.num_negative_samples = 20
