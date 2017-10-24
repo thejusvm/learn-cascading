@@ -7,7 +7,7 @@ import time
 from functools import partial
 import glob
 import sys
-from clickstream_dataset import ClickstreamDataset
+from enhance_clickstream import ClickstreamDataset
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
