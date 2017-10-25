@@ -7,7 +7,7 @@ import time
 from functools import partial
 import glob
 import sys
-from enhance_clickstream import ClickstreamDataset
+from clickstream_iterator import ClickstreamDataset
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
@@ -38,7 +38,7 @@ def save_traincxt(trainCxt) :
         pickle.dump(trainCxt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def train(train_cxt) :
-    """@type traincxt: trainingcontext"""
+    """@type train_cxt: trainingcontext"""
 
     modelconf = trainCxt.model_config
     logBreak()
@@ -49,6 +49,12 @@ def train(train_cxt) :
     print_dict(modelconf.__dict__)
     logBreak()
 
+
+    ################################### Prepareing datasets
+    attributes = map(lambda x : x.name, modelconf.attributes_config)
+    dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=True)
+    # HACK : Using extremely large batch_size, to reuse the same code as training. no method in Dataset to say batch all in one go
+    test_dataset = ClickstreamDataset(attributes, batch_size=train_cxt.max_test_size, shuffle=False)
     ################################### Start model building
 
     attribute_dicts = get_attributedict(train_cxt.attributedict_path)
@@ -60,13 +66,20 @@ def train(train_cxt) :
     mod = mf.get_model(modelconf) #type: model
     logBreak()
 
+    mod.feed_input(dataset.get_next)
+    loss = mod.loss()
+    minimize_step = mod.minimize_step()
+
+    mod.feed_input(test_dataset.get_next)
+    test_loss = mod.loss()
+    summaries = mod.test_summaries()
+
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    loss_summary = tf.summary.scalar("loss", mod.loss())
-    test_loss_summary = tf.summary.scalar("test_loss", mod.loss())
+    loss_summary = tf.summary.scalar("loss", loss)
+    test_loss_summary = tf.summary.scalar("test_loss", test_loss)
 
-    summaries = mod.test_summaries()
     test_summaries = [test_loss_summary]
     for summary in summaries :
         test_summary = tf.summary.scalar("test_" + summary[0], summary[1])
@@ -111,48 +124,26 @@ def train(train_cxt) :
         saver.restore(sess, restore_nn_dir)
         logBreak()
 
-    attributes = map(lambda x : x.name, modelconf.attributes_config)
-    product_to_attributes = integerized_attributes(attributes, trainCxt.product_attributes_path, attributes[0])
-
-    # HACK : Using extremely large batch_size, to reuse the same code as training. no method in Dataset to say batch all in one go
-    test_dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.max_test_size,
-                                      shuffle=False, product_to_attributes=product_to_attributes)
-
-    feed_keys = mod.place_holders()
-
-    test_feed = None
-    if summary_writer is not None :
-        print "test data generation started"
-        start = time.clock()
-        test_dataset.initialize_iterator(sess, ctr_data_path=train_cxt.test_path)
-        test_processed_data = sess.run(test_dataset.get_next)
-        print "test set size : " + str(len(test_processed_data[0])) + " in " + str(time.clock() - start)
-        logBreak()
-        test_feed = dict(zip(feed_keys, test_processed_data))
 
     print "model training started"
 
-    dataset = ClickstreamDataset(train_cxt, min_click_context=train_cxt.min_click_context, batch_size=train_cxt.batch_size,
-                                 shuffle=False, product_to_attributes=product_to_attributes)
-
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
-        dataset.initialize_iterator(sess,train_cxt.train_path)
+        dataset.initialize_iterator(sess, train_cxt.train_path)
 
         while True :
             try :
                 start = time.clock()
-                processed_data = sess.run(dataset.get_next)
-                print str(trainCxt.train_counter) + " fetching batch took : " + str(time.clock() - start)
-                feed = dict(zip(feed_keys, processed_data))
-                start = time.clock()
-                _, loss_val, summary = sess.run([mod.minimize_step(), mod.loss(), loss_summary], feed_dict=feed)
+                _, loss_val, summary = sess.run([minimize_step, loss, loss_summary])
                 print str(trainCxt.train_counter) + " processing one batch took : " + str(time.clock() - start)
                 if summary_writer is not None :
                     summary_writer.add_summary(summary, trainCxt.train_counter)
 
-                if summary_writer is not None and test_feed is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
-                    all_summary = sess.run(merged_summary, feed_dict = test_feed)
+                if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
+                    test_dataset.initialize_iterator(sess, train_cxt.test_path)
+                    start = time.clock()
+                    all_summary = sess.run(merged_summary)
+                    print str(trainCxt.train_counter) + " processing test batch took : " + str(time.clock() - start)
                     summary_writer.add_summary(all_summary, trainCxt.train_counter)
 
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
@@ -200,7 +191,8 @@ if __name__ == '__main__' :
 
         trainCxt = trainingcontext()
         trainCxt.date = currentdate
-        trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
+        trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
+        trainCxt.attributedict_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
         trainCxt.product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
         trainCxt.model_dir = "saved_models/run." + currentdate
         trainCxt.summary_dir = "summary/sessionsimple." + currentdate
@@ -211,6 +203,7 @@ if __name__ == '__main__' :
         trainCxt.publish_summary = True
         trainCxt.save_model = True
         trainCxt.save_model_num_iter = 1000
+        trainCxt.test_summary_publish_iters = 1000
         trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
 
         dataFiles = glob.glob(trainCxt.data_path + "/part-*")
@@ -220,7 +213,8 @@ if __name__ == '__main__' :
         trainCxt.test_path = dataFiles[trainSize:]
         trainCxt.negative_samples_source = "random"
 
-        trainCxt.attributedict_path = get_attributedict_path(trainCxt.data_path)
+        raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
+        trainCxt.attributedict_path = get_attributedict_path(raw_data_path)
 
         modelconf = modelconfig("softmax_model")
         # modelconf.layer_count = [1024, 512, 256]

@@ -9,7 +9,7 @@ def getTraningContextDir(model_dir) :
 class trainingcontext :
 
     def __init__(self):
-        self.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplode-201708.MOB.processed"
+        self.data_path = None
         self.product_attributes_path = None
         self.batch_size = 500
         self.num_epochs = 20

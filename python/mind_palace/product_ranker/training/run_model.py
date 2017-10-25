@@ -74,21 +74,28 @@ class Scorer :
                 else :
                     clicked_products = [0]
 
-            score = self.mod.score()
-            feed_keys = self.mod.place_holders()
-
             ranking_attributes = self.lookup_attributes(products_to_rank)
             clicked_attributes = self.lookup_attributes(clicked_products)
 
             result = []
-            for i in range(len(products_to_rank)) :
+            num_attributes = len(self.attributes)
+            num_feed = len(self.attributes) * 3
+            feed_values = [[] for i in range(num_feed)]
+            num_products = len(products_to_rank)
+            for i in range(num_products) :
                 pid = products_to_rank[i]
-                feed_values = []
-                for j in range(len(self.attributes)) :
-                    feed_values += [[ranking_attributes[i][j]], [[]], [clicked_attributes[:, j]]]
-                feed = dict(zip(feed_keys, feed_values))
-                pid_score = sess.run(score, feed_dict = feed)
-                result.append([pid, i, float(pid_score[0][0]), float(pid_score[1][0][0]), float(pid_score[2][0][0])])
+                feed_values_row = []
+                for j in range(num_attributes) :
+                    feed_values_row += [[ranking_attributes[i][j]], [], clicked_attributes[:, j]]
+                for j in range(num_feed) :
+                    feed_values[j].append(feed_values_row[j])
+            feed_values = [np.array(feed_values[j], dtype=int) for j in range(num_feed)]
+            self.mod.feed_input(feed_values)
+            score = self.mod.score()
+            pid_score = sess.run(score)
+            for i in range(num_products) :
+                pid = products_to_rank[i]
+                result.append([pid, i, float(pid_score[0][i]), float(pid_score[1][i][0]), float(pid_score[2][i][0])])
 
             response_keys = ['product_id', 'original_rank', 'logit', 'xent', 'probability']
             product_score = sorted(result, key=itemgetter(2), reverse=True)
@@ -102,14 +109,14 @@ class Scorer :
 
 
 if __name__ == '__main__' :
-    model_path = "saved_models/run.20171019-13-21-32"
+    model_path = "saved_models/run.20171025-17-15-33"
     rm = Scorer(model_path)
     products_to_rank = ["MOBEQ98MNXHY4RU9", "MOBES9G5SJHYT9QX", "MOBEQ98TABTWXGTD", "MOBEWN63JHHEXPTD", "MOBEXNP9FJ9K5K53", "MOBEX9WXUSZVYHET", "MOBET6RH4XSXKM7D", "MOBEQ98TWG8X4HH3", "MOBECCA5FHQD43KA", "MOBEWN63NBDSMVPG", "MOBEU9WRGVXDPBSF", "MOBEU9WRZFFUYAXJ", "MOBEU9WRZHRVWXTK", "MOBEMK62PN2HU7EE", "MOBEX9WXZCZHWXUZ", "MOBEWXHUSBXVJ7NZ", "MOBET6RHXVZBJFNT", "MOBESDYMGHC37GCS", "MOBEN2YYKU9386TQ", "MOBEN2YYQH8PSYXG", "MOBECCA5Y5HBYR3Q", "MOBECCA5SMRSKCNY", "MOBEG4XWMBDGZVEX", "MOBEG4XWDK4WBGNU", "MOBEV7YDBCAFG3ZH", "MOBEN2XYK8WFEGM8", "MOBEJFHUFVAJ45YA", "MOBEJFHUGPWTZFQJ", "MOBEV7YD3CFBTENW", "MOBEVKFTCFFU2FE7", "MOBETM9FZWW5UEZG", "MOBEUF42PGDRYCQA", "MOBEUF424KXTP9CT", "MOBEUF42VHXZSQV7", "MOBEQ98T82CYVHGZ", "MOBETM93F7DGJNN5", "MOBETMH3ZYNDPVVC", "MOBEU35JUQMQQHWK", "MOBEU35JAZKVWRPV", "MOBESDYCQD3FJCFW", "MOBEZEMYH7FQBGBQ", "MOBEZENFZBPW8UMF", "MOBEKGT2HGDGADFW", "MOBEMK62JSRHU85T", "MOBEZPVEGADXHMHT", "MOBEZPVENHEVMQDZ", "MOBEQRYTXZXC8FZZ", "MOBETM93HMBGUQKH", "MOBEXHHKDHSA9UZC", "MOBECCA5BJUVUGNP", "MOBEHZTGXSGG2GRX", "MOBEK4ABQFH3SSP7", "MOBE9TGVE7ZBRAEN"]
     clicked_products = ["MOBETMH3ZYNDPVVC"]
     ps = rm.print_score(products_to_rank, clicked_products)
     print "---------------------------------------------------------"
-    clicked_products = [CONST.DEFAULT_CLICK_TEXT]
-    ps = rm.print_score(products_to_rank, clicked_products)
+    # clicked_products = [CONST.DEFAULT_CLICK_TEXT]
+    # ps = rm.print_score(products_to_rank, clicked_products)
 
 
 

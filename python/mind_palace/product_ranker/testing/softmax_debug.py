@@ -25,16 +25,15 @@ md = softmax_model(mdl_conf) #type: softmax_model
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-positive_samples_test = [1.0, 4.0]
-negative_samples_test = [[0.0,0.0,0.0, 4.0, 3.0, 6.0], [0.0, 6.0, 8.0, 5.0, 7.0, 9.0]]
+positive_samples_test = [[1], [4]]
+negative_samples_test = [[0, 0, 0, 4, 3, 6], [0, 6, 8, 5, 7, 9]]
 context = [[2, 3, 0, 0, 0, 0], [6, 8, 5, 7, 0, 0]]
 
-feed_keys = md.place_holders()
 feed_vals = [positive_samples_test, negative_samples_test, context, positive_samples_test, negative_samples_test, context]
-feed = dict(zip(feed_keys, feed_vals))
+md.feed_input(feed_vals)
 
 ps = md.negative_sigmoid
-for score in sess.run([ps.weights_cross_context_sum, ps.modified_bias, ps.logits, ps.xent], feed_dict = feed):
+for score in sess.run([ps.weights_cross_context_sum, ps.modified_bias, ps.logits, ps.xent]):
     print score
     print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))

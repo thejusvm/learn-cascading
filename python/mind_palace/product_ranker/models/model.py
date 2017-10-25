@@ -6,6 +6,9 @@ class model :
     def __init__(self, model_config) :
         self.model_config = model_config # type: modelconfig
 
+    def feed_input(self, inputs):
+        pass
+
     def place_holders(self):
         """:return the list of placeholders in attach data to"""
         pass

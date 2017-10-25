@@ -32,23 +32,28 @@ class ClickstreamDataset :
         self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row))
 
         if shuffle :
-            self.dataset = self.dataset.shuffle(buffer_size=10000)
+            self.dataset = self.dataset.shuffle(buffer_size=100000)
         if batch_size != None :
-            self.dataset = self.dataset.padded_batch(batch_size)
+            padding_value = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
+            num_features = len(feature_names)
+            padding_values = tuple([tf.constant(padding_value, dtype=tf.int64) for _ in range(num_features)])
+            padded_shapes = tuple([[None] for _ in range(num_features)])
+            self.dataset = self.dataset.padded_batch(batch_size, padded_shapes = padded_shapes, padding_values=padding_values)
 
         self.iterator = self.dataset.make_initializable_iterator()
         self.get_next = self.iterator.get_next()
 
-    def initialize_iterator(self, sess, tfr_data_path):
-        sess.run(self.iterator.initializer, feed_dict={self.filenames : tfr_data_path})
+    def initialize_iterator(self, sess, ctr_data_path):
+        sess.run(self.iterator.initializer, feed_dict={self.filenames : ctr_data_path})
 
 if __name__ == '__main__' :
 
     path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr/part-*")
     sess = tf.Session()
     attributes = ["productId", "brand", "vertical"]
-    dataset = ClickstreamDataset(attributes, batch_size=3)
+    attributes = ["productId"]
+    dataset = ClickstreamDataset(attributes, batch_size=10)
     dataset.initialize_iterator(sess, path)
     get_next = dataset.get_next
-    print type(get_next)
+    print get_next
     print sess.run(get_next)

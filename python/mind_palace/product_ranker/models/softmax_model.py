@@ -11,18 +11,23 @@ class softmax_model(model) :
     def __init__(self, modelConf):
         model.__init__(self, modelConf)
         self.modelConf = modelConf # type: modelconfig
-        self.placeholders = []
         self.per_attribute_embeddings = []
+
+        attributes_config = self.modelConf.attributes_config
+        for attribute_config in attributes_config :
+            attribute_embeddings = AttributeEmbeddings(modelConf, attribute_config)
+            self.per_attribute_embeddings.append(attribute_embeddings)
+
+    def feed_input(self, inputs):
+        self.placeholders = []
         self.per_attribute_positive_weights = []
         self.per_attribute_positive_bias = []
         self.per_attribute_negative_weights = []
         self.per_attribute_negative_bias = []
         self.per_attribute_click_embedding = []
-
-        attributes_config = self.modelConf.attributes_config
-        for attribute_config in attributes_config :
-            attribute_embeddings = AttributeEmbeddings(modelConf, attribute_config)
-
+        for i in range(len(self.per_attribute_embeddings)) :
+            attribute_embeddings = self.per_attribute_embeddings[i]
+            attribute_embeddings.feed_input(inputs[3 * i: 3 * i + 3])
             self.per_attribute_positive_weights.append(attribute_embeddings.positive_weights)
             self.per_attribute_positive_bias.append(attribute_embeddings.positive_bias)
 
@@ -31,7 +36,6 @@ class softmax_model(model) :
 
             self.per_attribute_click_embedding.append(attribute_embeddings.context_embedding)
 
-            self.per_attribute_embeddings.append(attribute_embeddings)
             self.placeholders += [attribute_embeddings.positive_input,
                                   attribute_embeddings.negative_input,
                                   attribute_embeddings.click_input]
@@ -112,11 +116,11 @@ class AttributeEmbeddings :
         :type modelConf: modelconfig
         :type attribute_config: AttributeConfig
         """
-        default_click_index = CONST.DEFAULT_DICT_KEYS.index(CONST.DEFAULT_CLICK_TEXT)
         self.attribute_config = attribute_config
         self.attribute_name = attribute_config.name
         self.vocab_size = attribute_config.vocab_size
         self.embedding_size = attribute_config.embedding_size
+        self.modelConf = modelConf
         override_embedding = attribute_config.override_embeddings
 
         if override_embedding.context_dict is None:
@@ -136,11 +140,19 @@ class AttributeEmbeddings :
             self.softmax_bias = tf.Variable(tf.random_uniform([self.vocab_size], -1, 1), name="sm_b")
         else:
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
-        self.click_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_click_input")
+
+    def feed_input(self, inputs):
+        if inputs is None:
+            self.positive_input = tf.placeholder(tf.int32, shape=[None, 1], name = self.attribute_name + "_positive_input")
+            self.negative_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_negative_input")
+            self.click_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_click_input")
+        else :
+            self.positive_input, self.negative_input, self.click_input = inputs
+
         self.click_context_samples = self.click_input
         self.click_context_samples_padded = self.click_context_samples
         self.click_padder = padding_handler(self.click_context_samples_padded, self.context_dict)
-        if modelConf.use_context is False:
+        if self.modelConf.use_context is False:
             self.click_embeddings_mean = None
         else:
             self.click_embeddings_mean = self.click_padder.tensor_embeddings_mean
@@ -148,13 +160,11 @@ class AttributeEmbeddings :
 
         self.context_embedding = self.click_embeddings_mean
 
-        self.positive_input = tf.placeholder(tf.int32, shape=[None], name = self.attribute_name + "_positive_input")
-        self.positive_samples = tf.expand_dims(self.positive_input, [1])
+        self.positive_samples = self.positive_input
         self.positive_weights = tf.nn.embedding_lookup(self.softmax_weights, self.positive_samples)
         self.positive_bias = tf.nn.embedding_lookup(self.softmax_bias, self.positive_samples)
         self.positive_bias = tf.expand_dims(self.positive_bias, [1])
 
-        self.negative_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_negative_input")
         self.negative_samples = self.negative_input
         self.negative_weights = tf.nn.embedding_lookup(self.softmax_weights, self.negative_samples)
         self.negative_bias = tf.nn.embedding_lookup(self.softmax_bias, self.negative_samples)
