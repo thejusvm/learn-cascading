@@ -1,14 +1,13 @@
+import cPickle as pickle
 import glob
 import json
+import numpy as np
+import os
 import pandas as pd
 import time
-import numpy as np
-from sklearn.model_selection import train_test_split
-from mind_palace.DictIntegerizer import DictIntegerizer
-import cPickle as pickle
-import os
-import sys
+
 import mind_palace.product_ranker.constants as CONST
+from mind_palace.DictIntegerizer import DictIntegerizer
 
 """
     Given a file containing the click through data with product attributes,

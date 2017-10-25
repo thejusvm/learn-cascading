@@ -1,15 +1,9 @@
-import tensorflow as tf
-import time
-import json
-import numpy as np
-import mind_palace.product_ranker.constants as CONST
-from mind_palace.commons.helpers import logBreak
 import glob
-from functools import partial
-from product_attributes_dataset import integerized_attributes
-import sys
-import os
+import tensorflow as tf
+
+import mind_palace.product_ranker.constants as CONST
 from enhance_clickstream import generate_feature_names
+
 
 # def _deserialize_function(_example_protos):
 #     return [tf.deserialize_many_sparse(_example_proto, tf.int64) for _example_proto in _example_protos]

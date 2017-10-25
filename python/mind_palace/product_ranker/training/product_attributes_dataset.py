@@ -1,12 +1,9 @@
-import tensorflow as tf
-import json
-import time
-from mind_palace.DictIntegerizer import DictIntegerizer
-import glob
-import sys
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+
 import mind_palace.product_ranker.constants as CONST
+from mind_palace.DictIntegerizer import DictIntegerizer
 
 """
     Takes the output of prepare_product_attributes and wraps it with a tensorflow Dataset.

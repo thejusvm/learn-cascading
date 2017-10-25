@@ -1,22 +1,15 @@
 import cPickle as pickle
-import json
-import numpy as np
+import glob
 import os
 import tensorflow as tf
 import time
-from functools import partial
-import glob
-import sys
-from clickstream_iterator import ClickstreamDataset
 
+from clickstream_iterator import ClickstreamDataset
+from mind_palace.product_ranker.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
-from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
-from mind_palace.product_ranker.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
-from product_attributes_dataset import ProductAttributesDataset, integerized_attributes
-
 
 """
     generates training data with

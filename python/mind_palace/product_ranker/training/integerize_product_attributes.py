@@ -1,11 +1,10 @@
-import tensorflow as tf
 import cPickle as pickle
-from functools import partial
-from mind_palace.DictIntegerizer import DictIntegerizer
 import glob
-import json
-import mind_palace.product_ranker.constants as CONST
+import tensorflow as tf
+from functools import partial
 
+import mind_palace.product_ranker.constants as CONST
+from mind_palace.DictIntegerizer import DictIntegerizer
 
 """
     Converts a file containing product attributes and integerizes it.

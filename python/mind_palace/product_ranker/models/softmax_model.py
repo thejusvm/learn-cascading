@@ -1,9 +1,7 @@
 import tensorflow as tf
-import mind_palace.product_ranker.constants as CONST
-import collections
 
 from mind_palace.commons.padding_handler import padding_handler
-from mind_palace.product_ranker.models.modelconfig import modelconfig, EmbeddingDicts, AttributeConfig
+from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from model import model
 
 class softmax_model(model) :

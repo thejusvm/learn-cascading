@@ -1,8 +1,7 @@
-from flask import Flask, jsonify , request
-from mind_palace.product_ranker.training.run_model import Scorer
 import json
-import numpy
-import mind_palace.product_ranker.constants as CONST
+from flask import Flask, jsonify , request
+
+from mind_palace.product_ranker.training.run_model import Scorer
 
 app = Flask(__name__)
 
