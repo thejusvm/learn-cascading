@@ -30,6 +30,8 @@ class trainingcontext :
         self.negative_samples_source = 'random' #possible values : random/productAttributes
         self.restore_model_dir = None
         self.train_counter = 0
+        self.latency_track_iters = 10000
+        self.batch_size = 500
 
 
         #train_v2 only args (file train_v2.py)

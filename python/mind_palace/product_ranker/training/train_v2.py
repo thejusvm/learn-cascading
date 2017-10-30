@@ -117,9 +117,11 @@ def train(train_cxt) :
         saver.restore(sess, restore_nn_dir)
         logBreak()
 
-
+    num_batches_per_latency_track = int(trainCxt.latency_track_iters / trainCxt.batch_size)
     print "model training started"
 
+    start = None
+    elapsed_time = 0
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         dataset.initialize_iterator(sess, train_cxt.train_path)
@@ -128,12 +130,14 @@ def train(train_cxt) :
             try :
                 start = time.clock()
                 _, loss_val, summary = sess.run([minimize_step, loss, loss_summary])
-                elapsed_time = time.clock() - start
+                elapsed_time += time.clock() - start
                 # print str(trainCxt.train_counter) + " processing one batch took : " + str(elapsed_time)
                 if summary_writer is not None :
                     summary_writer.add_summary(summary, trainCxt.train_counter)
-                    summary = tf.Summary(value=[tf.Summary.Value(tag="per_batch_latency", simple_value=elapsed_time)])
-                    summary_writer.add_summary(summary, trainCxt.train_counter)
+                    if trainCxt.train_counter % num_batches_per_latency_track == 0 :
+                        latency_summary = tf.Summary(value=[tf.Summary.Value(tag="per_"+str(trainCxt.latency_track_iters)+"_latency", simple_value=elapsed_time)])
+                        summary_writer.add_summary(latency_summary, trainCxt.train_counter * trainCxt.batch_size)
+                        elapsed_time = 0
 
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
                     test_dataset.initialize_iterator(sess, train_cxt.test_path)
@@ -197,10 +201,11 @@ if __name__ == '__main__' :
         trainCxt.num_negative_samples = 20
         trainCxt.min_click_context = 0
         trainCxt.publish_summary = True
-        trainCxt.save_model = False
+        trainCxt.save_model = True
         trainCxt.save_model_num_iter = 1000
         trainCxt.test_summary_publish_iters = 1000
         trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
+        trainCxt.batch_size = 200
 
         dataFiles = glob.glob(trainCxt.data_path + "/part-*")
         numFiles = len(dataFiles)
