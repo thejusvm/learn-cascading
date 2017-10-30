@@ -125,12 +125,12 @@ def train(train_cxt) :
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         dataset.initialize_iterator(sess, train_cxt.train_path)
-        epoch_start = time.clock()
+        epoch_start = time.time()
         while True :
             try :
-                start = time.clock()
+                start = time.time()
                 _, loss_val, summary = sess.run([minimize_step, loss, loss_summary])
-                elapsed_time += time.clock() - start
+                elapsed_time += time.time() - start
                 # print str(trainCxt.train_counter) + " processing one batch took : " + str(elapsed_time)
                 if summary_writer is not None :
                     summary_writer.add_summary(summary, trainCxt.train_counter)
@@ -141,9 +141,9 @@ def train(train_cxt) :
 
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
                     test_dataset.initialize_iterator(sess, train_cxt.test_path)
-                    start = time.clock()
+                    start = time.time()
                     all_summary = sess.run(merged_summary)
-                    print str(trainCxt.train_counter) + " processing test batch took : " + str(time.clock() - start)
+                    print str(trainCxt.train_counter) + " processing test batch took : " + str(time.time() - start)
                     summary_writer.add_summary(all_summary, trainCxt.train_counter)
 
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
@@ -154,7 +154,7 @@ def train(train_cxt) :
                 trainCxt.train_counter = trainCxt.train_counter + 1
             except tf.errors.OutOfRangeError:
                 break
-        print "processing epoch took : " + str(time.clock() - epoch_start)
+        print "processing epoch took : " + str(time.time() - epoch_start)
 
         ################################### Saving model to file
         if trainCxt.save_model_on_epoch and trainCxt.save_model :
