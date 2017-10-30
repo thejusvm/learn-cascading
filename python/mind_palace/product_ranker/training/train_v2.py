@@ -125,7 +125,7 @@ def train(train_cxt) :
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
         dataset.initialize_iterator(sess, train_cxt.train_path)
-
+        epoch_start = time.clock()
         while True :
             try :
                 start = time.clock()
@@ -154,6 +154,7 @@ def train(train_cxt) :
                 trainCxt.train_counter = trainCxt.train_counter + 1
             except tf.errors.OutOfRangeError:
                 break
+        print "processing epoch took : " + str(time.clock() - epoch_start)
 
         ################################### Saving model to file
         if trainCxt.save_model_on_epoch and trainCxt.save_model :
@@ -202,10 +203,10 @@ if __name__ == '__main__' :
         trainCxt.min_click_context = 0
         trainCxt.publish_summary = True
         trainCxt.save_model = True
-        trainCxt.save_model_num_iter = 1000
-        trainCxt.test_summary_publish_iters = 1000
+        trainCxt.save_model_num_iter = 20000
+        trainCxt.test_summary_publish_iters = 10000
         trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
-        trainCxt.batch_size = 200
+        trainCxt.batch_size = 500
 
         dataFiles = glob.glob(trainCxt.data_path + "/part-*")
         numFiles = len(dataFiles)

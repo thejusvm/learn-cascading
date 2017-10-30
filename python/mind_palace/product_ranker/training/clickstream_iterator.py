@@ -25,7 +25,7 @@ class ClickstreamDataset :
         features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in feature_names])
         # self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row))
         self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row),
-                                        num_threads = 20, output_buffer_size = 100 * batch_size)
+                                        num_threads = 25, output_buffer_size = 100 * batch_size)
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)
