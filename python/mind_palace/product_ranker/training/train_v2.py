@@ -128,8 +128,11 @@ def train(train_cxt) :
             try :
                 start = time.clock()
                 _, loss_val, summary = sess.run([minimize_step, loss, loss_summary])
-                print str(trainCxt.train_counter) + " processing one batch took : " + str(time.clock() - start)
+                elapsed_time = time.clock() - start
+                # print str(trainCxt.train_counter) + " processing one batch took : " + str(elapsed_time)
                 if summary_writer is not None :
+                    summary_writer.add_summary(summary, trainCxt.train_counter)
+                    summary = tf.Summary(value=[tf.Summary.Value(tag="per_batch_latency", simple_value=elapsed_time)])
                     summary_writer.add_summary(summary, trainCxt.train_counter)
 
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
@@ -194,7 +197,7 @@ if __name__ == '__main__' :
         trainCxt.num_negative_samples = 20
         trainCxt.min_click_context = 0
         trainCxt.publish_summary = True
-        trainCxt.save_model = True
+        trainCxt.save_model = False
         trainCxt.save_model_num_iter = 1000
         trainCxt.test_summary_publish_iters = 1000
         trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
