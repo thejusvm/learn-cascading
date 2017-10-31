@@ -10,6 +10,7 @@ from mind_palace.product_ranker.models.modelconfig import modelconfig, Attribute
 from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
 from mind_palace.product_ranker.prepare_data.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
+from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_trainingdata_path
 
 """
     generates training data with
@@ -120,7 +121,6 @@ def train(train_cxt) :
     num_batches_per_latency_track = int(trainCxt.latency_track_iters / trainCxt.batch_size)
     print "model training started"
 
-    start = None
     elapsed_time = 0
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
@@ -190,11 +190,12 @@ if __name__ == '__main__' :
         timestamp = time.localtime()
         currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
 
+        root_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int"
+
         trainCxt = trainingcontext()
         trainCxt.date = currentdate
-        trainCxt.data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
-        trainCxt.attributedict_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
-        trainCxt.product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
+        trainCxt.data_path = get_trainingdata_path(root_data_path)
+        trainCxt.attributedict_path = get_attributedicts_path(root_data_path)
         trainCxt.model_dir = "saved_models/run." + currentdate
         trainCxt.summary_dir = "summary/sessionsimple." + currentdate
         trainCxt.test_size = 0.03
@@ -208,15 +209,11 @@ if __name__ == '__main__' :
         trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
         trainCxt.batch_size = 500
 
-        dataFiles = glob.glob(trainCxt.data_path + "/part-*")
+        dataFiles = sorted(glob.glob(trainCxt.data_path + "/part-*"))
         numFiles = len(dataFiles)
         trainSize = int(numFiles * (1 - trainCxt.test_size))
         trainCxt.train_path = dataFiles[:trainSize]
         trainCxt.test_path = dataFiles[trainSize:]
-        trainCxt.negative_samples_source = "random"
-
-        raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
-        trainCxt.attributedict_path = get_attributedict_path(raw_data_path)
 
         modelconf = modelconfig("softmax_model")
         # modelconf.layer_count = [1024, 512, 256]
@@ -225,7 +222,6 @@ if __name__ == '__main__' :
         modelconf.reuse_context_dict = False
         # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15), AttributeConfig("vertical", 5)]
         modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
-        trainCxt.negative_samples_source = "productAttributes"
         # modelconf.attributes_config = [AttributeConfig("productId", 50)]
         trainCxt.model_config = modelconf
 

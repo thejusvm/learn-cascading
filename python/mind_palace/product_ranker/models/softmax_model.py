@@ -18,6 +18,7 @@ class softmax_model(model) :
 
     def feed_input(self, inputs):
         self.placeholders = []
+        self.inputs = inputs
         self.per_attribute_positive_weights = []
         self.per_attribute_positive_bias = []
         self.per_attribute_negative_weights = []

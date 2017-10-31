@@ -19,6 +19,15 @@ def make_dir(path) :
     if not os.path.exists(path):
         os.makedirs(path)
 
+def get_attributedicts_path(output_path) :
+    return output_path + "/" + dicts_path_suffix
+
+def get_enhanceddata_path(output_path, version) :
+    return output_path + "/" + enhanced_clickstream_path_suffix + "." + str(version)
+
+def get_trainingdata_path(output_path) :
+    return output_path + "/" + enhanced_clickstream_path_suffix + ".*"
+
 def flow(attributes,
          attributes_path,
          clickstream_path,
@@ -27,10 +36,9 @@ def flow(attributes,
 
     make_dir(output_path)
 
-    attribute_dicts_path = output_path + "/" + dicts_path_suffix
+    attribute_dicts_path = get_attributedicts_path(output_path)
     integerized_attributes_path = output_path + "/" + integerized_attributes_path_suffix
     integerized_clickstream_path = output_path + "/" + integerized_clickstream_path_suffix
-    enhanced_clickstream_path_prefix = output_path + "/" + enhanced_clickstream_path_suffix
 
     log("integerizing attributes")
     attribute_dicts = integerize_product_attributes(attributes, attributes_path, integerized_attributes_path, attribute_dicts_path)
@@ -46,7 +54,7 @@ def flow(attributes,
     for i in range(num_enhance_times) :
         str_i = str(i)
         log("enhancing clickstream : " + str_i)
-        enhanced_clickstream_path = enhanced_clickstream_path_prefix + "." + str_i
+        enhanced_clickstream_path = get_enhanceddata_path(output_path, i)
         make_dir(enhanced_clickstream_path)
         globbed_integerized_clickstream_path = glob.glob(integerized_clickstream_path + "/part-*")
         enhance_clickstream(attributes, integerized_attributes_path, globbed_integerized_clickstream_path, enhanced_clickstream_path)
