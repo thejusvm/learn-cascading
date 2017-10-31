@@ -27,7 +27,7 @@ def read_integerized_attributes(attributes, attributes_path, index_field):
 
 if __name__ == '__main__' :
 
-    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
+    attributes_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int/integerized_attributes"
     attributes = ["productId", "brand", "vertical"]
 
     all_data =  read_integerized_attributes(attributes, attributes_path, "productId")

@@ -149,9 +149,9 @@ def enhance_clickstream(attributes, integerized_product_attributes_path, integer
 if __name__ == '__main__' :
 
     attributes = ["productId", "brand", "vertical"]
-    data_path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/part-*")
-    product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
-    output_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
+    data_path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int/integerized_clickstream/part-*")
+    product_attributes_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int/integerized_attributes"
+    output_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int/test_enhance"
 
 
     enhance_clickstream(attributes, product_attributes_path, data_path, output_path)

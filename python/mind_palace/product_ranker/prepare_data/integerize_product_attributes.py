@@ -1,7 +1,7 @@
-import cPickle as pickle
 import glob
 import tensorflow as tf
 import os
+from commons import write_attribute_dicts, init_attribute_dicts
 from functools import partial
 
 import mind_palace.product_ranker.constants as CONST
@@ -24,7 +24,7 @@ def map_to_ints(attribute_dicts, values) :
     for i in range(len(attribute_dicts)) :
         attribute_dict = attribute_dicts[i] #type: DictIntegerizer
         value = values[i]
-        ints.append(attribute_dict.only_get(value, missing_val=deafult_unavaileble_index))
+        ints.append(attribute_dict.get(value))
     return ints
 
 def not_unavailable_product(x):
@@ -63,9 +63,10 @@ class PrepareAttributesDataset:
     def initialize_iterator(self, sess, attributes_path):
         sess.run(self.iterator.initializer, feed_dict={self.filenames : attributes_path})
 
-def integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict=None) :
+def integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict_path) :
     attributes_path = glob.glob(attributes_path)
-    features = PrepareAttributesDataset(attributes, attribute_dicts=attribute_dict, filter_unavailable=True)
+    attribute_dicts = init_attribute_dicts(attributes, default_dict_keys=CONST.DEFAULT_DICT_KEYS)
+    features = PrepareAttributesDataset(attributes, attribute_dicts=attribute_dicts, filter_unavailable=True)
 
     sess = tf.Session()
     sess.run(features.iterator.initializer, feed_dict={features.filenames : attributes_path})
@@ -86,6 +87,9 @@ def integerize_product_attributes(attributes, attributes_path, output_path, attr
         writer.flush()
         writer.close()
 
+    write_attribute_dicts(attribute_dict_path, attribute_dicts)
+    return attribute_dicts
+
 if __name__ == '__main__' :
 
     attribute_dict_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/productdict.pickle"
@@ -93,10 +97,5 @@ if __name__ == '__main__' :
     output_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
     attributes = ["productId", "brand", "vertical"]
 
-    attribute_dict = None
-    if os.path.exists(attribute_dict_path):
-        with open(attribute_dict_path, 'rb') as handle:
-            attribute_dict = pickle.load(handle)
-
-    integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict=attribute_dict)
+    integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict_path)
 

@@ -25,11 +25,13 @@ class DictIntegerizer :
             return -1
 
     def get(self, term) :
+        term = term.lower()
         if term not in self.termdict :
             self._add_(term)
         return self.termdict[term]
 
     def only_get(self, term, missing_val = -1):
+        term = term.lower()
         if term not in self.termdict :
             return missing_val
         return self.termdict[term]

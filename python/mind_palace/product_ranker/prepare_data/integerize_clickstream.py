@@ -5,9 +5,9 @@ import numpy as np
 import os
 import pandas as pd
 import time
+from commons import init_attribute_dicts
 
 import mind_palace.product_ranker.constants as CONST
-from mind_palace.DictIntegerizer import DictIntegerizer
 
 """
     Given a file containing the click through data with product attributes,
@@ -29,7 +29,7 @@ def integerize(attributes, attribute_dicts, products_attributes) :
             attribute_val = products_attributes[attribute]
         else :
             attribute_val = CONST.MISSING_DATA_TEXT
-        attribute_integerized = attribute_dict.get(attribute_val)
+        attribute_integerized = attribute_dict.only_get(attribute_val, missing_val=CONST.DEFAULT_DICT_KEYS.index(CONST.MISSING_DATA_TEXT))
         attributes_integerized.append(attribute_integerized)
     return attributes_integerized
 
@@ -79,8 +79,7 @@ def process_row(df, attributes, attribute_dicts):
 
 def process_file(data_path,
                  attributes,
-                 attribute_dicts,
-                 min_click_context = 0):
+                 attribute_dicts):
     df = pd.read_csv(data_path, sep="\t")
     df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search")]
     start = time.clock()
@@ -103,25 +102,18 @@ def get_attributedict(data_path) :
     with open(data_path, 'rb') as handle:
         return pickle.load(handle)
 
-def new_dictintegerizer(attribute, deafult_dicy_keys):
-    dict_i = DictIntegerizer(default=deafult_dicy_keys, name=attribute)
-    return dict_i
 
 def prepare_data(raw_data_path,
                  processed_data_path,
                  attributes,
-                 default_dict_keys = None):
-    attribute_dicts = {}
-    for attribute in attributes :
-        attributedict = new_dictintegerizer(attribute, default_dict_keys)
-        attribute_dicts[attribute] = attributedict
+                 attribute_dicts):
 
     filenames = glob.glob(raw_data_path)
     start = time.clock()
     counter = 0
     for in_file in filenames:
         logBreak()
-        print "start file processing : " + in_file + ", with dict size : " + str(map(str, attribute_dicts.values()))
+        print "start file processing : " + in_file
         pd = process_file(in_file, attributes, attribute_dicts)
         print "end file processing : " + in_file + ", in " + str(time.clock() - start)
         out_file = processed_data_path + "/part-" + str(counter)
@@ -134,6 +126,9 @@ def prepare_data(raw_data_path,
 
     return attribute_dicts
 
+def integerize_clickstream(attributes, attribute_dicts, raw_data_path, output_path) :
+    prepare_data(raw_data_path, output_path, attributes, attribute_dicts)
+
 
 if __name__ == '__main__' :
     raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large" + "/part-*"
@@ -142,7 +137,9 @@ if __name__ == '__main__' :
 
     attributes = ["productId", "brand", "vertical"]
 
-    dicts = prepare_data(raw_data_path, processed_data_path, attributes, default_dict_keys=CONST.DEFAULT_DICT_KEYS)
+    attribute_dicts = init_attribute_dicts(attributes, CONST.DEFAULT_DICT_KEYS)
+
+    dicts = integerize_clickstream(attributes, attribute_dicts, raw_data_path, processed_data_path)
     product_dict_file = get_attributedict_path(processed_data_path)
 
     start = time.clock()
