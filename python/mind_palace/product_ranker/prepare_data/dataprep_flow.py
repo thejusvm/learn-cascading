@@ -56,10 +56,12 @@ def flow(attributes,
 if __name__ == '__main__' :
 
     attributes = ["productId", "brand", "vertical"]
-    attributesPath = sys.argv[1] #"/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
+    attributesPathBase = sys.argv[1] #"/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
     clickstreamPathBase = sys.argv[2] #"/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller"
-    clickstreamPath = clickstreamPathBase + "/part-*"
     outputPath = sys.argv[3]
+
+    attributesPath = attributesPathBase + "/part-*"
+    clickstreamPath = clickstreamPathBase + "/part-*"
 
     flow(attributes, attributesPath, clickstreamPath, outputPath, num_enhance_times=3)
 
