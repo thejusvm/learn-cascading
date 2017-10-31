@@ -1,15 +1,14 @@
-import tensorflow as tf
-import time
+import glob
 import json
 import numpy as np
+import os
+import tensorflow as tf
+import time
+from functools import partial
+
 import mind_palace.product_ranker.constants as CONST
 from mind_palace.commons.helpers import logBreak
-import glob
-from functools import partial
-from product_attributes_dataset import read_integerized_attributes
-import sys
-import os
-
+from mind_palace.product_ranker.prepare_data.product_attributes_dataset import read_integerized_attributes
 
 """
     This file processes the output of integerize_clickstream to generate tfRecords file,

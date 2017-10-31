@@ -4,11 +4,11 @@ import os
 import tensorflow as tf
 import time
 
-from clickstream_iterator import ClickstreamDataset
-from mind_palace.product_ranker.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
+from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
+from mind_palace.product_ranker.prepare_data.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
 
 """

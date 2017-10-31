@@ -1,6 +1,7 @@
 import cPickle as pickle
 import glob
 import tensorflow as tf
+import os
 from functools import partial
 
 import mind_palace.product_ranker.constants as CONST
@@ -62,17 +63,7 @@ class PrepareAttributesDataset:
     def initialize_iterator(self, sess, attributes_path):
         sess.run(self.iterator.initializer, feed_dict={self.filenames : attributes_path})
 
-
-if __name__ == '__main__' :
-
-    attribute_dict_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/productdict.pickle"
-    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
-    output_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
-    attributes = ["productId", "brand", "vertical"]
-
-    with open(attribute_dict_path, 'rb') as handle:
-        attribute_dict = pickle.load(handle)
-
+def integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict=None) :
     attributes_path = glob.glob(attributes_path)
     features = PrepareAttributesDataset(attributes, attribute_dicts=attribute_dict, filter_unavailable=True)
 
@@ -94,3 +85,18 @@ if __name__ == '__main__' :
                 break
         writer.flush()
         writer.close()
+
+if __name__ == '__main__' :
+
+    attribute_dict_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/productdict.pickle"
+    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
+    output_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
+    attributes = ["productId", "brand", "vertical"]
+
+    attribute_dict = None
+    if os.path.exists(attribute_dict_path):
+        with open(attribute_dict_path, 'rb') as handle:
+            attribute_dict = pickle.load(handle)
+
+    integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict=attribute_dict)
+

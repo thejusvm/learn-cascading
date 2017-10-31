@@ -1,17 +1,16 @@
 import cPickle as pickle
-import tensorflow as tf
-import mind_palace.product_ranker.constants as CONST
-import numpy as np
 import collections
-
-from mind_palace.product_ranker.models.modelconfig import modelconfig
-from mind_palace.product_ranker.models.model import model
-from mind_palace.product_ranker.models import model_factory as mf
-from mind_palace.product_ranker.training import trainingcontext as tc
-from mind_palace.product_ranker.training.trainingcontext import trainingcontext
-from product_attributes_dataset import read_integerized_attributes
-from mind_palace.DictIntegerizer import DictIntegerizer
+import numpy as np
+import tensorflow as tf
 from operator import itemgetter
+
+import mind_palace.product_ranker.constants as CONST
+from mind_palace.DictIntegerizer import DictIntegerizer
+from mind_palace.product_ranker.models import model_factory as mf
+from mind_palace.product_ranker.models.model import model
+from mind_palace.product_ranker.models.modelconfig import modelconfig
+from mind_palace.product_ranker.prepare_data.product_attributes_dataset import read_integerized_attributes
+from mind_palace.product_ranker.training import trainingcontext as tc
 
 
 class Scorer :
