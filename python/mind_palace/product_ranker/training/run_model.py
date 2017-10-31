@@ -9,7 +9,7 @@ from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.training import trainingcontext as tc
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext
-from product_attributes_dataset import integerized_attributes
+from product_attributes_dataset import read_integerized_attributes
 from mind_palace.DictIntegerizer import DictIntegerizer
 from operator import itemgetter
 
@@ -41,7 +41,7 @@ class Scorer :
 
         index_field = "productId"
         self.pid_dict = attribute_dict[index_field] #type: DictIntegerizer
-        self.product_attributes = integerized_attributes(self.attributes, self.trainCxt.product_attributes_path, index_field)
+        self.product_attributes = read_integerized_attributes(self.attributes, self.trainCxt.product_attributes_path, index_field)
         self.missing_data_index = CONST.DEFAULT_DICT_KEYS.index(CONST.MISSING_DATA_TEXT)
         print "loaded model, ready to run now"
 

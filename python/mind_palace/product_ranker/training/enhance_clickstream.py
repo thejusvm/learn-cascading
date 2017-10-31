@@ -6,7 +6,7 @@ import mind_palace.product_ranker.constants as CONST
 from mind_palace.commons.helpers import logBreak
 import glob
 from functools import partial
-from product_attributes_dataset import integerized_attributes
+from product_attributes_dataset import read_integerized_attributes
 import sys
 import os
 
@@ -119,7 +119,7 @@ if __name__ == '__main__' :
     features_names = generate_feature_names(attributes)
     num_features = len(features_names)
 
-    product_to_attributes = integerized_attributes(attributes, product_attributes_path, attributes[0])
+    product_to_attributes = read_integerized_attributes(attributes, product_attributes_path, attributes[0])
     dataset = ClickstreamDataset(num_attributes=len(attributes),
                                  product_to_attributes=product_to_attributes,
                                  shuffle=False)
