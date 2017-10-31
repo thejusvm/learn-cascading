@@ -108,17 +108,11 @@ def generate_feature_names(attributes):
 def add_to_record(record, feature_name, feature_value) :
     record.features.feature[feature_name].int64_list.value.extend(feature_value)
 
-if __name__ == '__main__' :
-
-    data_path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/part-*")
-    product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
-    output_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
-
-    attributes = ["productId", "brand", "vertical"]
+def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, output_path) :
     features_names = generate_feature_names(attributes)
     num_features = len(features_names)
 
-    product_to_attributes = read_integerized_attributes(attributes, product_attributes_path, attributes[0])
+    product_to_attributes = read_integerized_attributes(attributes, integerized_product_attributes_path, attributes[0])
     dataset = ClickstreamDataset(num_attributes=len(attributes),
                                  product_to_attributes=product_to_attributes,
                                  shuffle=False)
@@ -128,7 +122,7 @@ if __name__ == '__main__' :
 
     sess = tf.Session()
     counter = 0
-    for file in data_path :
+    for file in integerized_ctr_data_path :
         print "processing file : " + file
         dataset.initialize_iterator(sess, [file])
         output_file = output_path + "/part-" + str(counter)
@@ -150,3 +144,14 @@ if __name__ == '__main__' :
         print "processed file in " + str(time.clock() - start)
         counter += 1
         logBreak()
+
+
+if __name__ == '__main__' :
+
+    attributes = ["productId", "brand", "vertical"]
+    data_path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/part-*")
+    product_attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
+    output_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr"
+
+
+    enhance_clickstream(attributes, product_attributes_path, data_path, output_path)
