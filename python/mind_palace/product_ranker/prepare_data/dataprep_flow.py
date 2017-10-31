@@ -4,6 +4,7 @@ from enhance_clickstream import enhance_clickstream
 from mind_palace.commons.helpers import logBreak
 import os
 import glob
+import sys
 
 dicts_path_suffix = "attribute_dicts.pickle"
 integerized_attributes_path_suffix = "integerized_attributes"
@@ -55,11 +56,10 @@ def flow(attributes,
 if __name__ == '__main__' :
 
     attributes = ["productId", "brand", "vertical"]
-    attributesPath = "/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
-    clickstreamPathBase = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller"
-    clickstreamPath = clickstreamPathBase + "/part-00003"
-    outputPath = clickstreamPathBase + ".int"
-
+    attributesPath = sys.argv[1] #"/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
+    clickstreamPathBase = sys.argv[2] #"/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller"
+    clickstreamPath = clickstreamPathBase + "/part-*"
+    outputPath = sys.argv[3]
 
     flow(attributes, attributesPath, clickstreamPath, outputPath, num_enhance_times=3)
 
