@@ -3,6 +3,9 @@ import glob
 import os
 import tensorflow as tf
 import time
+import sys
+
+import argparse
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
@@ -112,8 +115,8 @@ def train(train_cxt) :
             print "no model to restore from : " + trainCxt.model_dir
     logBreak()
 
-    if trainCxt.restore_model_dir is not None and os.path.isdir(trainCxt.restore_model_dir) :
-        restore_nn_dir = tf.train.latest_checkpoint(trainCxt.restore_model_dir)
+    if trainCxt.restore_model_path and os.path.isdir(trainCxt.restore_model_path) :
+        restore_nn_dir = tf.train.latest_checkpoint(trainCxt.restore_model_path)
         print "restoring tf model from : " + restore_nn_dir
         saver.restore(sess, restore_nn_dir)
         logBreak()
@@ -178,37 +181,34 @@ def train(train_cxt) :
 
 if __name__ == '__main__' :
 
-    restore_model_path = None
-    # restore_model_path = "saved_models/run.20171023-17-01-09"
-    if restore_model_path is not None :
-        dir = getTraningContextDir(restore_model_path)
+    trainCxt = trainingcontext()
+    parser = argparse.ArgumentParser()
+    train_cxt_dict = trainCxt.__dict__
+    for train_key in train_cxt_dict :
+        parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
+    args = parser.parse_args()
+
+    for arg in args.__dict__:
+        arg_val = args.__dict__[arg]
+        if arg_val != None:
+            trainCxt.__dict__[arg] = arg_val
+            print arg, arg_val
+
+    if not (trainCxt.input_path or trainCxt.restore_model_path) :
+        print "provide one of the two options --input_path | --restore_model_path"
+        sys.exit(0)
+
+    if trainCxt.restore_model_path :
+        dir = getTraningContextDir(trainCxt.restore_model_path)
         print "loading training context : " + dir
         with open(dir, 'rb') as handle:
             trainCxt = pickle.load(handle)
     else :
-
-        timestamp = time.localtime()
-        currentdate = time.strftime('%Y%m%d-%H-%M-%S', timestamp)
-
-        root_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int"
-
-        trainCxt = trainingcontext()
-        trainCxt.date = currentdate
-        trainCxt.data_path = get_trainingdata_path(root_data_path)
-        trainCxt.attributedict_path = get_attributedicts_path(root_data_path)
-        trainCxt.product_attributes_path = get_integerized_attributes_path(root_data_path)
-        trainCxt.model_dir = "saved_models/run." + currentdate
-        trainCxt.summary_dir = "summary/sessionsimple." + currentdate
-        trainCxt.test_size = 0.03
-        trainCxt.num_epochs = 25
-        trainCxt.num_negative_samples = 20
-        trainCxt.min_click_context = 0
-        trainCxt.publish_summary = True
-        trainCxt.save_model = True
-        trainCxt.save_model_num_iter = 20000
-        trainCxt.test_summary_publish_iters = 10000
-        trainCxt.restore_model_dir = None #"saved_models/run.20171023-13-26-35"
-        trainCxt.batch_size = 500
+        trainCxt.data_path = get_trainingdata_path(trainCxt.input_path)
+        trainCxt.attributedict_path = get_attributedicts_path(trainCxt.input_path)
+        trainCxt.product_attributes_path = get_integerized_attributes_path(trainCxt.input_path)
+        trainCxt.model_dir = "saved_models/run." + trainCxt.date
+        trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
 
         dataFiles = sorted(glob.glob(trainCxt.data_path + "/part-*"))
         numFiles = len(dataFiles)
@@ -217,7 +217,6 @@ if __name__ == '__main__' :
         trainCxt.test_path = dataFiles[trainSize:]
 
         modelconf = modelconfig("softmax_model")
-        # modelconf.layer_count = [1024, 512, 256]
         modelconf.use_context = True
         modelconf.enable_default_click = False
         modelconf.reuse_context_dict = False

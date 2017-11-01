@@ -9,7 +9,7 @@ class modelconfig :
         self.model_name = model_name
 
         self.attributes_config = None
-        self.enable_default_click = True
+        self.enable_default_click = False
         self.pad_index = 0
         self.use_context = True
         self.layer_count = [256]
