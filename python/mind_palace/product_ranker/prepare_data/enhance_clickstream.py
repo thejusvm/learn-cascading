@@ -6,11 +6,14 @@ import tensorflow as tf
 import time
 import pandas as pd
 import sys
+from functools import partial
 
 import mind_palace.product_ranker.constants as CONST
 from mind_palace.commons.helpers import logBreak
 from mind_palace.product_ranker.prepare_data.product_attributes_dataset import read_integerized_attributes
 from integerize_clickstream import geneate_key
+from multiprocessing import Pool
+from contextlib import closing
 
 """
     This file processes the output of integerize_clickstream to generate tfRecords file,
@@ -87,7 +90,8 @@ def get_processed_data_frame(input_file,
     return df["tfr"]
 
 
-def enhance_file(attributes, product_to_attributes, file, output_file):
+def enhance_file(attributes, product_to_attributes, io):
+    file, output_file = io
     print "processing file : " + file
     start = time.time()
     df = get_processed_data_frame(file, attributes, product_to_attributes)
@@ -101,18 +105,17 @@ def enhance_file(attributes, product_to_attributes, file, output_file):
     logBreak()
 
 
-def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, output_path) :
+def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, output_path, num_parallel = 20) :
 
     product_to_attributes = read_integerized_attributes(attributes, integerized_product_attributes_path, attributes[0])
 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    counter = 0
-    for file in integerized_ctr_data_path :
-        output_file = output_path + "/part-" + str(counter)
-        enhance_file(attributes, product_to_attributes, file, output_file)
-        counter += 1
+    output_files = map(lambda x : output_path + "/part-" + str(x), range(len(integerized_ctr_data_path)))
+    input_output = zip(integerized_ctr_data_path, output_files)
+    with closing(Pool(processes=num_parallel)) as pool:
+        pool.map(partial(enhance_file, attributes, product_to_attributes), input_output)
 
 
 if __name__ == '__main__' :
