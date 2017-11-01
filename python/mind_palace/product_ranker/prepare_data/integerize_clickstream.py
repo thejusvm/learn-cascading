@@ -72,10 +72,10 @@ def integerize_multi_val_column(df, column_name, new_column_prefix, attributes, 
         df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i].tolist() if len(x) > 0 else []))
 
 def process_row(df, attributes, attribute_dicts):
-    integerize_single_val_column(df, "positiveProducts", "positive", attributes, attribute_dicts)
-    integerize_multi_val_column(df, "negativeProducts", "negative", attributes, attribute_dicts)
-    integerize_multi_val_column(df, "pastClickedProducts", "clicked", attributes, attribute_dicts)
-    integerize_multi_val_column(df, "pastBoughtProducts", "bought", attributes, attribute_dicts)
+    integerize_single_val_column(df, "positiveProducts", CONST.POSITIVE_COL_PREFIX, attributes, attribute_dicts)
+    integerize_multi_val_column(df, "negativeProducts", CONST.NEGATIVE_COL_PREFIX, attributes, attribute_dicts)
+    integerize_multi_val_column(df, "pastClickedProducts", CONST.CLICK_COL_PRERFIX, attributes, attribute_dicts)
+    integerize_multi_val_column(df, "pastBoughtProducts", CONST.BOUGHT_COL_PREFIX, attributes, attribute_dicts)
 
 def process_file(data_path,
                  attributes,

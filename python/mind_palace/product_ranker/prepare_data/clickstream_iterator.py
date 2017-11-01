@@ -21,7 +21,7 @@ class ClickstreamDataset :
     def __init__(self, attributes, shuffle=True, batch_size=None):
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.TFRecordDataset(self.filenames)
-        feature_names = generate_feature_names(attributes)
+        feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
         features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in feature_names])
         # self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row))
         self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row),
