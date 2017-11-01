@@ -10,7 +10,7 @@ from mind_palace.product_ranker.models.modelconfig import modelconfig, Attribute
 from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
 from mind_palace.product_ranker.prepare_data.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
-from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_trainingdata_path
+from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_trainingdata_path, get_integerized_attributes_path
 
 """
     generates training data with
@@ -196,6 +196,7 @@ if __name__ == '__main__' :
         trainCxt.date = currentdate
         trainCxt.data_path = get_trainingdata_path(root_data_path)
         trainCxt.attributedict_path = get_attributedicts_path(root_data_path)
+        trainCxt.product_attributes_path = get_integerized_attributes_path(root_data_path)
         trainCxt.model_dir = "saved_models/run." + currentdate
         trainCxt.summary_dir = "summary/sessionsimple." + currentdate
         trainCxt.test_size = 0.03

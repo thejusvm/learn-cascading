@@ -10,6 +10,7 @@ class trainingcontext :
 
     def __init__(self):
         self.data_path = None
+        self.product_attributes_path = None
         self.batch_size = 500
         self.num_epochs = 20
         self.min_click_context = 0 # Minimum number of context click to consider it for training

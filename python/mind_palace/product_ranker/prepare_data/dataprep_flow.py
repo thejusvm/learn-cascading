@@ -22,6 +22,9 @@ def make_dir(path) :
 def get_attributedicts_path(output_path) :
     return output_path + "/" + dicts_path_suffix
 
+def get_integerized_attributes_path(output_path) :
+    return output_path + "/" + integerized_attributes_path_suffix
+
 def get_enhanceddata_path(output_path, version) :
     return output_path + "/" + enhanced_clickstream_path_suffix + "." + str(version)
 
@@ -37,7 +40,7 @@ def flow(attributes,
     make_dir(output_path)
 
     attribute_dicts_path = get_attributedicts_path(output_path)
-    integerized_attributes_path = output_path + "/" + integerized_attributes_path_suffix
+    integerized_attributes_path = get_integerized_attributes_path(output_path)
     integerized_clickstream_path = output_path + "/" + integerized_clickstream_path_suffix
 
     log("integerizing attributes")
