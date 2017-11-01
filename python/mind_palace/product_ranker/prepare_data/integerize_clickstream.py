@@ -6,6 +6,9 @@ import os
 import pandas as pd
 import time
 from commons import init_attribute_dicts
+from functools import partial
+from multiprocessing import Pool
+from contextlib import closing
 
 import mind_palace.product_ranker.constants as CONST
 
@@ -109,22 +112,27 @@ def prepare_data(raw_data_path,
                  attribute_dicts):
 
     filenames = glob.glob(raw_data_path)
-    start = time.clock()
-    counter = 0
-    for in_file in filenames:
-        logBreak()
-        print "start file processing : " + in_file
-        pd = process_file(in_file, attributes, attribute_dicts)
-        print "end file processing : " + in_file + ", in " + str(time.clock() - start)
-        out_file = processed_data_path + "/part-" + str(counter)
-        print out_file
-        start = time.clock()
-        pd.to_csv(out_file, sep ="\t", index=False)
-        print "dumped content of " + in_file + " to " + out_file + " in " + str(time.clock() - start)
-        counter += 1
-        logBreak()
+    out_files = [processed_data_path + "/part-" + str(counter) for counter in range(len(filenames))]
+    io_files = zip(filenames, out_files)
+    with closing(Pool(processes=20)) as pool:
+        pool.map(partial(integerize_file, attributes, attribute_dicts), io_files)
 
     return attribute_dicts
+
+
+def integerize_file(attributes, attribute_dicts, io_file):
+    in_file, out_file = io_file
+    logBreak()
+    start = time.clock()
+    print "start file processing : " + in_file
+    pd = process_file(in_file, attributes, attribute_dicts)
+    print "end file processing : " + in_file + ", in " + str(time.clock() - start)
+    print out_file
+    start = time.clock()
+    pd.to_csv(out_file, sep="\t", index=False)
+    print "dumped content of " + in_file + " to " + out_file + " in " + str(time.clock() - start)
+    logBreak()
+
 
 def integerize_clickstream(attributes, attribute_dicts, raw_data_path, output_path) :
     prepare_data(raw_data_path, output_path, attributes, attribute_dicts)
@@ -132,7 +140,7 @@ def integerize_clickstream(attributes, attribute_dicts, raw_data_path, output_pa
 
 if __name__ == '__main__' :
     raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large" + "/part-*"
-    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search"
+    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.1"
     os.makedirs(processed_data_path)
 
     attributes = ["productId", "brand", "vertical"]
