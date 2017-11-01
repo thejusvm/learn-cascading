@@ -87,6 +87,20 @@ def get_processed_data_frame(input_file,
     return df["tfr"]
 
 
+def enhance_file(attributes, product_to_attributes, file, output_file):
+    print "processing file : " + file
+    start = time.time()
+    df = get_processed_data_frame(file, attributes, product_to_attributes)
+    print "file to processed dataframe in : " + str(time.time() - start)
+    writer = tf.python_io.TFRecordWriter(output_file)
+    print "writing to file : " + output_file
+    start = time.time()
+    for row in df:
+        writer.write(row)
+    print "wrote file in " + str(time.time() - start)
+    logBreak()
+
+
 def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, output_path) :
 
     product_to_attributes = read_integerized_attributes(attributes, integerized_product_attributes_path, attributes[0])
@@ -94,24 +108,11 @@ def enhance_clickstream(attributes, integerized_product_attributes_path, integer
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    sess = tf.Session()
     counter = 0
     for file in integerized_ctr_data_path :
-        print "processing file : " + file
-
-        start = time.time()
-        df = get_processed_data_frame(file, attributes, product_to_attributes)
-        print "file to processed dataframe in : " + str(time.time() - start)
-
         output_file = output_path + "/part-" + str(counter)
-        writer = tf.python_io.TFRecordWriter(output_file)
-        print "writing to file : " + output_file
-        start = time.time()
-        for row in df :
-            writer.write(row)
-        print "wrote file in " + str(time.time() - start)
+        enhance_file(attributes, product_to_attributes, file, output_file)
         counter += 1
-        logBreak()
 
 
 if __name__ == '__main__' :
