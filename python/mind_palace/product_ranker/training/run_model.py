@@ -11,6 +11,7 @@ from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig
 from mind_palace.product_ranker.prepare_data.product_attributes_dataset import read_integerized_attributes
 from mind_palace.product_ranker.training import trainingcontext as tc
+from mind_palace.product_ranker.commons import generate_feature_names
 
 
 class Scorer :
@@ -88,8 +89,9 @@ class Scorer :
                     feed_values_row += [[ranking_attributes[i][j]], [], clicked_attributes[:, j]]
                 for j in range(num_feed) :
                     feed_values[j].append(feed_values_row[j])
+            feature_names = generate_feature_names(self.attributes, feature_prefixes=CONST.TRAINING_COL_PREFIXES)
             feed_values = [np.array(feed_values[j], dtype=int) for j in range(num_feed)]
-            self.mod.feed_input(feed_values)
+            self.mod.feed_input(feature_names, feed_values)
             score = self.mod.score()
             pid_score = sess.run(score)
             for i in range(num_products) :

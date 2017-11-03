@@ -1,12 +1,15 @@
 import numpy as np
 import tensorflow as tf
+import sys
 
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig, EmbeddingDicts
 from mind_palace.product_ranker.models.softmax_model import softmax_model
+from mind_palace.product_ranker.commons import generate_feature_names
+from mind_palace.product_ranker.constants import TRAINING_COL_PREFIXES
 
 init_emb = np.ones([5, 10]) * range(10)
 init_weight = np.ones([5, 10]) * range(10)
-init_bias = range(10) + np.ones(10)
+init_bias = range(10) #+ np.ones(10)
 
 # print "emb"
 # print init_emb.T
@@ -30,10 +33,21 @@ negative_samples_test = [[0, 0, 0, 4, 3, 6], [0, 6, 8, 5, 7, 9]]
 context = [[2, 3, 0, 0, 0, 0], [6, 8, 5, 7, 0, 0]]
 
 feed_vals = [positive_samples_test, negative_samples_test, context, positive_samples_test, negative_samples_test, context]
-md.feed_input(feed_vals)
+feature_names = generate_feature_names([x.name for x in mdl_conf.attributes_config], feature_prefixes=TRAINING_COL_PREFIXES)
+# print feature_names
+# sys.exit(0)
 
-ps = md.negative_sigmoid
-for score in sess.run([ps.weights_cross_context_sum, ps.modified_bias, ps.logits, ps.xent]):
+md.feed_input(feature_names, feed_vals)
+
+
+ps = md.positive_sigmoid
+ns = md.negative_sigmoid
+bias_ = [
+    ps.xent,
+    ns.xent,
+    md.sigmoid_loss
+    ]
+for score in sess.run(bias_):
     print score
     print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))

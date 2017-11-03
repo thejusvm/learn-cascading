@@ -2,7 +2,7 @@ import glob
 import tensorflow as tf
 
 import mind_palace.product_ranker.constants as CONST
-from enhance_clickstream import generate_feature_names
+from mind_palace.product_ranker.commons import generate_feature_names
 
 
 # def _deserialize_function(_example_protos):
@@ -21,17 +21,16 @@ class ClickstreamDataset :
     def __init__(self, attributes, shuffle=True, batch_size=None):
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.TFRecordDataset(self.filenames)
-        feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
-        features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in feature_names])
-        # self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row))
-        self.dataset = self.dataset.map(lambda row : _parse_function(feature_names, features, row),
+        self.feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
+        features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in self.feature_names])
+        self.dataset = self.dataset.map(lambda row : _parse_function(self.feature_names, features, row),
                                         num_threads = 25, output_buffer_size = 100 * batch_size)
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)
         if batch_size != None :
             padding_value = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
-            num_features = len(feature_names)
+            num_features = len(self.feature_names)
             padding_values = tuple([tf.constant(padding_value, dtype=tf.int64) for _ in range(num_features)])
             padded_shapes = tuple([[None] for _ in range(num_features)])
             self.dataset = self.dataset.padded_batch(batch_size, padded_shapes = padded_shapes, padding_values=padding_values)

@@ -6,7 +6,7 @@ class model :
     def __init__(self, model_config) :
         self.model_config = model_config # type: modelconfig
 
-    def feed_input(self, inputs):
+    def feed_input(self, feature_names, inputs):
         pass
 
     def place_holders(self):

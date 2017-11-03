@@ -1,5 +1,7 @@
 import cPickle as pickle
 from mind_palace.DictIntegerizer import DictIntegerizer
+from mind_palace.product_ranker import constants as CONST
+
 
 def _new_dictintegerizer(attribute, deafult_dicy_keys):
     dict_i = DictIntegerizer(default=deafult_dicy_keys, name=attribute)
@@ -20,3 +22,15 @@ def read_attribute_dicts(attribute_dict_path):
 def write_attribute_dicts(attribute_dict_path, dicts):
     with open(attribute_dict_path, 'w+b') as handle:
         pickle.dump(dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def generate_key(key_prefix, attribute):
+    return key_prefix + "_" + attribute
+
+
+def generate_feature_names(attributes, feature_prefixes = CONST.COL_PREFIXES):
+    features = []
+    for attribute in attributes :
+        for feature_prefix in feature_prefixes :
+            features.append(generate_key(feature_prefix, attribute))
+    return features

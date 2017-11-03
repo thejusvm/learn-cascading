@@ -5,12 +5,12 @@ import numpy as np
 import os
 import pandas as pd
 import time
-from commons import init_attribute_dicts
+from contextlib import closing
 from functools import partial
 from multiprocessing import Pool
-from contextlib import closing
 
 import mind_palace.product_ranker.constants as CONST
+from mind_palace.product_ranker.commons import init_attribute_dicts, generate_key
 
 """
     Given a file containing the click through data with product attributes,
@@ -40,8 +40,6 @@ def integerize(attributes, attribute_dicts, products_attributes) :
 def get_exploded_columns(keys, field_name):
     return map(lambda x : field_name + "_" + x, keys)
 
-def geneate_key(key_prefix, attribute):
-    return key_prefix + "_" + attribute
 
 def add_to_row(row, attributes, attribute_vals, key_prefix):
     for i in range(len(attributes)) :
@@ -50,14 +48,14 @@ def add_to_row(row, attributes, attribute_vals, key_prefix):
             attribute_val = attribute_vals[i]
         else :
             attribute_val = []
-        row[geneate_key(key_prefix, attribute)] = attribute_val
+        row[generate_key(key_prefix, attribute)] = attribute_val
 
 
 def cross_attribute_prefix(attributes, key_prefixes) :
     keys = []
     for attribute in attributes :
         for key_prefix in key_prefixes :
-            keys.append(geneate_key(key_prefix, attribute))
+            keys.append(generate_key(key_prefix, attribute))
     return keys
 
 def integerize_single_val_column(df, column_name, new_column_prefix, attributes, attribute_dicts) :
@@ -65,14 +63,14 @@ def integerize_single_val_column(df, column_name, new_column_prefix, attributes,
     integerized_cols = df[column_name].apply(integerize_single)
     for i in range(len(attributes)) :
         attribute = attributes[i]
-        df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i]))
+        df[generate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i]))
 
 def integerize_multi_val_column(df, column_name, new_column_prefix, attributes, attribute_dicts) :
     integerize_multiple = lambda y: np.array(map(lambda x: integerize(attributes, attribute_dicts, x), json.loads(y))).T
     integerized_cols = df[column_name].apply(integerize_multiple)
     for i in range(len(attributes)) :
         attribute = attributes[i]
-        df[geneate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i].tolist() if len(x) > 0 else []))
+        df[generate_key(new_column_prefix, attribute)] =  integerized_cols.apply(lambda x : json.dumps(x[i].tolist() if len(x) > 0 else []))
 
 def process_row(df, attributes, attribute_dicts):
     integerize_single_val_column(df, "positiveProducts", CONST.POSITIVE_COL_PREFIX, attributes, attribute_dicts)

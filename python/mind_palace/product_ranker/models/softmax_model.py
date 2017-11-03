@@ -3,6 +3,8 @@ import tensorflow as tf
 from mind_palace.commons.padding_handler import padding_handler
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
 from model import model
+from mind_palace.product_ranker.commons import generate_feature_names
+import mind_palace.product_ranker.constants as CONST
 
 class softmax_model(model) :
 
@@ -11,12 +13,12 @@ class softmax_model(model) :
         self.modelConf = modelConf # type: modelconfig
         self.per_attribute_embeddings = []
 
-        attributes_config = self.modelConf.attributes_config
-        for attribute_config in attributes_config :
+        self.attributes_config = self.modelConf.attributes_config
+        for attribute_config in self.attributes_config :
             attribute_embeddings = AttributeEmbeddings(modelConf, attribute_config)
             self.per_attribute_embeddings.append(attribute_embeddings)
 
-    def feed_input(self, inputs):
+    def feed_input(self, feature_names, inputs):
         self.placeholders = []
         self.inputs = inputs
         self.per_attribute_positive_weights = []
@@ -26,7 +28,11 @@ class softmax_model(model) :
         self.per_attribute_click_embedding = []
         for i in range(len(self.per_attribute_embeddings)) :
             attribute_embeddings = self.per_attribute_embeddings[i]
-            attribute_embeddings.feed_input(inputs[3 * i: 3 * i + 3])
+            attribute_name = self.attributes_config[i].name
+            attribute_feature_names = generate_feature_names([attribute_name], CONST.TRAINING_COL_PREFIXES)
+            attribute_feature_indices = [feature_names.index(i) for i in attribute_feature_names]
+            inputs_for_attribute = [inputs[i] for i in attribute_feature_indices]
+            attribute_embeddings.feed_input(inputs_for_attribute)
             self.per_attribute_positive_weights.append(attribute_embeddings.positive_weights)
             self.per_attribute_positive_bias.append(attribute_embeddings.positive_bias)
 

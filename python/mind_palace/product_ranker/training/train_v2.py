@@ -63,11 +63,11 @@ def train(train_cxt) :
     mod = mf.get_model(modelconf) #type: model
     logBreak()
 
-    mod.feed_input(dataset.get_next)
+    mod.feed_input(dataset.feature_names, dataset.get_next)
     loss = mod.loss()
     minimize_step = mod.minimize_step()
 
-    mod.feed_input(test_dataset.get_next)
+    mod.feed_input(test_dataset.feature_names, test_dataset.get_next)
     test_loss = mod.loss()
     summaries = mod.test_summaries()
 

@@ -1,11 +1,10 @@
 import glob
 import tensorflow as tf
-import os
-from commons import write_attribute_dicts, init_attribute_dicts
 from functools import partial
 
 import mind_palace.product_ranker.constants as CONST
 from mind_palace.DictIntegerizer import DictIntegerizer
+from mind_palace.product_ranker.commons import write_attribute_dicts, init_attribute_dicts
 
 """
     Converts a file containing product attributes and integerizes it.

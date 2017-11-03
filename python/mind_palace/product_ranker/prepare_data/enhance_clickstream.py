@@ -2,18 +2,17 @@ import glob
 import json
 import numpy as np
 import os
+import pandas as pd
 import tensorflow as tf
 import time
-import pandas as pd
-import sys
+from contextlib import closing
 from functools import partial
+from multiprocessing import Pool
 
 import mind_palace.product_ranker.constants as CONST
 from mind_palace.commons.helpers import logBreak
+from mind_palace.product_ranker.commons import generate_feature_names
 from mind_palace.product_ranker.prepare_data.product_attributes_dataset import read_integerized_attributes
-from integerize_clickstream import geneate_key
-from multiprocessing import Pool
-from contextlib import closing
 
 """
     This file processes the output of integerize_clickstream to generate tfRecords file,
@@ -48,13 +47,6 @@ def filter_min_context_click(min_click_count, line) :
     click_data = json.loads(line_split[2])
     allow = len(click_data) >= min_click_count
     return allow
-
-def generate_feature_names(attributes, feature_prefixes = CONST.COL_PREFIXES):
-    features = []
-    for attribute in attributes :
-        for feature_prefix in feature_prefixes :
-            features.append(geneate_key(feature_prefix, attribute))
-    return features
 
 def add_to_record(record, feature_name, feature_value) :
     record.features.feature[feature_name].int64_list.value.extend(feature_value)
