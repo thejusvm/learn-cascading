@@ -191,6 +191,7 @@ if __name__ == '__main__' :
     for train_key in train_cxt_dict :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
+    parser.add_argument("--learning_rate", type=float)
     args = parser.parse_args()
 
     attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
@@ -228,6 +229,9 @@ if __name__ == '__main__' :
         modelconf.reuse_context_dict = False
         modelconf.attributes_config = attributes_config
         trainCxt.model_config = modelconf
+
+    if args.learning_rate is not None :
+        trainCxt.model_config.learning_rate = args.learning_rate
 
     train(trainCxt)
 

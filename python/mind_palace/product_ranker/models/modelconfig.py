@@ -14,6 +14,7 @@ class modelconfig :
         self.use_context = True
         self.layer_count = [256]
         self.reuse_context_dict = False
+        self.learning_rate = 1e-3
 
 class AttributeConfig :
 
