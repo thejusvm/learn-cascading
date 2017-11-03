@@ -151,7 +151,7 @@ def train(train_cxt) :
                     test_metric_summary = tf.Summary(value=test_summary_values)
                     summary_writer.add_summary(test_metric_summary, trainCxt.train_counter)
                     num_test_records = test_batch_counter * trainCxt.batch_size
-                    print str(trainCxt.train_counter) + " processing test batch of size " + str(num_test_records) + " records took  : " + str(time.time() - start)
+                    print str(trainCxt.train_counter) + " processing test batch of size ~" + str(num_test_records) + " records took  : " + str(time.time() - start)
 
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
                     saver.save(sess, nn_model_dir + ".counter" , global_step = trainCxt.train_counter)
