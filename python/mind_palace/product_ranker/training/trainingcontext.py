@@ -18,9 +18,9 @@ class trainingcontext :
         # self.min_click_context = 0 # Minimum number of context click to consider it for training
         self.summary_dir = "/tmp/sessionsimple"
         self.model_dir = "saved_models/"
-        self.test_summary_publish_iters = 10000
+        self.test_summary_publish_iters = 5000
         self.save_model_on_epoch = False
-        self.save_model_num_iter =  20000
+        self.save_model_num_iter =  5000
         self.save_model = True
         self.timestamp = time.localtime()
         self.date = time.strftime('%Y%m%d-%H-%M-%S', self.timestamp)
