@@ -44,8 +44,8 @@ def prepare_data(raw_data_path):
     return data_dict
 
 if __name__ == '__main__' :
-    raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller" + "/part-*"
-    output_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.eda"
+    raw_data_path = sys.argv[1] #"/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller" + "/part-*"
+    output_path = sys.argv[2] #"/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.eda"
     datas = prepare_data(raw_data_path)
 
     with open(output_path, mode="w+b") as writer :
