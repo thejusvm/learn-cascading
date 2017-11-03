@@ -4,6 +4,9 @@ import sys
 import time
 import json
 
+import traceback
+import logging
+
 """
 
 """
@@ -23,8 +26,6 @@ def add_to_data_dict(dd, index, contexts, products):
 
 def process_file(data_path, data_dict):
 
-
-
     df = pd.read_csv(data_path, sep="\t")
     df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search")]
     start = time.clock()
@@ -43,7 +44,11 @@ def prepare_data(raw_data_path):
     data_dict = {}
     for file in filenames:
         print "processing file : ", file
-        process_file(file, data_dict)
+        try:
+            process_file(file, data_dict)
+        except Exception as e:
+            print "some error!!"
+            logging.error(traceback.format_exc())
     return data_dict
 
 if __name__ == '__main__' :
