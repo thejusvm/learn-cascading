@@ -1,6 +1,7 @@
 import json
 from flask import Flask, jsonify , request
 import sys
+import tensorflow as tf
 
 from mind_palace.product_ranker.training.run_model import Scorer
 
@@ -13,13 +14,18 @@ def hello():
 model_path = sys.argv[0]
 global scorer
 scorer = None
+global graph
+graph = None
 
 @app.route("/init")
 def init():
     args = request.args
     model_path = args["model_path"]
     global scorer
-    scorer = Scorer(model_path)
+    global graph
+    graph = tf.Graph()
+    with graph.as_default():
+        scorer = Scorer(model_path)
     return "successfully loded model from path : " + model_path
 
 products_to_rank = ["MOBEQ98MNXHY4RU9", "MOBES9G5SJHYT9QX", "MOBEQ98TABTWXGTD", "MOBEWN63JHHEXPTD", "MOBEXNP9FJ9K5K53", "MOBEX9WXUSZVYHET", "MOBET6RH4XSXKM7D", "MOBEQ98TWG8X4HH3", "MOBECCA5FHQD43KA", "MOBEWN63NBDSMVPG", "MOBEU9WRGVXDPBSF", "MOBEU9WRZFFUYAXJ", "MOBEU9WRZHRVWXTK", "MOBEMK62PN2HU7EE", "MOBEX9WXZCZHWXUZ", "MOBEWXHUSBXVJ7NZ", "MOBET6RHXVZBJFNT", "MOBESDYMGHC37GCS", "MOBEN2YYKU9386TQ", "MOBEN2YYQH8PSYXG", "MOBECCA5Y5HBYR3Q", "MOBECCA5SMRSKCNY", "MOBEG4XWMBDGZVEX", "MOBEG4XWDK4WBGNU", "MOBEV7YDBCAFG3ZH", "MOBEN2XYK8WFEGM8", "MOBEJFHUFVAJ45YA", "MOBEJFHUGPWTZFQJ", "MOBEV7YD3CFBTENW", "MOBEVKFTCFFU2FE7", "MOBETM9FZWW5UEZG", "MOBEUF42PGDRYCQA", "MOBEUF424KXTP9CT", "MOBEUF42VHXZSQV7", "MOBEQ98T82CYVHGZ", "MOBETM93F7DGJNN5", "MOBETMH3ZYNDPVVC", "MOBEU35JUQMQQHWK", "MOBEU35JAZKVWRPV", "MOBESDYCQD3FJCFW", "MOBEZEMYH7FQBGBQ", "MOBEZENFZBPW8UMF", "MOBEKGT2HGDGADFW", "MOBEMK62JSRHU85T", "MOBEZPVEGADXHMHT", "MOBEZPVENHEVMQDZ", "MOBEQRYTXZXC8FZZ", "MOBETM93HMBGUQKH", "MOBEXHHKDHSA9UZC", "MOBECCA5BJUVUGNP", "MOBEHZTGXSGG2GRX", "MOBEK4ABQFH3SSP7", "MOBE9TGVE7ZBRAEN"]
@@ -49,24 +55,26 @@ def enrich(each_product) :
 def score():
     args = request.args
     global scorer
+    global graph
     if scorer is None:
         resp = "model not init, Use to /init api to init the model"
         model_path = None
     else:
-        if "clicked" not in args :
-            clicked_products = []
-        else :
-            clicked_arg = args['clicked']
-            clicked_products = clicked_arg.split(",")
+        with graph.as_default():
+            if "clicked" not in args :
+                clicked_products = []
+            else :
+                clicked_arg = args['clicked']
+                clicked_products = clicked_arg.split(",")
 
-        nn_version=None
-        if "model_version" in args :
-            nn_version = args["model_version"]
+            nn_version=None
+            if "model_version" in args :
+                nn_version = args["model_version"]
 
-        resp = scorer.score(products_to_rank, clicked_products, nn_version=nn_version)
-        resp = map(enrich, resp)
-        resp = {"products": resp}
-        model_path = scorer.model_path
+            resp = scorer.score(products_to_rank, clicked_products, nn_version=nn_version)
+            resp = map(enrich, resp)
+            resp = {"products": resp}
+            model_path = scorer.model_path
 
     body = {"REQUEST" : {"args" : args, "model_path" : model_path}, "RESPONSE" : resp}
     return jsonify(body)
