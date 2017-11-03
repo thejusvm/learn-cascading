@@ -39,8 +39,11 @@ def process_file(data_path, data_dict):
 
 def prepare_data(raw_data_path):
     filenames = glob.glob(raw_data_path)
+    print "found ", len(filenames), " number of files"
     data_dict = {}
-    map(lambda x : process_file(x, data_dict), filenames)
+    for file in filenames:
+        print "processing file : ", file
+        process_file(file, data_dict)
     return data_dict
 
 if __name__ == '__main__' :
