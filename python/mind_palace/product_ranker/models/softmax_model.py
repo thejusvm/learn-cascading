@@ -88,7 +88,11 @@ class softmax_model(model) :
                 ["mean_reciprocal_rank", self.mean_reciprocal_rank]]
 
     def score(self):
-        return [self.positive_score_vector, self.positive_sigmoid.xent, self.positive_probability]
+        return [["bias", self.positive_sigmoid.modified_bias],
+                ["wTx", self.positive_sigmoid.weights_cross_context_sum],
+                ["score", self.positive_score_vector],
+                ["xent", self.positive_sigmoid.xent],
+                ["probability", self.positive_probability]]
 
     def place_holders(self):
         return self.placeholders

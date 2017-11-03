@@ -93,12 +93,15 @@ class Scorer :
             feed_values = [np.array(feed_values[j], dtype=int) for j in range(num_feed)]
             self.mod.feed_input(feature_names, feed_values)
             score = self.mod.score()
-            pid_score = sess.run(score)
+            score_names = [x[0] for x in score]
+            score_ops = [x[1] for x in score]
+            pid_score = sess.run(score_ops)
             for i in range(num_products) :
                 pid = products_to_rank[i]
-                result.append([pid, i, float(pid_score[0][i]), float(pid_score[1][i][0]), float(pid_score[2][i][0])])
+                scores = [float(pid_score[j][i]) for j in range(len(score_names))]
+                result.append([pid, i] + scores)
 
-            response_keys = ['product_id', 'original_rank', 'logit', 'xent', 'probability']
+            response_keys = ['product_id', 'original_rank'] + score_names
             product_score = sorted(result, key=itemgetter(2), reverse=True)
             product_score = map(lambda x : collections.OrderedDict(zip(response_keys, x)), product_score)
             return product_score
