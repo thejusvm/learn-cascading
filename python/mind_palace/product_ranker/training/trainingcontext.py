@@ -39,7 +39,6 @@ class trainingcontext :
         self.attributedict_path = ""
         self.train_path = ""
         self.test_path = ""
-        self.max_test_size = 10000000
 
     def getTrainCxtDir(self) :
         return self.model_dir + train_context_pickle

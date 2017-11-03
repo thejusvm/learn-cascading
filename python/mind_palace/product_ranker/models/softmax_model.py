@@ -81,7 +81,8 @@ class softmax_model(model) :
 
 
     def test_summaries(self):
-        return [["prec-1", self.prec_1],
+        return [["loss", self.sigmoid_loss],
+                ["prec-1", self.prec_1],
                 ["probability", self.positive_mean_probability],
                 ["mean_rank", self.mean_rank],
                 ["mean_reciprocal_rank", self.mean_reciprocal_rank]]

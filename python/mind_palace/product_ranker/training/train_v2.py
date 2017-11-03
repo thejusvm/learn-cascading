@@ -50,8 +50,7 @@ def train(train_cxt) :
     ################################### Prepareing datasets
     attributes = map(lambda x : x.name, modelconf.attributes_config)
     dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=True)
-    # HACK : Using extremely large batch_size, to reuse the same code as training. no method in Dataset to say batch all in one go
-    test_dataset = ClickstreamDataset(attributes, batch_size=train_cxt.max_test_size, shuffle=False)
+    test_dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=False)
     ################################### Start model building
 
     attribute_dicts = get_attributedict(train_cxt.attributedict_path)
@@ -66,22 +65,13 @@ def train(train_cxt) :
     mod.feed_input(dataset.feature_names, dataset.get_next)
     loss = mod.loss()
     minimize_step = mod.minimize_step()
+    loss_summary = tf.summary.scalar("loss", loss)
 
     mod.feed_input(test_dataset.feature_names, test_dataset.get_next)
-    test_loss = mod.loss()
-    summaries = mod.test_summaries()
+    test_metric_nodes = mod.test_summaries()
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
-
-    loss_summary = tf.summary.scalar("loss", loss)
-    test_loss_summary = tf.summary.scalar("test_loss", test_loss)
-
-    test_summaries = [test_loss_summary]
-    for summary in summaries :
-        test_summary = tf.summary.scalar("test_" + summary[0], summary[1])
-        test_summaries.append(test_summary)
-    merged_summary = tf.summary.merge(test_summaries)
 
     summary_writer = None
     if trainCxt.publish_summary :
@@ -145,9 +135,23 @@ def train(train_cxt) :
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
                     test_dataset.initialize_iterator(sess, train_cxt.test_path)
                     start = time.time()
-                    all_summary = sess.run(merged_summary)
-                    print str(trainCxt.train_counter) + " processing test batch took : " + str(time.time() - start)
-                    summary_writer.add_summary(all_summary, trainCxt.train_counter)
+                    test_metric_names = ["test_" + x[0] + "_1" for x in test_metric_nodes]
+                    test_metrics_ops = [x[1] for x in test_metric_nodes]
+                    test_batch_counter = 0
+                    test_metric_aggregated = [0 for _ in range(len(test_metric_names))]
+                    while True:
+                        try :
+                            test_metrics_batch = sess.run(test_metrics_ops)
+                            test_metric_aggregated = map(lambda x, y : x + y, test_metric_aggregated, test_metrics_batch)
+                            test_batch_counter += 1
+                        except tf.errors.OutOfRangeError:
+                            break
+                    test_metric_mean = [x/test_batch_counter for x in test_metric_aggregated]
+                    test_summary_values = map(lambda x, y : tf.Summary.Value(tag=x, simple_value=y), test_metric_names, test_metric_mean)
+                    test_metric_summary = tf.Summary(value=test_summary_values)
+                    summary_writer.add_summary(test_metric_summary, trainCxt.train_counter)
+                    num_test_records = test_batch_counter * trainCxt.batch_size
+                    print str(trainCxt.train_counter) + " processing test batch of size " + str(num_test_records) + " records took  : " + str(time.time() - start)
 
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
                     saver.save(sess, nn_model_dir + ".counter" , global_step = trainCxt.train_counter)
