@@ -9,7 +9,7 @@ import argparse
 
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
-from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig
+from mind_palace.product_ranker.models.modelconfig import modelconfig, parse_attribute_config
 from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
 from mind_palace.product_ranker.prepare_data.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
@@ -190,8 +190,10 @@ if __name__ == '__main__' :
     train_cxt_dict = trainCxt.__dict__
     for train_key in train_cxt_dict :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
+    parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
     args = parser.parse_args()
 
+    attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
     for arg in args.__dict__:
         arg_val = args.__dict__[arg]
         if arg_val != None:
@@ -224,9 +226,7 @@ if __name__ == '__main__' :
         modelconf.use_context = True
         modelconf.enable_default_click = False
         modelconf.reuse_context_dict = False
-        # modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15), AttributeConfig("vertical", 5)]
-        modelconf.attributes_config = [AttributeConfig("productId", 30), AttributeConfig("brand", 15)]
-        # modelconf.attributes_config = [AttributeConfig("productId", 50)]
+        modelconf.attributes_config = attributes_config
         trainCxt.model_config = modelconf
 
     train(trainCxt)

@@ -22,3 +22,13 @@ class AttributeConfig :
         self.embedding_size = embedding_size
         self.vocab_size = vocab_size
         self.override_embeddings = override_embeddings
+
+    def __str__(self):
+        return self.name + ":" + str(self.embedding_size)
+
+    def __repr__(self):
+        return self.__str__()
+
+def parse_attribute_config(conf_str):
+    confs = conf_str.split(':')
+    return AttributeConfig(confs[0], int(confs[1]))
