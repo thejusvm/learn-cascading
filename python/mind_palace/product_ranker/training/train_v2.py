@@ -135,7 +135,7 @@ def train(train_cxt) :
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
                     test_dataset.initialize_iterator(sess, train_cxt.test_path)
                     start = time.time()
-                    test_metric_names = ["test_" + x[0] + "_1" for x in test_metric_nodes]
+                    test_metric_names = ["test_" + x[0] for x in test_metric_nodes]
                     test_metrics_ops = [x[1] for x in test_metric_nodes]
                     test_batch_counter = 0
                     test_metric_aggregated = [0 for _ in range(len(test_metric_names))]
