@@ -59,8 +59,8 @@ class softmax_model(model) :
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_sigmoid.xent) + tf.reduce_sum(self.negative_sigmoid.xent)) / tf.cast(self.batch_size, tf.float32)
 
-        # self.train_step = tf.train.AdamOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
-        self.train_step = tf.train.GradientDescentOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
+        self.train_step = tf.train.AdamOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
+        # self.train_step = tf.train.GradientDescentOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
 
 
         self.max_negative_score = tf.reduce_max(self.negative_sigmoid.logits, reduction_indices = [1])
