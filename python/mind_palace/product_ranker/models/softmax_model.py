@@ -134,8 +134,8 @@ class AttributeEmbeddings :
         override_embedding = attribute_config.override_embeddings
 
         if override_embedding.context_dict is None:
-            self.context_dict = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_size], -1.0, 1.0),
-                                            dtype=tf.float32)
+            init_context_dict = tf.random_normal([self.vocab_size, self.embedding_size], 0.0, 1.0, dtype=tf.float32)
+            self.context_dict = tf.Variable(init_context_dict, dtype=tf.float32)
         else:
             self.context_dict = tf.Variable(override_embedding.context_dict, dtype=tf.float32)
         if modelConf.reuse_context_dict:
