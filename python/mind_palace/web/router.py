@@ -2,6 +2,11 @@ import json
 from flask import Flask, jsonify , request
 import sys
 import tensorflow as tf
+import cPickle as pickle
+from mind_palace.product_ranker.training import trainingcontext as tc
+from json import JSONEncoder
+import time
+
 
 from mind_palace.product_ranker.training.run_model import Scorer
 
@@ -16,6 +21,29 @@ global scorer
 scorer = None
 global graph
 graph = None
+
+class MyEncoder(JSONEncoder):
+    def default(self, o):
+        print type(o)
+        if type(o) == time.struct_time :
+            return str(o)
+        else:
+            return o.__dict__
+
+app.json_encoder = MyEncoder
+
+@app.route("/trainingconfig")
+def train_config():
+    args = request.args
+    model_path = args["model_path"]
+    dir = tc.getTraningContextDir(model_path)
+    trainCxt = None
+    with open(dir, 'rb') as handle:
+        trainCxt = pickle.load(handle)
+    body = {"REQUEST" : {"args" : args, "model_path" : model_path}, "RESPONSE" : trainCxt}
+
+    return jsonify(body)
+
 
 @app.route("/init")
 def init():
