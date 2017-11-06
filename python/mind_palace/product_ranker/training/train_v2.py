@@ -132,6 +132,8 @@ def train(train_cxt) :
                         summary_writer.add_summary(latency_summary, trainCxt.train_counter * trainCxt.batch_size)
                         elapsed_time = 0
 
+                trainCxt.train_counter = trainCxt.train_counter + 1
+
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
                     test_dataset.initialize_iterator(sess, train_cxt.test_path)
                     start = time.time()
@@ -158,7 +160,7 @@ def train(train_cxt) :
                     save_traincxt(trainCxt)
                     print "saved nn model on counter " + str(trainCxt.train_counter) + " into : " + nn_model_dir
 
-                trainCxt.train_counter = trainCxt.train_counter + 1
+
             except tf.errors.OutOfRangeError:
                 break
         print "processing epoch took : " + str(time.time() - epoch_start)
