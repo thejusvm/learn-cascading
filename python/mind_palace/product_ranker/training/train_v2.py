@@ -224,7 +224,7 @@ if __name__ == '__main__' :
         num_files_per_copy = len(dataFiles) / num_copies
         train_size_per_copy = int(num_files_per_copy * (1 - trainCxt.test_size))
         train_size = train_size_per_copy * num_copies
-        trainCxt.train_path = dataFiles[:train_size]
+        trainCxt.train_path = sorted(dataFiles[:train_size])
         trainCxt.test_path = dataFiles[train_size:]
 
         modelconf = modelconfig("softmax_model")
