@@ -219,11 +219,13 @@ if __name__ == '__main__' :
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
 
-        dataFiles = sorted(glob.glob(trainCxt.data_path + "/part-*"))
-        numFiles = len(dataFiles)
-        trainSize = int(numFiles * (1 - trainCxt.test_size))
-        trainCxt.train_path = dataFiles[:trainSize]
-        trainCxt.test_path = dataFiles[trainSize:]
+        num_copies = len(glob.glob(trainCxt.data_path))
+        dataFiles = sorted(glob.glob(trainCxt.data_path + "/part-*"), key=lambda x : x[::-1])
+        num_files_per_copy = len(dataFiles) / num_copies
+        train_size_per_copy = int(num_files_per_copy * (1 - trainCxt.test_size))
+        train_size = train_size_per_copy * num_copies
+        trainCxt.train_path = dataFiles[:train_size]
+        trainCxt.test_path = dataFiles[train_size:]
 
         modelconf = modelconfig("softmax_model")
         modelconf.use_context = True

@@ -54,12 +54,12 @@ def flow(attributes,
     integerize_clickstream(attributes, attribute_dicts, clickstream_path, integerized_clickstream_path)
     log("done integerizing clickstream")
 
+    globbed_integerized_clickstream_path = glob.glob(integerized_clickstream_path + "/part-*")
     for i in range(num_enhance_times) :
         str_i = str(i)
         log("enhancing clickstream : " + str_i)
         enhanced_clickstream_path = get_enhanceddata_path(output_path, i)
         make_dir(enhanced_clickstream_path)
-        globbed_integerized_clickstream_path = glob.glob(integerized_clickstream_path + "/part-*")
         enhance_clickstream(attributes, integerized_attributes_path, globbed_integerized_clickstream_path, enhanced_clickstream_path)
         log("done enhancing clickstream : " + str_i)
 
