@@ -5,6 +5,14 @@ from mind_palace.product_ranker.models.modelconfig import modelconfig, Attribute
 from model import model
 from mind_palace.product_ranker.commons import generate_feature_names
 import mind_palace.product_ranker.constants as CONST
+import collections
+
+
+def fetch_features(attribute_names, prefix, feature_names, inputs):
+    prefix_feature_names = generate_feature_names(attribute_names, [prefix])
+    feature_indices = [feature_names.index(i) for i in prefix_feature_names]
+    features = [inputs[i] for i in feature_indices]
+    return features
 
 class softmax_model(model) :
 
@@ -19,37 +27,22 @@ class softmax_model(model) :
             self.per_attribute_embeddings.append(attribute_embeddings)
 
     def feed_input(self, feature_names, inputs):
-        self.placeholders = []
-        self.inputs = inputs
-        self.per_attribute_positive_weights = []
-        self.per_attribute_positive_bias = []
-        self.per_attribute_negative_weights = []
-        self.per_attribute_negative_bias = []
-        self.per_attribute_click_embedding = []
-        for i in range(len(self.per_attribute_embeddings)) :
-            attribute_embeddings = self.per_attribute_embeddings[i]
-            attribute_name = self.attributes_config[i].name
-            attribute_feature_names = generate_feature_names([attribute_name], CONST.TRAINING_COL_PREFIXES)
-            attribute_feature_indices = [feature_names.index(i) for i in attribute_feature_names]
-            inputs_for_attribute = [inputs[i] for i in attribute_feature_indices]
-            attribute_embeddings.feed_input(inputs_for_attribute)
-            self.per_attribute_positive_weights.append(attribute_embeddings.positive_weights)
-            self.per_attribute_positive_bias.append(attribute_embeddings.positive_bias)
+        num_attributes = len(self.attributes_config)
+        attribute_names = [self.attributes_config[i].name for i in range(num_attributes)]
 
-            self.per_attribute_negative_weights.append(attribute_embeddings.negative_weights)
-            self.per_attribute_negative_bias.append(attribute_embeddings.negative_bias)
+        click_features = fetch_features(attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
+        self.click_embedder = ContextClickProductHandler(self.per_attribute_embeddings, click_features)
+        postive_features = fetch_features(attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
+        self.positive_embedder = ScoringProductHandler(self.per_attribute_embeddings, postive_features)
+        negative_features = fetch_features(attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
+        self.negative_embedder = ScoringProductHandler(self.per_attribute_embeddings, negative_features)
 
-            self.per_attribute_click_embedding.append(attribute_embeddings.context_embedding)
-
-            self.placeholders += [attribute_embeddings.positive_input,
-                                  attribute_embeddings.negative_input,
-                                  attribute_embeddings.click_input]
-
-        self.click_embeddings = tf.concat(self.per_attribute_click_embedding, 2)
-        self.positive_weights = tf.concat(self.per_attribute_positive_weights, 2)
-        self.positive_bias = tf.concat(self.per_attribute_positive_bias, 1)
-        self.negative_weights = tf.concat(self.per_attribute_negative_weights, 2)
-        self.negative_bias = tf.concat(self.per_attribute_negative_bias, 1)
+        self.click_embeddings = self.click_embedder.embeddings_mean
+        self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
+        self.positive_weights = self.positive_embedder.weights
+        self.positive_bias = self.positive_embedder.bias
+        self.negative_weights = self.negative_embedder.weights
+        self.negative_bias = self.negative_embedder.bias
 
         self.context_embedding = self.click_embeddings
         self.batch_size = tf.shape(self.positive_weights)[0]
@@ -98,7 +91,7 @@ class softmax_model(model) :
                 ["probability", self.positive_probability]]
 
     def place_holders(self):
-        return self.placeholders
+        return []
 
     def loss(self):
         return self.sigmoid_loss
@@ -158,35 +151,46 @@ class AttributeEmbeddings :
         else:
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
 
-    def feed_input(self, inputs):
-        if inputs is None:
-            self.positive_input = tf.placeholder(tf.int32, shape=[None, 1], name = self.attribute_name + "_positive_input")
-            self.negative_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_negative_input")
-            self.click_input = tf.placeholder(tf.int32, shape=[None, None], name = self.attribute_name + "_click_input")
-        else :
-            self.positive_input, self.negative_input, self.click_input = inputs
+PerAttrClickEmb = collections.namedtuple('PerAttrClickEmb', 'pad_handler click_embedding')
 
-        self.click_context_samples = self.click_input
-        self.click_context_samples_padded = self.click_context_samples
-        self.click_padder = padding_handler(self.click_context_samples_padded, self.context_dict)
-        if self.modelConf.use_context is False:
-            self.click_embeddings_mean = None
-        else:
-            self.click_embeddings_mean = self.click_padder.tensor_embeddings_mean
-        self.click_embeddings_mean = tf.expand_dims(self.click_embeddings_mean, 1)
+class ContextClickProductHandler() :
 
-        self.context_embedding = self.click_embeddings_mean
+    def __init__(self, attributeEmbeddings, input):
+        self.clickAttrEmbs = []
+        self.input = input
+        self.num_non_pad = 0
+        for i in range(len(attributeEmbeddings)):
+            attribute_embedding = attributeEmbeddings[i]
+            attribute_pad_handler = padding_handler(input[i], attribute_embedding.context_dict, padding_index=CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT))
+            self.num_non_pad = attribute_pad_handler.num_non_pad
+            attribute_click_embedding = attribute_pad_handler.tensor_embeddings
+            attrEmb = PerAttrClickEmb(attribute_pad_handler, attribute_click_embedding)
+            self.clickAttrEmbs.append(attrEmb)
+        self.attribute_click_embeddings = [x.click_embedding for x in self.clickAttrEmbs]
+        self.click_embedding = tf.concat(self.attribute_click_embeddings, 2)
+        self.embeddings_sum = tf.reduce_sum(self.click_embedding, reduction_indices=[1])
+        self.embeddings_mean = self.embeddings_sum / self.num_non_pad
 
-        self.positive_samples = self.positive_input
-        self.positive_weights = tf.nn.embedding_lookup(self.softmax_weights, self.positive_samples)
-        self.positive_bias = tf.nn.embedding_lookup(self.softmax_bias, self.positive_samples)
-        self.positive_bias = tf.expand_dims(self.positive_bias, [1])
 
-        self.negative_samples = self.negative_input
-        self.negative_weights = tf.nn.embedding_lookup(self.softmax_weights, self.negative_samples)
-        self.negative_bias = tf.nn.embedding_lookup(self.softmax_bias, self.negative_samples)
-        self.negative_bias = tf.expand_dims(self.negative_bias, [1])
+PerAttrScoreEmb = collections.namedtuple('PerAttrScoreEmb', 'pad_handler click_embedding')
 
+class ScoringProductHandler() :
+
+    def __init__(self, attributeEmbeddings, input):
+        self.clickAttrEmbs = []
+        self.input = input
+        self.num_non_pad = 0
+        self.per_attr_weights = []
+        self.per_attr_bias = []
+        for i in range(len(attributeEmbeddings)):
+            attribute_embedding = attributeEmbeddings[i]
+            attribute_input = input[i]
+            self.per_attr_weights.append(tf.nn.embedding_lookup(attribute_embedding.softmax_weights, attribute_input))
+            positive_bias_ = tf.nn.embedding_lookup(attribute_embedding.softmax_bias, attribute_input)
+            self.per_attr_bias.append(tf.expand_dims(positive_bias_, [1]))
+
+        self.weights = tf.concat(self.per_attr_weights, 2)
+        self.bias = tf.concat(self.per_attr_bias, 1)
 
 
 
