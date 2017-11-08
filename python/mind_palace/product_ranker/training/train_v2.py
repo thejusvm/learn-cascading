@@ -194,6 +194,8 @@ if __name__ == '__main__' :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
     parser.add_argument("--learning_rate", type=float)
+    parser.add_argument("--click_non_linearity", type=bool, default=False)
+    parser.add_argument("--layer_count", type=str)
     args = parser.parse_args()
 
     attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
@@ -228,10 +230,11 @@ if __name__ == '__main__' :
         trainCxt.test_path = dataFiles[train_size:]
 
         modelconf = modelconfig("softmax_model")
-        modelconf.use_context = True
-        modelconf.enable_default_click = False
-        modelconf.reuse_context_dict = False
         modelconf.attributes_config = attributes_config
+        if args.click_non_linearity :
+            modelconf.click_non_linearity = args.click_non_linearity
+        if args.layer_count :
+            modelconf.layer_count = [int(x) for x in args.layer_count.split(",")]
         trainCxt.model_config = modelconf
 
     if args.learning_rate is not None :
