@@ -3,6 +3,7 @@ import tensorflow as tf
 import sys
 
 from mind_palace.product_ranker.models.modelconfig import modelconfig, AttributeConfig, EmbeddingDicts
+from mind_palace.product_ranker.models.softmax_model_v2 import softmax_model_v2
 from mind_palace.product_ranker.models.softmax_model import softmax_model
 from mind_palace.product_ranker.commons import generate_feature_names
 from mind_palace.product_ranker.constants import TRAINING_COL_PREFIXES
@@ -11,19 +12,24 @@ init_emb = np.ones([5, 10]) * range(10)
 init_weight = np.ones([5, 10]) * range(10)
 init_bias = range(10) #+ np.ones(10)
 
+init_emb_1 = np.ones([5, 10]) * range(10) + 10
+init_weight_1 = np.ones([5, 10]) * range(10) + 10
+init_bias_1 = range(10) + np.ones(10) * 10
+
 # print "emb"
 # print init_emb.T
 # print "weight"
 # print init_weight.T
 
-mdl_conf = modelconfig("softmax_model")
+mdl_conf = modelconfig("softmax_model_v2")
 mdl_conf.use_context = True
 mdl_conf.enable_default_click = False
 embedding_dicts = EmbeddingDicts(context_dict=init_emb.T, softmax_weights=init_weight.T, softmax_bias=init_bias)
+embedding_dicts_1 = EmbeddingDicts(context_dict=init_emb_1.T, softmax_weights=init_weight_1.T, softmax_bias=init_bias_1)
 mdl_conf.attributes_config = [AttributeConfig("pid", 5, 10, override_embeddings=embedding_dicts),
-                              AttributeConfig("brand", 5, 10, override_embeddings=embedding_dicts)]
+                              AttributeConfig("brand", 5, 10, override_embeddings=embedding_dicts_1)]
 
-md = softmax_model(mdl_conf) #type: softmax_model
+md = softmax_model_v2(mdl_conf) #type: softmax_model_v2
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -40,14 +46,8 @@ feature_names = generate_feature_names([x.name for x in mdl_conf.attributes_conf
 md.feed_input(feature_names, feed_vals)
 
 
-ps = md.positive_sigmoid
-ns = md.negative_sigmoid
-bias_ = [
-    ps.xent,
-    ns.xent,
-    md.sigmoid_loss
-    ]
-for score in sess.run(bias_):
+scorre = [x[1] for x in md.score()]
+for score in sess.run(scorre):
     print score
     print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))

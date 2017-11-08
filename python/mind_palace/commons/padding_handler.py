@@ -34,6 +34,7 @@ class padding_handler :
         self.tensor_embeddings = tf.multiply(self._click_embeddings_pre_pad, self._padding_mask)
         self.tensor_embeddings_sum = tf.reduce_sum(self.tensor_embeddings, reduction_indices=[1])
         self.tensor_embeddings_mean = self.tensor_embeddings_sum / self._num_non_pad
+        self.num_non_pad = self._num_non_pad
 
 
 
