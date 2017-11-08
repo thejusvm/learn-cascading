@@ -23,6 +23,8 @@ init_bias_1 = range(10) + np.ones(10) * 10
 
 mdl_conf = modelconfig("softmax_model")
 mdl_conf.use_context = True
+mdl_conf.layer_count = []
+mdl_conf.click_non_linearity = True
 mdl_conf.enable_default_click = False
 embedding_dicts = EmbeddingDicts(context_dict=init_emb.T, softmax_weights=init_weight.T, softmax_bias=init_bias)
 embedding_dicts_1 = EmbeddingDicts(context_dict=init_emb_1.T, softmax_weights=init_weight_1.T, softmax_bias=init_bias_1)
@@ -32,7 +34,6 @@ mdl_conf.attributes_config = [AttributeConfig("pid", 5, 10, override_embeddings=
 md = softmax_model(mdl_conf) #type: softmax_model
 
 sess = tf.Session()
-sess.run(tf.global_variables_initializer())
 
 positive_samples_test = [[1], [4]]
 negative_samples_test = [[0, 0, 0, 4, 3, 6], [0, 6, 8, 5, 7, 9]]
@@ -44,9 +45,11 @@ feature_names = generate_feature_names([x.name for x in mdl_conf.attributes_conf
 # sys.exit(0)
 
 md.feed_input(feature_names, feed_vals)
+sess.run(tf.global_variables_initializer())
 
 
-scorre = [x[1] for x in md.score()]
+# scorre = [x[1] for x in md.score()]
+scorre = [md.click_embedder.click_embedding, md.click_embedder.click_embedding_nn]
 for score in sess.run(scorre):
     print score
     print "---------"

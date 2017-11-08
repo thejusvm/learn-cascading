@@ -6,6 +6,7 @@ from model import model
 from mind_palace.product_ranker.commons import generate_feature_names
 import mind_palace.product_ranker.constants as CONST
 import collections
+import math
 
 
 def fetch_features(attribute_names, prefix, feature_names, inputs):
@@ -31,7 +32,7 @@ class softmax_model(model) :
         attribute_names = [self.attributes_config[i].name for i in range(num_attributes)]
 
         click_features = fetch_features(attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
-        self.click_embedder = ContextClickProductHandler(self.per_attribute_embeddings, click_features)
+        self.click_embedder = ContextClickProductHandler(self.per_attribute_embeddings, click_features, self.model_config)
         postive_features = fetch_features(attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
         self.positive_embedder = ScoringProductHandler(self.per_attribute_embeddings, postive_features)
         negative_features = fetch_features(attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
@@ -153,9 +154,45 @@ class AttributeEmbeddings :
 
 PerAttrClickEmb = collections.namedtuple('PerAttrClickEmb', 'pad_handler click_embedding')
 
+def _nn_internal_(modelConf, input_embedding) :
+
+    lastdim = input_embedding.get_shape().ndims - 1
+
+    layer_in_count = input_embedding.get_shape()[lastdim].value
+    in_layer = input_embedding
+    out_layer = in_layer
+
+    counter = 0
+    layer_count = list(modelConf.layer_count)
+    layer_count.append(layer_in_count)
+    for num in layer_count :
+        counter = counter + 1
+        layer_out_count = num
+        stddev = math.sqrt(2.0 / (layer_in_count + layer_out_count))
+        kernal_initial = tf.truncated_normal_initializer(0, stddev)
+        out_layer = tf.layers.dense(inputs = in_layer,
+                                    units = num,
+                                    activation=tf.nn.relu,
+                                    kernel_initializer =  kernal_initial,
+                                    bias_initializer = tf.constant_initializer(10),
+                                    name = "layer_" + str(counter))
+
+        in_layer = out_layer
+        layer_in_count = layer_out_count
+
+    return out_layer
+
+def nn(modelConf, embeddings) :
+    with tf.variable_scope("embedding_nn"):
+        try :
+            return _nn_internal_(modelConf, embeddings)
+        except ValueError:
+            tf.get_variable_scope().reuse_variables()
+            return _nn_internal_(modelConf, embeddings)
+
 class ContextClickProductHandler() :
 
-    def __init__(self, attributeEmbeddings, input):
+    def __init__(self, attributeEmbeddings, input, model_config):
         self.clickAttrEmbs = []
         self.input = input
         self.num_non_pad = 0
@@ -168,7 +205,11 @@ class ContextClickProductHandler() :
             self.clickAttrEmbs.append(attrEmb)
         self.attribute_click_embeddings = [x.click_embedding for x in self.clickAttrEmbs]
         self.click_embedding = tf.concat(self.attribute_click_embeddings, 2)
-        self.embeddings_sum = tf.reduce_sum(self.click_embedding, reduction_indices=[1])
+        if model_config.click_non_linearity:
+            self.click_embedding_nn = nn(model_config, self.click_embedding)
+        else:
+            self.click_embedding_nn = self.click_embedding
+        self.embeddings_sum = tf.reduce_sum(self.click_embedding_nn, reduction_indices=[1])
         self.embeddings_mean = self.embeddings_sum / self.num_non_pad
 
 
