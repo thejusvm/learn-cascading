@@ -64,7 +64,7 @@ def train(train_cxt) :
 
     mod.feed_input(dataset.feature_names, dataset.get_next)
     loss = mod.loss()
-    minimize_step = mod.minimize_step()
+    minimize_step = tf.train.AdamOptimizer(modelconf.learning_rate).minimize(loss)
     loss_summary = tf.summary.scalar("loss", loss)
 
     mod.feed_input(test_dataset.feature_names, test_dataset.get_next)
