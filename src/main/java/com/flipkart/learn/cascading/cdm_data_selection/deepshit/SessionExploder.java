@@ -93,7 +93,7 @@ public class SessionExploder implements SimpleFlow {
                             .filter(product -> product.getProductId().matches(regex))
                             .filter(product -> !product.isClick()) // removing if the product has been clicked
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
-                            .filter(product -> !finalPastClick.keySet().contains(product.getProductId())) // removed if the product had been clicked in the history
+//                            .filter(product -> !finalPastClick.keySet().contains(product.getProductId())) // removed if the product had been clicked in the history
 //                            .filter(product -> !finalPastBought.keySet().contains(product.getProductId()))
                             .filter(product -> clickedProduct.getPosition() + 2 >= product.getPosition()) // removing if the product's position is 2 greater than the clicked product
                             .map(ProductObj::getAttributes)
