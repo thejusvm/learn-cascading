@@ -195,7 +195,8 @@ if __name__ == '__main__' :
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
     parser.add_argument("--learning_rate", type=float)
     parser.add_argument("--click_non_linearity", type=bool, default=False)
-    parser.add_argument("--layer_count", type=str)
+    parser.add_argument("--click_layer_count", type=str)
+    parser.add_argument("--use_context", type=bool, default=True)
     args = parser.parse_args()
 
     attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
@@ -233,8 +234,10 @@ if __name__ == '__main__' :
         modelconf.attributes_config = attributes_config
         if args.click_non_linearity :
             modelconf.click_non_linearity = args.click_non_linearity
-        if args.layer_count :
-            modelconf.layer_count = [int(x) for x in args.layer_count.split(",")]
+        if args.click_layer_count :
+            modelconf.click_layer_count = [int(x) for x in args.click_layer_count.split(",")]
+        if args.use_context :
+            modelconf.use_context = args.use_context
         trainCxt.model_config = modelconf
 
     if args.learning_rate is not None :

@@ -23,7 +23,7 @@ init_bias_1 = range(10) + np.ones(10) * 10
 
 mdl_conf = modelconfig("softmax_model")
 mdl_conf.use_context = True
-mdl_conf.layer_count = []
+mdl_conf.click_layer_count = []
 mdl_conf.click_non_linearity = True
 mdl_conf.enable_default_click = False
 embedding_dicts = EmbeddingDicts(context_dict=init_emb.T, softmax_weights=init_weight.T, softmax_bias=init_bias)

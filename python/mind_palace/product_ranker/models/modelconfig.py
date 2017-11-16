@@ -13,7 +13,7 @@ class modelconfig :
         self.pad_index = 0
         self.use_context = True
         self.click_non_linearity = False
-        self.layer_count = []
+        self.click_layer_count = []
         self.reuse_context_dict = False
         self.learning_rate = 1e-3
 

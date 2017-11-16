@@ -155,17 +155,20 @@ class AttributeEmbeddings :
 
 PerAttrClickEmb = collections.namedtuple('PerAttrClickEmb', 'pad_handler click_embedding')
 
-def _nn_internal_(modelConf, input_embedding) :
+def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None) :
 
     lastdim = input_embedding.get_shape().ndims - 1
-
     layer_in_count = input_embedding.get_shape()[lastdim].value
+
+    if last_out_layer_count is None:
+        last_out_layer_count = layer_in_count
+
     in_layer = input_embedding
     out_layer = in_layer
 
     counter = 0
-    layer_count = list(modelConf.layer_count)
-    layer_count.append(layer_in_count)
+    layer_count = list(layer_count)
+    layer_count.append(last_out_layer_count)
     for num in layer_count :
         counter = counter + 1
         layer_out_count = num
@@ -183,13 +186,13 @@ def _nn_internal_(modelConf, input_embedding) :
 
     return out_layer
 
-def nn(modelConf, embeddings) :
-    with tf.variable_scope("embedding_nn"):
+def nn(namespace, layer_count, embeddings, last_out_layer_count = None) :
+    with tf.variable_scope(namespace):
         try :
-            return _nn_internal_(modelConf, embeddings)
+            return _nn_internal_(layer_count, embeddings, last_out_layer_count)
         except ValueError:
             tf.get_variable_scope().reuse_variables()
-            return _nn_internal_(modelConf, embeddings)
+            return _nn_internal_(layer_count, embeddings, last_out_layer_count)
 
 class ContextClickProductHandler() :
 
@@ -207,7 +210,7 @@ class ContextClickProductHandler() :
         self.attribute_click_embeddings = [x.click_embedding for x in self.clickAttrEmbs]
         self.click_embedding = tf.concat(self.attribute_click_embeddings, 2)
         if model_config.click_non_linearity:
-            self.click_embedding_nn = nn(model_config, self.click_embedding)
+            self.click_embedding_nn = nn("click_nn", model_config.click_layer_count, self.click_embedding)
         else:
             self.click_embedding_nn = self.click_embedding
         self.embeddings_sum = tf.reduce_sum(self.click_embedding_nn, reduction_indices=[1])
