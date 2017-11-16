@@ -138,7 +138,7 @@ class nn_probability :
         self.context_rep = tf.tile(context, [1, self.repeate_count, 1])
         self.context_rep_reshape = tf.reshape(self.context_rep, self.embedding_shape)
         self.layer_1 = tf.concat([self.embeddings, self.context_rep_reshape], 2)
-        self.logits = nn("probability_predictor", layer_count, self.layer_1, last_out_layer_count=1)
+        self.logits = nn("probability_predictor", layer_count, self.layer_1, last_out_layer_count=1, last_no_activation=True)
 
 class AttributeEmbeddings :
 
@@ -178,7 +178,7 @@ class AttributeEmbeddings :
 
 PerAttrClickEmb = collections.namedtuple('PerAttrClickEmb', 'pad_handler click_embedding')
 
-def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None) :
+def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None, last_no_activation = False) :
 
     lastdim = input_embedding.get_shape().ndims - 1
     layer_in_count = input_embedding.get_shape()[lastdim].value
@@ -194,14 +194,20 @@ def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None) :
     layer_count.append(last_out_layer_count)
     for num in layer_count :
         counter = counter + 1
+        if last_no_activation and counter == len(layer_count) :
+            activation = None
+            bais_init = 0
+        else :
+            activation = tf.nn.relu
+            bais_init = 10
         layer_out_count = num
         stddev = math.sqrt(2.0 / (layer_in_count + layer_out_count))
         kernal_initial = tf.truncated_normal_initializer(0, stddev)
         out_layer = tf.layers.dense(inputs = in_layer,
                                     units = num,
-                                    # activation=tf.nn.sigmoid,
+                                    activation=activation,
                                     kernel_initializer =  kernal_initial,
-                                    bias_initializer = tf.constant_initializer(10),
+                                    bias_initializer = tf.constant_initializer(bais_init),
                                     name = "layer_" + str(counter))
 
         in_layer = out_layer
@@ -209,13 +215,13 @@ def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None) :
 
     return out_layer
 
-def nn(namespace, layer_count, embeddings, last_out_layer_count = None) :
+def nn(namespace, layer_count, embeddings, last_out_layer_count = None, last_no_activation =False) :
     with tf.variable_scope(namespace):
         try :
-            return _nn_internal_(layer_count, embeddings, last_out_layer_count)
+            return _nn_internal_(layer_count, embeddings, last_out_layer_count, last_no_activation)
         except ValueError:
             tf.get_variable_scope().reuse_variables()
-            return _nn_internal_(layer_count, embeddings, last_out_layer_count)
+            return _nn_internal_(layer_count, embeddings, last_out_layer_count, last_no_activation)
 
 class ContextClickProductHandler() :
 
