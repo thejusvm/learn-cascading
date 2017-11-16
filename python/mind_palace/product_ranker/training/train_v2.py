@@ -196,6 +196,8 @@ if __name__ == '__main__' :
     parser.add_argument("--learning_rate", type=float)
     parser.add_argument("--click_non_linearity", type=bool, default=False)
     parser.add_argument("--click_layer_count", type=str)
+    parser.add_argument("--probability_function", type=str)
+    parser.add_argument("--layer_count", type=str)
     parser.add_argument("--use_context", type=bool, default=True)
     args = parser.parse_args()
 
@@ -232,6 +234,10 @@ if __name__ == '__main__' :
 
         modelconf = modelconfig("softmax_model")
         modelconf.attributes_config = attributes_config
+        if args.probability_function :
+            modelconf.probability_function = args.probability_function
+        if args.layer_count :
+            modelconf.layer_count = args.layer_count
         if args.click_non_linearity :
             modelconf.click_non_linearity = args.click_non_linearity
         if args.click_layer_count :

@@ -48,23 +48,19 @@ class softmax_model(model) :
         self.context_embedding = self.click_embeddings
         self.batch_size = tf.shape(self.positive_weights)[0]
 
-        self.positive_sigmoid = sigmoid(self.positive_weights, self.positive_bias, self.context_embedding, True)
-        self.negative_sigmoid = sigmoid(self.negative_weights, self.negative_bias, self.context_embedding, False)
+        self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
+        self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
 
-        self.sigmoid_loss = (tf.reduce_sum(self.positive_sigmoid.xent) + tf.reduce_sum(self.negative_sigmoid.xent)) / tf.cast(self.batch_size, tf.float32)
+        self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent)) / tf.cast(self.batch_size, tf.float32)
 
-        # self.train_step = tf.train.AdamOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
-        # self.train_step = tf.train.GradientDescentOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
-
-
-        self.max_negative_score = tf.reduce_max(self.negative_sigmoid.logits, reduction_indices = [1])
+        self.max_negative_score = tf.reduce_max(self.negative_handler.logits, reduction_indices = [1])
         self.max_negative_score = tf.reshape(self.max_negative_score, [tf.size(self.max_negative_score)])
 
-        self.positive_score_vector = tf.reshape(self.positive_sigmoid.logits, [tf.size(self.positive_sigmoid.logits)])
+        self.positive_score_vector = tf.reshape(self.positive_handler.logits, [tf.size(self.positive_handler.logits)])
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
 
-        self.less_than = tf.cast(tf.less(self.positive_sigmoid.logits, self.negative_sigmoid.logits), tf.float32)
+        self.less_than = tf.cast(tf.less(self.positive_handler.logits, self.negative_handler.logits), tf.float32)
         self.rank_per_record = tf.reduce_sum(self.less_than, reduction_indices = [1])
         self.rank_per_record = self.rank_per_record + 1
         self.mean_rank = tf.reduce_mean(self.rank_per_record)
@@ -73,7 +69,7 @@ class softmax_model(model) :
         self.mean_reciprocal_rank = tf.reduce_mean(self.reciprocal_rank_per_record)
 
 
-        self.positive_probability = tf.sigmoid(self.positive_sigmoid.logits)
+        self.positive_probability = tf.sigmoid(self.positive_handler.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
 
@@ -86,9 +82,7 @@ class softmax_model(model) :
 
     def score(self):
         return [["score", self.positive_score_vector],
-                ["bias", self.positive_sigmoid.modified_bias],
-                ["wTx", self.positive_sigmoid.weights_cross_context_sum],
-                ["xent", self.positive_sigmoid.xent],
+                ["xent", self.positive_handler.xent],
                 ["probability", self.positive_probability]]
 
     def place_holders(self):
@@ -101,21 +95,50 @@ class softmax_model(model) :
         pass
         # return self.train_step
 
-class sigmoid :
-    def __init__(self, weights, bias, context_embedding, positive = True):
-        self.weights = weights
-        self.bias = bias
-        self.context_embedding = context_embedding
-        self.postive = positive
-        self.modified_bias = tf.reduce_sum(self.bias, reduction_indices=[1])
-        self.weights_cross_context = tf.multiply(self.context_embedding, self.weights)
-        self.weights_cross_context_sum = tf.reduce_sum(self.weights_cross_context, reduction_indices=[2])
-        self.logits = self.weights_cross_context_sum + self.modified_bias
+class to_probability :
+    def __init__(self, modelconfig, weights, bias, context_embedding, positive = True):
+        """
+        :type modelconfig: modelconfig
+        :param weights:
+        :param bias:
+        :param context_embedding:
+        :param positive:
+        """
+        self.probability_fn = None
+        if "sigmoid" == modelconfig.probability_function:
+            self.probability_fn = sigmoid(weights, bias, context_embedding)
+        else :
+            self.probability_fn = nn_probability(weights, context_embedding, modelconfig.layer_count)
+
+        self.logits = self.probability_fn.logits
         if positive :
             labels = tf.ones_like(self.logits)
         else :
             labels = tf.zeros_like(self.logits)
         self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=self.logits)
+
+class sigmoid :
+    def __init__(self, weights, bias, context_embedding):
+        self.weights = weights
+        self.bias = bias
+        self.context_embedding = context_embedding
+        self.modified_bias = tf.reduce_sum(self.bias, reduction_indices=[1])
+        self.weights_cross_context = tf.multiply(self.context_embedding, self.weights)
+        self.weights_cross_context_sum = tf.reduce_sum(self.weights_cross_context, reduction_indices=[2])
+        self.logits = self.weights_cross_context_sum + self.modified_bias
+
+class nn_probability :
+    def __init__(self, embeddings, context, layer_count):
+        self.embeddings = embeddings
+        self.context = context
+
+        self.embedding_shape = tf.shape(self.embeddings)
+        self.embedding_size = tf.size(self.embeddings)
+        self.repeate_count = self.embedding_size / (self.embedding_shape[0] * self.embedding_shape[2])
+        self.context_rep = tf.tile(context, [1, self.repeate_count, 1])
+        self.context_rep_reshape = tf.reshape(self.context_rep, self.embedding_shape)
+        self.layer_1 = tf.concat([self.embeddings, self.context_rep_reshape], 2)
+        self.logits = nn("probability_predictor", layer_count, self.layer_1, last_out_layer_count=1)
 
 class AttributeEmbeddings :
 

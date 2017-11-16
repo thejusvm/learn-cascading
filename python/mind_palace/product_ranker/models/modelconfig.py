@@ -17,6 +17,9 @@ class modelconfig :
         self.reuse_context_dict = False
         self.learning_rate = 1e-3
 
+        self.probability_function = "sigmoid" #values: sigmoid/nn
+        self.layer_count = []
+
 class AttributeConfig :
 
     def __init__(self, name, embedding_size, vocab_size = 0, override_embeddings = empty_embeddingdict):

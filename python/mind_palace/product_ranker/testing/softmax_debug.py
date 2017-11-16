@@ -23,8 +23,8 @@ init_bias_1 = range(10) + np.ones(10) * 10
 
 mdl_conf = modelconfig("softmax_model")
 mdl_conf.use_context = True
-mdl_conf.click_layer_count = []
-mdl_conf.click_non_linearity = True
+mdl_conf.layer_count = []
+mdl_conf.click_non_linearity = False
 mdl_conf.enable_default_click = False
 embedding_dicts = EmbeddingDicts(context_dict=init_emb.T, softmax_weights=init_weight.T, softmax_bias=init_bias)
 embedding_dicts_1 = EmbeddingDicts(context_dict=init_emb_1.T, softmax_weights=init_weight_1.T, softmax_bias=init_bias_1)
@@ -49,7 +49,8 @@ sess.run(tf.global_variables_initializer())
 
 
 # scorre = [x[1] for x in md.score()]
-scorre = [md.click_embedder.click_embedding, md.click_embedder.click_embedding_nn]
+pfn = md.positive_handler.probability_fn
+scorre = [pfn.embeddings, pfn.context, pfn.layer_1, pfn.logits]
 for score in sess.run(scorre):
     print score
     print "---------"
