@@ -199,7 +199,7 @@ def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None) :
         kernal_initial = tf.truncated_normal_initializer(0, stddev)
         out_layer = tf.layers.dense(inputs = in_layer,
                                     units = num,
-                                    activation=tf.nn.relu,
+                                    # activation=tf.nn.sigmoid,
                                     kernel_initializer =  kernal_initial,
                                     bias_initializer = tf.constant_initializer(10),
                                     name = "layer_" + str(counter))

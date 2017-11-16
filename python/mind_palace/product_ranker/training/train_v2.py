@@ -237,7 +237,7 @@ if __name__ == '__main__' :
         if args.probability_function :
             modelconf.probability_function = args.probability_function
         if args.layer_count :
-            modelconf.layer_count = args.layer_count
+            modelconf.layer_count = [int(x) for x in args.layer_count.split(",")]
         if args.click_non_linearity :
             modelconf.click_non_linearity = args.click_non_linearity
         if args.click_layer_count :

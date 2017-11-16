@@ -23,6 +23,7 @@ init_bias_1 = range(10) + np.ones(10) * 10
 
 mdl_conf = modelconfig("softmax_model")
 mdl_conf.use_context = True
+mdl_conf.probability_function = "nn"
 mdl_conf.layer_count = []
 mdl_conf.click_non_linearity = False
 mdl_conf.enable_default_click = False
@@ -49,7 +50,7 @@ sess.run(tf.global_variables_initializer())
 
 
 # scorre = [x[1] for x in md.score()]
-pfn = md.positive_handler.probability_fn
+pfn = md.negative_handler.probability_fn
 scorre = [pfn.embeddings, pfn.context, pfn.layer_1, pfn.logits]
 for score in sess.run(scorre):
     print score
