@@ -66,8 +66,6 @@ class Scorer :
                 nn_dir = tf.train.latest_checkpoint(self.trainCxt.model_dir)
             else :
                 nn_dir = self.trainCxt.getNnDir(extension=nn_version)
-            print "restoring tf model from : " + nn_dir
-            self.saver.restore(sess, nn_dir)
 
             if not clicked_products :
                 if self.model_conf.enable_default_click :
@@ -96,6 +94,11 @@ class Scorer :
             score = self.mod.score()
             score_names = [x[0] for x in score]
             score_ops = [x[1] for x in score]
+
+            print "restoring tf model from : " + nn_dir
+            sess.run(tf.global_variables_initializer())
+            self.saver.restore(sess, nn_dir)
+
             pid_score = sess.run(score_ops)
             for i in range(num_products) :
                 pid = products_to_rank[i]
@@ -114,7 +117,7 @@ class Scorer :
 
 
 if __name__ == '__main__' :
-    model_path = "saved_models/run.20171101-17-28-25"
+    model_path = "saved_models/run.20171117-12-18-55"
     rm = Scorer(model_path)
     products_to_rank = ["MOBEQ98MNXHY4RU9", "MOBES9G5SJHYT9QX", "MOBEQ98TABTWXGTD", "MOBEWN63JHHEXPTD", "MOBEXNP9FJ9K5K53", "MOBEX9WXUSZVYHET", "MOBET6RH4XSXKM7D", "MOBEQ98TWG8X4HH3", "MOBECCA5FHQD43KA", "MOBEWN63NBDSMVPG", "MOBEU9WRGVXDPBSF", "MOBEU9WRZFFUYAXJ", "MOBEU9WRZHRVWXTK", "MOBEMK62PN2HU7EE", "MOBEX9WXZCZHWXUZ", "MOBEWXHUSBXVJ7NZ", "MOBET6RHXVZBJFNT", "MOBESDYMGHC37GCS", "MOBEN2YYKU9386TQ", "MOBEN2YYQH8PSYXG", "MOBECCA5Y5HBYR3Q", "MOBECCA5SMRSKCNY", "MOBEG4XWMBDGZVEX", "MOBEG4XWDK4WBGNU", "MOBEV7YDBCAFG3ZH", "MOBEN2XYK8WFEGM8", "MOBEJFHUFVAJ45YA", "MOBEJFHUGPWTZFQJ", "MOBEV7YD3CFBTENW", "MOBEVKFTCFFU2FE7", "MOBETM9FZWW5UEZG", "MOBEUF42PGDRYCQA", "MOBEUF424KXTP9CT", "MOBEUF42VHXZSQV7", "MOBEQ98T82CYVHGZ", "MOBETM93F7DGJNN5", "MOBETMH3ZYNDPVVC", "MOBEU35JUQMQQHWK", "MOBEU35JAZKVWRPV", "MOBESDYCQD3FJCFW", "MOBEZEMYH7FQBGBQ", "MOBEZENFZBPW8UMF", "MOBEKGT2HGDGADFW", "MOBEMK62JSRHU85T", "MOBEZPVEGADXHMHT", "MOBEZPVENHEVMQDZ", "MOBEQRYTXZXC8FZZ", "MOBETM93HMBGUQKH", "MOBEXHHKDHSA9UZC", "MOBECCA5BJUVUGNP", "MOBEHZTGXSGG2GRX", "MOBEK4ABQFH3SSP7", "MOBE9TGVE7ZBRAEN"]
     clicked_products = ["MOBETMH3ZYNDPVVC"]
