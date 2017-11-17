@@ -216,8 +216,12 @@ def _nn_internal_(layer_count, input_embedding, last_out_layer_count = None, las
     return out_layer
 
 def nn(namespace, layer_count, embeddings, last_out_layer_count = None, last_no_activation =False) :
-    with tf.variable_scope(namespace, reuse=tf.AUTO_REUSE):
-        return _nn_internal_(layer_count, embeddings, last_out_layer_count, last_no_activation)
+    with tf.variable_scope(namespace):
+        try :
+            return _nn_internal_(layer_count, embeddings, last_out_layer_count, last_no_activation)
+        except ValueError:
+            tf.get_variable_scope().reuse_variables()
+            return _nn_internal_(layer_count, embeddings, last_out_layer_count, last_no_activation)
 
 class ContextClickProductHandler() :
 
