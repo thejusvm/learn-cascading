@@ -22,11 +22,12 @@ class modelconfig :
 
 class AttributeConfig :
 
-    def __init__(self, name, embedding_size, vocab_size = 0, override_embeddings = empty_embeddingdict):
+    def __init__(self, name, embedding_size, vocab_size = 0, override_embeddings = empty_embeddingdict, per_attribute_learning_rate = None):
         self.name = name
         self.embedding_size = embedding_size
         self.vocab_size = vocab_size
         self.override_embeddings = override_embeddings
+        self.per_attribute_learning_rate = per_attribute_learning_rate
 
     def __str__(self):
         return self.name + ":" + str(self.embedding_size)
