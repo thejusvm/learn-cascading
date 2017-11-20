@@ -30,10 +30,9 @@ public class ExtractCmsAttributes implements SimpleFlow {
 
     public static void main(String[] args) {
         if(args.length == 0) {
-            args = new String[]{"data/catalog-data.MOB", "data/product-attributes.MOB"};
+            args = new String[]{"data/catalog-data.MOB", "data/product-attributes.MOB", "brand,sim_type,vertical"};
         }
-        String[] cmsAttributeKeys = {DataFields._BRAND, DataFields._VERTICAL};
         Fields inputFields = new Fields(DataFields._PRODUCTID, DataFields._CMS);
-        SimpleFlowRunner.execute(new ExtractCmsAttributes(cmsAttributeKeys), args[0], inputFields, args[1]);
+        SimpleFlowRunner.execute(new ExtractCmsAttributes(args[2].split(",")), args[0], inputFields, args[1]);
     }
 }
