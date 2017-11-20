@@ -15,6 +15,7 @@ import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.Serializable;
 import java.util.*;
@@ -34,10 +35,10 @@ public class SessionExploder implements SimpleFlow {
 
     private static int numProducts = 10;
 
-    private String regex = ".*";
+    private Map<String, Set<String>> matchConfig = Collections.emptyMap();
 
-    public void setRegex(String regex) {
-        this.regex = regex;
+    public void setMatchConfig(Map<String, Set<String>> matchConfig) {
+        this.matchConfig = matchConfig;
     }
 
     @Override
@@ -46,7 +47,7 @@ public class SessionExploder implements SimpleFlow {
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
         Fields expodedFields = new Fields(RANDOM_ID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
-        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields, regex), Fields.ALL);
+        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields, matchConfig), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
         pipe = new JsonEncodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
         pipe = new GroupBy(pipe, new Fields(RANDOM_ID));
@@ -56,11 +57,20 @@ public class SessionExploder implements SimpleFlow {
 
     private class ExplodeSessions extends BaseOperation implements Function, Serializable {
 
-        private final String regex;
+        private final Map<String, Set<String>> matchConfig;
 
-        public ExplodeSessions(Fields fields, String regex) {
+        public ExplodeSessions(Fields fields, Map<String, Set<String>> matchConfig) {
             super(fields);
-            this.regex = regex;
+            this.matchConfig = matchConfig;
+        }
+
+        private boolean match(ProductObj productObj) {
+            if(matchConfig == null || matchConfig.isEmpty()) {
+                return true;
+            } else {
+                Map<String, String> attributes = productObj.getAttributes();
+                return matchConfig.entrySet().stream().allMatch(x -> x.getValue().contains(attributes.get(x.getKey())));
+            }
         }
 
         @Override
@@ -77,7 +87,7 @@ public class SessionExploder implements SimpleFlow {
 
                 clickedProducts = clickedProducts
                         .stream()
-                        .filter(product -> product.getProductId().matches(regex))
+                        .filter(this::match)
                         .collect(Collectors.toList());
 
                 for (ProductObj clickedProduct : clickedProducts) {
@@ -90,7 +100,7 @@ public class SessionExploder implements SimpleFlow {
 //                    Map<String, Map<String, String>> finalPastBought = pastBought;
                     List negativeForClicked = impressionsSorted
                             .stream()
-                            .filter(product -> product.getProductId().matches(regex))
+                            .filter(this::match)
                             .filter(product -> !product.isClick()) // removing if the product has been clicked
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
 //                            .filter(product -> !finalPastClick.keySet().contains(product.getProductId())) // removed if the product had been clicked in the history
@@ -116,7 +126,7 @@ public class SessionExploder implements SimpleFlow {
                     pastClick.put(clickedProduct.getProductId(), clickedProduct.getAttributes());
                 }
 
-                boughtProducts = boughtProducts.stream().filter(product -> product.getProductId().matches(regex)).collect(Collectors.toList());
+                boughtProducts = boughtProducts.stream().filter(this::match).collect(Collectors.toList());
                 pastBought = new LinkedHashMap<>(pastBought);
                 for (ProductObj boughtProduct : boughtProducts) {
                     pastBought.put(boughtProduct.getProductId(), boughtProduct.getAttributes());
@@ -129,16 +139,26 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000", "data/sessionexplode-2017-0801.1000", "MOB.*"};
+            args = new String[]{"data/session-2017-0801.1000", "data/sessionexplode-2017-0801.1000", "vertical:mobile"};
         }
 
-        String prefix = args.length > 2 ? args[2] : null;
+        String matchConfigStr = args.length > 2 ? args[2] : null;
 
         PipeRunner runner = new PipeRunner("session-explode");
         runner.setNumReducers(600);
         SessionExploder sessionExploder = new SessionExploder();
-        if(prefix != null) {
-            sessionExploder.setRegex(prefix);
+
+        if(matchConfigStr != null) {
+            Map<String, Set<String>> matchConfig = new HashMap<>();
+            String[] matchConfigSplits = matchConfigStr.split("::");
+            for (String matchConfigSplit : matchConfigSplits) {
+                String[] perAttributeConf = matchConfigSplit.split(":", 2);
+                String attributeKey = perAttributeConf[0];
+                String attributeValue = perAttributeConf[1];
+                ImmutableSet<String> attributeValues = ImmutableSet.copyOf(attributeValue.split(","));
+                matchConfig.put(attributeKey, attributeValues);
+            }
+            sessionExploder.setMatchConfig(matchConfig);
         }
         runner.executeHfs(sessionExploder.getPipe(), args[0], args[1], true);
 
