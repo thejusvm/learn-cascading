@@ -162,7 +162,8 @@ public class PipeRunner {
     }
 
     public PipeRunner addHFSSource(Pipe pipe, String fileName) {
-        return addHFSSource(pipe, fileName, Fields.ALL);
+        Tap inputTap = new GlobHfs(new TextDelimited(Fields.ALL, true, "\t"), fileName);
+        return addSource(pipe, inputTap);
     }
 
 

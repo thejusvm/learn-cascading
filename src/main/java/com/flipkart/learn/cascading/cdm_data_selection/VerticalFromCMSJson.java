@@ -64,9 +64,19 @@ public class VerticalFromCMSJson extends BaseOperation implements Function {
                 if(allowedValues != null && !allowedValues.contains(attributeValue)) {
                     attributeValue = null;
                 }
+                if(attributeValue != null && !isClean(attributeValue)) {
+                    attributeValue = null;
+                }
+                if(attributeValue != null) {
+                    attributeValue = attributeValue.replaceAll(",", "").replaceAll("\t","");
+
+                }
+
                 if(attributeValue != null && renameConfig.containsKey(attributeValue)) {
                     attributeValue = renameConfig.get(attributeValue);
                 }
+
+
                 if (attributeValue != null) {
                     result.add(attributeValue);
                 } else {
@@ -78,5 +88,9 @@ public class VerticalFromCMSJson extends BaseOperation implements Function {
             e.printStackTrace();
         }
 
+    }
+
+    private boolean isClean(String attributeValue) {
+        return attributeValue.split(" ").length < 5;
     }
 }
