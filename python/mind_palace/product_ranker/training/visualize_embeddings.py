@@ -36,7 +36,7 @@ def generate_metadata(idict, path, field_name):
     lst = [None] * idict.currentCount
     term_to_int = idict.getDict()
     for term in term_to_int:
-        lst[term_to_int[term]] = term
+        lst[term_to_int[term]] = term.upper()
 
     with open(path, mode="w+b") as writer :
         # writer.write(field_name + '\n')
@@ -58,7 +58,7 @@ with tf.Session() as sess:
 
     # You can add multiple embeddings. Here we add only one.
     embedding = config.embeddings.add()
-    per_attribute_embeddings = md.per_attribute_embeddings[1]
+    per_attribute_embeddings = md.per_attribute_embeddings[0]
     embedding.tensor_name = per_attribute_embeddings.context_dict.name
     # Link this tensor to its metadata file (e.g. labels).
     embedding.metadata_path = os.path.join(LOG_DIR, 'metadata.tsv')
