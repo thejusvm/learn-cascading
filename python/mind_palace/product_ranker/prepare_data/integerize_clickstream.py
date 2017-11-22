@@ -85,8 +85,11 @@ def process_file(data_path,
     df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search")]
     start = time.clock()
     process_row(df, attributes, attribute_dicts)
-    necessaryKeys = cross_attribute_prefix(attributes, CONST.OUTPUTS_PER_ATTRIBUTE)
+    attribute_keys = cross_attribute_prefix(attributes, CONST.OUTPUTS_PER_ATTRIBUTE)
+    necessaryKeys = ["timestamp"]
+    necessaryKeys += attribute_keys
     data = df[necessaryKeys]
+
     print "time taken by data preprocess : " + str(time.clock() - start)
     return data
 
@@ -137,8 +140,8 @@ def integerize_clickstream(attributes, attribute_dicts, raw_data_path, output_pa
 
 
 if __name__ == '__main__' :
-    raw_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large" + "/part-*"
-    processed_data_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.1"
+    raw_data_path = "/Users/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller" + "/part-*"
+    processed_data_path = "/Users/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.search.1"
     os.makedirs(processed_data_path)
 
     attributes = ["productId", "brand", "vertical"]

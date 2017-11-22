@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import tensorflow as tf
 import time
+import datetime
 from contextlib import closing
 from functools import partial
 from multiprocessing import Pool
@@ -60,6 +61,7 @@ def to_tfr_example(row, features_names) :
 def get_processed_data_frame(input_file,
                              attributes,
                              product_to_attributes,
+                             train_test_split_date,
                              num_negative_samples = 20,
                              min_click_context = 0) :
 
@@ -79,35 +81,46 @@ def get_processed_data_frame(input_file,
 
     all_features = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
     df["tfr"] = df[all_features].apply(lambda x : to_tfr_example(x, all_features), axis=1)
-    return df["tfr"]
 
+    train_test_split_timestamp = time.mktime(datetime.datetime.strptime(train_test_split_date, "%Y-%m-%d").timetuple())
+    train_test_split_timestamp = train_test_split_timestamp * 1000
 
-def enhance_file(attributes, product_to_attributes, io):
-    file, output_file = io
-    print "processing file : " + file
-    start = time.time()
-    df = get_processed_data_frame(file, attributes, product_to_attributes)
-    print "file to processed dataframe in : " + str(time.time() - start)
+    train_df = df[df["timestamp"] < train_test_split_timestamp]
+    test_df = df[df["timestamp"] > train_test_split_timestamp]
+
+    return train_df["tfr"], test_df["tfr"]
+
+def write_df_toFile(df, output_file):
     writer = tf.python_io.TFRecordWriter(output_file)
     print "writing to file : " + output_file
     start = time.time()
     for row in df:
         writer.write(row)
     print "wrote file in " + str(time.time() - start)
+
+def enhance_file(attributes, product_to_attributes, train_test_split_date, io):
+    file, train_output_file, test_output_file = io
+    print "processing file : " + file
+    start = time.time()
+    train_df, test_df = get_processed_data_frame(file, attributes, product_to_attributes, train_test_split_date)
+    print "file to processed dataframe in : " + str(time.time() - start)
+    write_df_toFile(train_df, train_output_file)
+    write_df_toFile(train_df, test_output_file)
     logBreak()
 
 
-def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, output_path, num_parallel = 20) :
+def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, train_output_path, test_output_path, train_test_split_date, num_parallel = 1) :
 
     product_to_attributes = read_integerized_attributes(attributes, integerized_product_attributes_path, attributes[0])
 
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    if not os.path.exists(train_output_path):
+        os.makedirs(train_output_path)
+    if not os.path.exists(test_output_path):
+        os.makedirs(test_output_path)
 
-    output_files = map(lambda x : output_path + "/part-" + str(x), range(len(integerized_ctr_data_path)))
-    input_output = zip(integerized_ctr_data_path, output_files)
+    input_output = [[integerized_ctr_data_path[i], train_output_path + "/part-" + str(i), test_output_path + "/part-" + str(i)] for i in range(len(integerized_ctr_data_path))]
     with closing(Pool(processes=num_parallel)) as pool:
-        pool.map(partial(enhance_file, attributes, product_to_attributes), input_output)
+        pool.map(partial(enhance_file, attributes, product_to_attributes, train_test_split_date), input_output)
 
 
 if __name__ == '__main__' :

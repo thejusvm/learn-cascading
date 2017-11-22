@@ -13,7 +13,7 @@ from mind_palace.product_ranker.models.modelconfig import modelconfig, parse_att
 from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
 from mind_palace.product_ranker.prepare_data.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
-from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_trainingdata_path, get_integerized_attributes_path
+from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_train_data_path, get_test_data_path, get_integerized_attributes_path
 
 """
     generates training data with
@@ -218,19 +218,12 @@ if __name__ == '__main__' :
         with open(dir, 'rb') as handle:
             trainCxt = pickle.load(handle)
     else :
-        trainCxt.data_path = get_trainingdata_path(trainCxt.input_path)
+        trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
+        trainCxt.test_path = glob.glob(get_test_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.attributedict_path = get_attributedicts_path(trainCxt.input_path)
         trainCxt.product_attributes_path = get_integerized_attributes_path(trainCxt.input_path)
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
-
-        num_copies = len(glob.glob(trainCxt.data_path))
-        dataFiles = sorted(glob.glob(trainCxt.data_path + "/part-*"), key=lambda x : x[::-1])
-        num_files_per_copy = len(dataFiles) / num_copies
-        train_size_per_copy = int(num_files_per_copy * (1 - trainCxt.test_size))
-        train_size = train_size_per_copy * num_copies
-        trainCxt.train_path = sorted(dataFiles[:train_size])
-        trainCxt.test_path = dataFiles[train_size:]
 
         modelconf = modelconfig("softmax_model")
         modelconf.attributes_config = attributes_config

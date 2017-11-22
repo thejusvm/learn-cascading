@@ -11,7 +11,7 @@ class trainingcontext :
 
     def __init__(self):
         self.input_path = ""
-        self.data_path = ""
+        # self.data_path = ""
         self.product_attributes_path = ""
         self.batch_size = 500
         self.num_epochs = 25

@@ -91,10 +91,10 @@ def integerize_product_attributes(attributes, attributes_path, output_path, attr
 
 if __name__ == '__main__' :
 
-    attribute_dict_path = "/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search/productdict.pickle"
-    attributes_path = "/home/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
-    output_path = "/home/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
-    attributes = ["productId", "brand", "vertical"]
+    attribute_dict_path = "/Users/thejus/workspace/learn-cascading/data/productdict.pickle"
+    attributes_path = "/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB/part-*"
+    output_path = "/Users/thejus/workspace/learn-cascading/data/product-attributes-integerized.MOB.large.search"
+    attributes = ["productId", "brand", "ideal_for", "vertical"]
 
     integerize_product_attributes(attributes, attributes_path, output_path, attribute_dict_path)
 
