@@ -39,7 +39,7 @@ class SearchSessions implements Serializable{
         return sessions;
     }
 
-    public void add(String sqid, ProductObj product) {
+    public void add(String sqid, String searchQuery, ProductObj product) {
         String currentFindingMethod = product.getFindingmethod();
         int currentPos = product.getPosition();
         if (sqid == null) {
@@ -51,8 +51,9 @@ class SearchSessions implements Serializable{
             }
         }
         if (!sessions.containsKey(sqid)) {
-            sessions.put(sqid, new SearchSession(sqid, product.getTimestamp()));
+            sessions.put(sqid, new SearchSession(sqid, searchQuery, product.getTimestamp()));
         }
+        sessions.get(sqid).add(product);
         sessions.get(sqid).add(product);
         lastFindingMethod = currentFindingMethod;
         lastPosition = currentPos;

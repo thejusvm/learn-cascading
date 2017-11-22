@@ -53,6 +53,7 @@ public class DataFields {
     //Search attributes
     public static final String _SEARCHATTRIBUTES = "searchAttributes";
     public static final String _SEARCHQUERYID = "searchQueryId";
+    public static final String _ORIGINALSEARCHQUERY = "originalSearchQuery";
 
     //product page listing attributes
     public static final String _PRODUCTPAGELISTINGATTRIBUTES = "productPageListingAttributes";//parent node
@@ -98,6 +99,7 @@ public class DataFields {
             _DEVICEID,
             _FINDINGMETHOD,
             _SEARCHQUERYID,
+            _ORIGINALSEARCHQUERY,
             _PRODUCTID,
             _ISVIDEOAVAILABLE,
             _ISIMAGESAVAILABLE,

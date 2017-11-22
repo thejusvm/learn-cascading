@@ -3,7 +3,6 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 import cascading.avro.AvroScheme;
 import cascading.flow.FlowDef;
 import cascading.flow.FlowProcess;
-import cascading.flow.planner.Scope;
 import cascading.operation.*;
 import cascading.operation.expression.ExpressionFunction;
 import cascading.operation.regex.RegexFilter;
@@ -22,13 +21,11 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import com.flipkart.learn.cascading.cdm_data_selection.CPRRow;
 import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
-import com.flipkart.learn.cascading.cdm_data_selection.VerticalFromCMSJson;
 import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.IOException;
@@ -53,6 +50,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             _FINDINGMETHOD,
             _TIMESTAMP,
             _SEARCHQUERYID,
+            _ORIGINALSEARCHQUERY,
             _PRODUCTID,
 //            _ISVIDEOAVAILABLE,
 //            _ISIMAGESAVAILABLE,
@@ -194,6 +192,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             userContext.setPlatform(aggregatorCall.getArguments().getString(_PLATFORM));
 
             String sqid = aggregatorCall.getArguments().getString(_SEARCHQUERYID);
+            String searchQuery = aggregatorCall.getArguments().getString(_ORIGINALSEARCHQUERY);
             String findingmethod = aggregatorCall.getArguments().getString(_FINDINGMETHOD);
             String productId = aggregatorCall.getArguments().getString(_PRODUCTID);
             int pos = aggregatorCall.getArguments().getInteger(_POSITION);
@@ -207,7 +206,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                 productAttributes.put(attributeName, attributeValue);
             }
 
-            userContext.addProduct(sqid, new ProductObj(productId, timestamp, pos, click, buy, findingmethod, productAttributes));
+            userContext.addToSession(sqid, searchQuery, new ProductObj(productId, timestamp, pos, click, buy, findingmethod, productAttributes));
         }
 
         @Override

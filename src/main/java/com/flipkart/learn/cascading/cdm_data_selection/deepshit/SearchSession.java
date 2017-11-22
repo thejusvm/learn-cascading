@@ -18,6 +18,8 @@ public class SearchSession implements Serializable {
 
     @JsonProperty(value = "sqid")
     private String sqid;
+    @JsonProperty(value = "searchQuery")
+    private String searchQuery;
     @JsonProperty(value = "timestamp")
     private long timestamp;
     @JsonProperty(value = "date")
@@ -27,10 +29,12 @@ public class SearchSession implements Serializable {
 
     @JsonCreator
     public SearchSession(@JsonProperty(value = "sqid") String sqid,
+                         @JsonProperty(value = "searchQuery") String searchQuery,
                          @JsonProperty(value = "timestamp") long timestamp,
                          @JsonProperty(value = "date") String date,
                          @JsonProperty(value = "products") List<ProductObj> products) {
         this.sqid = sqid;
+        this.searchQuery = searchQuery;
         this.timestamp = timestamp;
         this.date = date;
         this.products = products;
@@ -38,8 +42,9 @@ public class SearchSession implements Serializable {
 
     private static SimpleDateFormat format = new SimpleDateFormat("dd/MM/YY HH:mm:ss.SSSZ");
 
-    public SearchSession(String sqid, long timestamp) {
+    public SearchSession(String sqid, String searchQuery, long timestamp) {
         this.sqid = sqid;
+        this.searchQuery = searchQuery;
         this.timestamp = timestamp;
         this.date = format.format(new Date(timestamp));
         products = new ArrayList<>();
@@ -52,6 +57,10 @@ public class SearchSession implements Serializable {
 
     public String getSqid() {
         return sqid;
+    }
+
+    public String getSearchQuery() {
+        return searchQuery;
     }
 
     public long getTimestamp() {

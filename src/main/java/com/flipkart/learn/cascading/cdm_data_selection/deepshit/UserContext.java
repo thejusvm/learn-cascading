@@ -51,8 +51,8 @@ class UserContext implements Serializable {
             this.platform = platform;
     }
 
-    public void addProduct(String sqid, ProductObj product) {
-        products.add(sqid, product);
+    public void addToSession(String sqid, String searchQuery, ProductObj product) {
+        products.add(sqid, searchQuery, product);
 
     }
 
