@@ -109,7 +109,7 @@ def enhance_file(attributes, product_to_attributes, train_test_split_date, io):
     logBreak()
 
 
-def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, train_output_path, test_output_path, train_test_split_date, num_parallel = 1) :
+def enhance_clickstream(attributes, integerized_product_attributes_path, integerized_ctr_data_path, train_output_path, test_output_path, train_test_split_date, num_parallel=20) :
 
     product_to_attributes = read_integerized_attributes(attributes, integerized_product_attributes_path, attributes[0])
 
