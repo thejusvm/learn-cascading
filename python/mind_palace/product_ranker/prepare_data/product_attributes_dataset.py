@@ -16,8 +16,8 @@ def read_integerized_attributes(attributes, attributes_path, index_field):
     df[index_attribute] = df.index
     df=df[attributes]
     max_val = max(df[index_attribute])
-    df.drop_duplicates(inplace=True)
-    df.reindex(range(max_val), fill_value = -1)
+    df.drop_duplicates(inplace=True, subset=index_field)
+    df.reindex(range(max_val), fill_value=-1)
     num_attributes = len(attributes)
     for i in range(num_defaults) :
         df.loc[i] = np.ones(num_attributes) * i
