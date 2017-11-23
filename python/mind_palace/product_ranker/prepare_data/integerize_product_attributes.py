@@ -35,7 +35,7 @@ def integerize_product_attributes(attributes, attributes_path, output_path, attr
         print "Processing attribute path : " + attributes_path
         df = pd.read_csv(attributes_path, sep="\t", dtype=str)
         for attribute in attributes:
-            df[attribute] = df[attribute].apply(lambda x:  attribute_dicts[attribute].get(x))
+            df[attribute] = df[attribute].apply(lambda x:  attribute_dicts[attribute].get(str(x)))
 
         if first_iter:
             first_iter = False
