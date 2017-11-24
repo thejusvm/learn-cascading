@@ -105,7 +105,7 @@ def enhance_file(attributes, product_to_attributes, train_test_split_date, io):
     train_df, test_df = get_processed_data_frame(file, attributes, product_to_attributes, train_test_split_date)
     print "file to processed dataframe in : " + str(time.time() - start)
     write_df_toFile(train_df, train_output_file)
-    write_df_toFile(train_df, test_output_file)
+    write_df_toFile(test_df, test_output_file)
     logBreak()
 
 
