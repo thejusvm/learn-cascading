@@ -32,6 +32,8 @@ class softmax_model(model) :
         attribute_names = [self.attributes_config[i].name for i in range(num_attributes)]
 
         click_features = fetch_features(attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
+        if not self.modelConf.use_context:
+            click_features = tf.zeros_like(click_features)
         self.click_embedder = ContextClickProductHandler(self.per_attribute_embeddings, click_features, self.model_config)
         postive_features = fetch_features(attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
         self.positive_embedder = ScoringProductHandler(self.per_attribute_embeddings, postive_features)

@@ -22,7 +22,7 @@ init_bias_1 = range(10) + np.ones(10) * 10
 # print init_weight.T
 
 mdl_conf = modelconfig("softmax_model")
-mdl_conf.use_context = True
+mdl_conf.use_context = False
 mdl_conf.probability_function = "nn"
 mdl_conf.layer_count = []
 mdl_conf.click_non_linearity = False
