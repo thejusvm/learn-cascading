@@ -74,7 +74,7 @@ def flow(attributes,
 
 if __name__ == '__main__' :
 
-    attributes = ["productId", "brand", "ideal_for", "vertical"]
+    attributes = ["productId", "brand", "ideal_for", "type", "color", "pattern", "occasion", "fit", "fabric", "vertical"]
     attributesPathBase = sys.argv[1] #"/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB/"
     clickstreamPathBase = sys.argv[2] #"/Users/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller"
     outputPath = sys.argv[3] #"/Users/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.smaller.int"
