@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -11,8 +12,10 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ public class ZuluClient {
 
     private final String host;
     private final String port;
+    private final HttpClient httpclient;
     private int timeout;
     private static final ObjectMapper mapper = new ObjectMapper();
     private Map<String, String> headers;
@@ -40,13 +44,26 @@ public class ZuluClient {
         this.host = host;
         this.port = port;
         this.timeout = timeout;
-        HttpClient client = HttpClients.createDefault();
         headers = new HashMap<>();
         headers.put("z-clientid", "w3.sherlock");
         headers.put("z-requestid", "request");
         headers.put("z-timestamp", "00:00:00");
         headers.put("Content-Typep", "application/json");
 
+        httpclient = getHttpClient(host, port);
+
+
+
+    }
+
+    private HttpClient getHttpClient(String host, String port) {
+        final PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+        HttpHost httpHost = new HttpHost(host, Integer.parseInt(port));
+        connectionManager.setMaxPerRoute(new HttpRoute(httpHost), 100);
+        connectionManager.setDefaultMaxPerRoute(100);
+        connectionManager.setMaxTotal(100);
+
+        return HttpClients.custom().setConnectionManager(connectionManager).build();
     }
 
     public List<Reponse> getNecessaryResponse(List<String> productIds) throws IOException {
@@ -126,7 +143,6 @@ public class ZuluClient {
 
 
     private byte [] get(final String uri, final Map<String, String> header, Integer retry, final boolean handleRedirect) throws IOException {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
         byte [] response = null;
         try {
             HttpGet httpGet = new HttpGet(uri);
@@ -161,7 +177,7 @@ public class ZuluClient {
                 }
             };
             response = httpclient.execute(httpGet, responseHandler);
-            httpclient.close();
+//            httpclient.close();
         } catch (SocketTimeoutException e) {
             if(retry>0)
                 return get(uri, header, --retry, handleRedirect);

@@ -38,13 +38,14 @@ public class FetchImageUrls {
 
         FileProcessor.SyncWriter writer = new FileProcessor.SyncWriter(outputFile, true);
 
-        ForkJoinPool forkJoinPool = new ForkJoinPool(20);
+        ForkJoinPool forkJoinPool = new ForkJoinPool(10);
+
+        ZuluClient client = new ZuluClient(host, port, 5000);
 
         forkJoinPool.submit((Callable) () -> {
                     pidsGrouped.parallelStream()
                             .filter(x -> !"productId".equals(x))
                             .forEach(ids -> {
-                                ZuluClient client = new ZuluClient(host, port, 5000);
                                 List<ZuluClient.Reponse> responses = null;
                                 try {
                                     responses = client.getNecessaryResponse(ids);
@@ -69,14 +70,18 @@ public class FetchImageUrls {
     }
 
 
-    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+    public static void main(String[] args)  {
 
         if(args.length == 0) {
             args = new String[]{"data/product-attributes.MOB/part-00000", "data/imageUrls.MOB.live"};
         }
 
         FetchImageUrls fetcher = new FetchImageUrls("10.47.1.8", "31200");
-        fetcher.dump(args[0], args[1]);
+        try {
+            fetcher.dump(args[0], args[1]);
+        } catch (IOException | ExecutionException | InterruptedException e) {
+            LOG.error("some error", e);
+        }
 
     }
 
