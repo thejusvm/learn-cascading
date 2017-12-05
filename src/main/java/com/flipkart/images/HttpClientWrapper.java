@@ -1,15 +1,21 @@
 package com.flipkart.images;
 
+import com.squareup.okhttp.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
@@ -100,6 +106,23 @@ public class HttpClientWrapper {
         }
         return response;
     }
+
+
+    public byte [] post(final String uri, String body, Map<String, String> header, Integer retry) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+
+        MediaType mediaType = MediaType.parse("application/json");
+        RequestBody requestBody = RequestBody.create(mediaType, body);
+        Request request = new Request.Builder()
+                .url(uri)
+                .post(requestBody)
+                .addHeader("content-type", "application/json")
+                .build();
+
+        Response response = client.newCall(request).execute();
+        return response.body().bytes();
+    }
+
 
 
 }
