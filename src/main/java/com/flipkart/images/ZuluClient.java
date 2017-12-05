@@ -35,7 +35,7 @@ public class ZuluClient {
 
     private final String host;
     private final String port;
-    private final HttpClient httpclient;
+    private final HttpClientWrapper httpClient;
     private int timeout;
     private static final ObjectMapper mapper = new ObjectMapper();
     private Map<String, String> headers;
@@ -49,21 +49,7 @@ public class ZuluClient {
         headers.put("z-requestid", "request");
         headers.put("z-timestamp", "00:00:00");
         headers.put("Content-Typep", "application/json");
-
-        httpclient = getHttpClient(host, port);
-
-
-
-    }
-
-    private HttpClient getHttpClient(String host, String port) {
-        final PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-        HttpHost httpHost = new HttpHost(host, Integer.parseInt(port));
-        connectionManager.setMaxPerRoute(new HttpRoute(httpHost), 100);
-        connectionManager.setDefaultMaxPerRoute(100);
-        connectionManager.setMaxTotal(100);
-
-        return HttpClients.custom().setConnectionManager(connectionManager).build();
+        httpClient = new HttpClientWrapper(host, port, timeout);
     }
 
     public List<Reponse> getNecessaryResponse(List<String> productIds) throws IOException {
@@ -75,7 +61,7 @@ public class ZuluClient {
 
         String uri = "http://" + host + ":" + port + baseUrl + entityIds;
 
-        byte[] byteResponse = get(uri, headers, 0, false);
+        byte[] byteResponse = httpClient.get(uri, headers, 0, false);
         Map responseMap = mapper.readValue(byteResponse, Map.class);
 
         List<Reponse> reponses = new ArrayList<>();
@@ -142,76 +128,11 @@ public class ZuluClient {
     }
 
 
-    private byte [] get(final String uri, final Map<String, String> header, Integer retry, final boolean handleRedirect) throws IOException {
-        byte [] response = null;
-        try {
-            HttpGet httpGet = new HttpGet(uri);
-            if(header != null) {
-                for(Map.Entry e : header.entrySet())
-                    httpGet.addHeader((String) e.getKey(), (String) e.getValue());
-            }
-            RequestConfig requestConfig = RequestConfig.custom()
-                    .setConnectTimeout(timeout)
-                    .setConnectionRequestTimeout(timeout)
-                    .setSocketTimeout(timeout)
-                    .setRedirectsEnabled(true)
-                    .build();
-
-            httpGet.setConfig(requestConfig);
-            ResponseHandler<byte []> responseHandler = new ResponseHandler<byte[]>() {
-                @Override
-                public byte[] handleResponse(
-                        final HttpResponse response) throws IOException {
-                    int status = response.getStatusLine().getStatusCode();
-                    if (status >= 200 && status < 400) {
-                        if(status == 302 && handleRedirect) {
-                            HttpEntity entity = response.getEntity();
-                            return EntityUtils.toByteArray(entity);
-                        } else {
-                            HttpEntity entity = response.getEntity();
-                            return entity != null ? EntityUtils.toByteArray(entity) : null;
-                        }
-                    } else {
-                        throw new ClientProtocolException("GET: UNEXPECTED RESPONSE STATUS: " + status + " for URI : " + uri);
-                    }
-                }
-            };
-            response = httpclient.execute(httpGet, responseHandler);
-//            httpclient.close();
-        } catch (SocketTimeoutException e) {
-            if(retry>0)
-                return get(uri, header, --retry, handleRedirect);
-            else {
-                throw new SocketTimeoutException("[ERROR] Socket Timeout Exception for uri " + uri);
-            }
-        } catch (ConnectTimeoutException e) {
-            if(retry>0)
-                return get(uri, header, --retry, handleRedirect);
-            else {
-                throw new ConnectTimeoutException("[ERROR] Connect Timeout Exception for uri " + uri);
-            }
-        } catch (ClientProtocolException e) {
-            if(retry>0)
-                return get(uri, header, --retry, handleRedirect);
-            else
-                throw new ClientProtocolException("[ERROR] Client Protocol Exception for uri: "+ uri, e);
-        } catch (IOException e) {
-            if(retry>0)
-                return get(uri, header, --retry, handleRedirect);
-            else
-                throw new IOException("[ERROR] IOException  for uri: " + uri, e);
-        }
-        return response;
-    }
-
-
     public static void main(String[] args) throws IOException {
 
         ZuluClient client = new ZuluClient("10.47.1.8", "31200", 1000);
         List<Reponse> resp = client.getNecessaryResponse(ImmutableList.of("TSHEQ54WRZ3R3WRN"));
-
         System.out.println(resp);
-
 
     }
 
