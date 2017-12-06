@@ -57,6 +57,7 @@ public class FetchImageEmbeddings {
                                         Object values = ((Map) responseMap.get("result")).get("fv");
                                         String valuesString = mapper.writeValueAsString(values);
                                         writer.write(id + "\t" + valuesString + "\n");
+                                        writer.flush();
                                     } else {
                                         writer.write(id + "\t" + "[]" + "\n");
                                     }
