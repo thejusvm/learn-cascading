@@ -6,7 +6,9 @@ import cascading.operation.Filter;
 import cascading.operation.FilterCall;
 import cascading.pipe.Each;
 import cascading.pipe.Pipe;
+import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
+import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlowRunner;
 import com.google.common.collect.ImmutableSet;
@@ -23,21 +25,21 @@ import java.util.Set;
  * Decodes the first column as a json Map and looks for the "query" field.
  * Retains only those lines where the query exist in the query set.
  */
-public class FilterByQuery implements SimpleFlow {
+public class FilterByQuery extends SubAssembly {
 
     private Set<String> queries;
     private String queryField = "query";
 
     public FilterByQuery(String queryField, Set<String> queries) {
-        this.queryField = queryField;
-        this.queries = queries;
+        this(new Pipe("filter_by_query"), queryField, queries);
     }
 
-    @Override
-    public Pipe getPipe() {
-        Pipe pipe = new Pipe("filter");
+    public FilterByQuery(Pipe inputPipe, String queryField, Set<String> queries) {
+        this.queryField = queryField;
+        this.queries = queries;
+        Pipe pipe = inputPipe;
         pipe = new Each(pipe, Fields.ALL, new QueryIn(queryField, queries));
-        return pipe;
+        setTails(pipe);
     }
 
     public static void main(String[] args) {
@@ -47,7 +49,8 @@ public class FilterByQuery implements SimpleFlow {
         }
 
         ImmutableSet<String> queries = ImmutableSet.copyOf(args[3].split(","));
-        SimpleFlowRunner.execute(new FilterByQuery(args[2], queries), args[0], args[1]);
+        PipeRunner runner = new PipeRunner("filter_by_query");
+        runner.executeHfs(new FilterByQuery(args[2], queries), args[0], args[1], true);
     }
 
     private static class QueryIn extends BaseOperation implements Filter, Serializable {

@@ -82,7 +82,8 @@ def process_file(data_path,
                  attributes,
                  attribute_dicts):
     df = pd.read_csv(data_path, sep="\t")
-    df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search")]
+    # df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search")]
+    df = df[df["findingMethod"].apply(lambda x: str(x).lower() == "search" or str(x).lower() == "organic")]
     start = time.clock()
     process_row(df, attributes, attribute_dicts)
     attribute_keys = cross_attribute_prefix(attributes, CONST.OUTPUTS_PER_ATTRIBUTE)

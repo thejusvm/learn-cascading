@@ -45,6 +45,12 @@ public class ExtractCmsAttributes implements SimpleFlow {
         Map<String, Set<String>> fetchConfig = new LinkedHashMap<>();
         fetchConfig.put("brand", null);
         fetchConfig.put("ideal_for", ImmutableSet.of("Women","Men","Women's","Men's","Girls","Boys","Baby","Girl's","Boy's","Kids","Adults","Couple","Junior","Senior","Unisex","Infants"));
+        fetchConfig.put("type", null);
+        fetchConfig.put("color", null);
+        fetchConfig.put("pattern", null);
+        fetchConfig.put("occasion", null);
+        fetchConfig.put("fit", null);
+        fetchConfig.put("fabric", null);
         fetchConfig.put("vertical", null);
         Fields inputFields = new Fields(DataFields._PRODUCTID, DataFields._CMS);
         SimpleFlowRunner.execute(new ExtractCmsAttributes(fetchConfig, renameConfig), args[0], inputFields, args[1]);

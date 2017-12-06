@@ -92,7 +92,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
 
 
-    private Pipe getCDMPipe() {
+    public static Pipe getCDMPipe() {
         Pipe cdmPipe = new Pipe("cdmPipe");
 
         cdmPipe = new Each(cdmPipe, Fields.ALL, new CPRRow(DataFields.cdmOutputFields), Fields.RESULTS);
