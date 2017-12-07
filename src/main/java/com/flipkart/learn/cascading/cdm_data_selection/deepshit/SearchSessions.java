@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Created by thejus on 13/9/17.
  */
-class SearchSessions implements Serializable{
+public class SearchSessions implements Serializable{
 
     @JsonProperty(value = "sessions")
     Map<String, SearchSession> sessions;

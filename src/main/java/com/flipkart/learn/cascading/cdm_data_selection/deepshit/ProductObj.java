@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Created by thejus on 13/9/17.
  */
-class ProductObj implements Serializable {
+public class ProductObj implements Serializable {
 
     @JsonProperty(value = "productId")
     private final String productId;
