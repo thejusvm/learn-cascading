@@ -54,7 +54,6 @@ public class SearchSessions implements Serializable{
             sessions.put(sqid, new SearchSession(sqid, searchQuery, product.getTimestamp()));
         }
         sessions.get(sqid).add(product);
-        sessions.get(sqid).add(product);
         lastFindingMethod = currentFindingMethod;
         lastPosition = currentPos;
     }
