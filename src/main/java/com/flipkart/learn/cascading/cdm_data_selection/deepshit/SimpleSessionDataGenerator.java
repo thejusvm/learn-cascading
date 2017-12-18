@@ -49,7 +49,6 @@ public class SimpleSessionDataGenerator implements CascadingFlows, Serializable 
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
         Pipe cdmRawPipe = getCDMPipe();
-        cdmRawPipe = new Each(cdmRawPipe, new ExpressionFilter("(productCardClicks == 0)", Float.class));
 
 
         cdmRawPipe = new Retain(cdmRawPipe, new Fields(_ACCOUNTID, _PRODUCTID));
@@ -72,7 +71,7 @@ public class SimpleSessionDataGenerator implements CascadingFlows, Serializable 
             args = new String[] {
                     "flowName=simple-session-data",
                     "input=data/cdm-2017-0801.1000.avro",
-                    "output=data/sessionNoAttributes-2017-0801.1000",
+                    "output=data/simplesession-2017-0801.100",
             };
         }
 

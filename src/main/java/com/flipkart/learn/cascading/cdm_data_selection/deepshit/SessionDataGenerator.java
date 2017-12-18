@@ -4,6 +4,7 @@ import cascading.avro.AvroScheme;
 import cascading.flow.FlowDef;
 import cascading.flow.FlowProcess;
 import cascading.operation.*;
+import cascading.operation.expression.ExpressionFilter;
 import cascading.operation.expression.ExpressionFunction;
 import cascading.operation.regex.RegexFilter;
 import cascading.pipe.*;
@@ -108,6 +109,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Fields buyIntentFields = new Fields(_BUYNOWCLICKS, _ADDTOCARTCLICKS);
         cdmPipe = new Each(cdmPipe, buyIntentFields, new ExpressionFunction(new Fields(_BUYINTENT), _BUYNOWCLICKS + "+" + _ADDTOCARTCLICKS, Float.class), Fields.ALL);
         cdmPipe = new Discard(cdmPipe, buyIntentFields);
+        cdmPipe = new Each(cdmPipe, new ExpressionFilter("(productCardClicks == 0)", Float.class));
         return cdmPipe;
     }
 
@@ -141,14 +143,15 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                 new Fields(DataFields._FSN),
                 new LeftJoin());
 
-        cdmCmsPipe = new GroupBy(cdmCmsPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
+        Pipe sessionPipe = new GroupBy(cdmCmsPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
 
-        Pipe sessionPipe = new Every(cdmCmsPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), attributes), Fields.ALL);
+        sessionPipe = new Every(sessionPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), attributes), Fields.ALL);
         sessionPipe = new Each(sessionPipe, userStats, new ExpandUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
-        sessionPipe = new Each(sessionPipe, new Fields(NUM_CLICKS), new RegexFilter("^[^0]$"));
+        sessionPipe = new Each(sessionPipe, new ExpressionFilter("(numClicks == 0)", Float.class));
+
         sessionPipe = new JsonEncodeEach(sessionPipe, userStats);
         sessionPipe = new JsonEncodeEach(sessionPipe, userDayStats);
         sessionPipe = new JsonEncodeEach(sessionPipe, userContext);

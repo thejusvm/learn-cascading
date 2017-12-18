@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator.lifeStylePrefixes;
 
 public class SessionExploder implements SimpleFlow {
 
@@ -65,12 +66,15 @@ public class SessionExploder implements SimpleFlow {
         }
 
         private boolean match(ProductObj productObj) {
-            if(matchConfig == null || matchConfig.isEmpty()) {
-                return true;
-            } else {
-                Map<String, String> attributes = productObj.getAttributes();
-                return matchConfig.entrySet().stream().allMatch(x -> x.getValue().contains(attributes.get(x.getKey())));
-            }
+
+            return Arrays.stream(lifeStylePrefixes).anyMatch(prefix -> productObj.getProductId().startsWith(prefix));
+
+//            if(matchConfig == null || matchConfig.isEmpty()) {
+//                return true;
+//            } else {
+//                Map<String, String> attributes = productObj.getAttributes();
+//                return matchConfig.entrySet().stream().allMatch(x -> x.getValue().contains(attributes.get(x.getKey())));
+//            }
         }
 
         @Override
@@ -139,7 +143,7 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000", "data/sessionexplode-2017-0801.1000", "vertical:mobile"};
+            args = new String[]{"data/session-2017-0801.1000/part-*", "data/sessionexplode-2017-0801.1000", "vertical:mobile"};
         }
 
         String matchConfigStr = args.length > 2 ? args[2] : null;
