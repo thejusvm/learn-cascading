@@ -109,7 +109,6 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Fields buyIntentFields = new Fields(_BUYNOWCLICKS, _ADDTOCARTCLICKS);
         cdmPipe = new Each(cdmPipe, buyIntentFields, new ExpressionFunction(new Fields(_BUYINTENT), _BUYNOWCLICKS + "+" + _ADDTOCARTCLICKS, Float.class), Fields.ALL);
         cdmPipe = new Discard(cdmPipe, buyIntentFields);
-        cdmPipe = new Each(cdmPipe, new ExpressionFilter("(productCardClicks == 0)", Float.class));
         return cdmPipe;
     }
 

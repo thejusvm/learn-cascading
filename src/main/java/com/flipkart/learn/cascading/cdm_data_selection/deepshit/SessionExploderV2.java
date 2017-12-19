@@ -28,11 +28,10 @@ public class SessionExploderV2 implements SimpleFlow {
 
     public static final String PAST_CLICKED_PRODUCTS = "pastClickedProducts";
     public static final String PAST_BOUGHT_PRODUCTS = "pastBoughtProducts";
-    public static final String POSITIVE_PRODUCTS = "positiveProducts";
-    public static final String NEGATIVE_PRODUCTS = "negativeProducts";
+    public static final String SCORABLE_PRODUCTS = "scorableProducts";
+    public static final String TARGET = "target";
     public static final String ACTION = "action";
     public static final String ACTION_CLICK = "action.click";
-    public static final String RANDOM_ID = "random_id";
 
     private static int numProducts = 10;
 
@@ -47,12 +46,11 @@ public class SessionExploderV2 implements SimpleFlow {
         Pipe pipe = new Pipe("session-exploder-pipe");
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
-        Fields expodedFields = new Fields(RANDOM_ID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
+        Fields expodedFields = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, SCORABLE_PRODUCTS, TARGET);
         pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields, matchConfig), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
-        pipe = new JsonEncodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
-        pipe = new GroupBy(pipe, new Fields(RANDOM_ID));
-        pipe = new Discard(pipe, new Fields(RANDOM_ID));
+        pipe = new JsonEncodeEach(pipe, new Fields(SCORABLE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
+        pipe = new GroupBy(pipe, new Fields(_SEARCHQUERYID));
         return pipe;
     }
 
@@ -85,6 +83,7 @@ public class SessionExploderV2 implements SimpleFlow {
             Map<String, Map<String, String>> pastBought = Collections.emptyMap();
             for (SearchSession session : sessions) {
                 long timestamp = session.getTimestamp();
+                String sqid = session.getSqid();
                 List<ProductObj> impressionProducts = session.getProducts();
                 List<ProductObj> clickedProducts = session.getClickedProduct();
                 List<ProductObj> boughtProducts = session.getBoughtProducts();
@@ -94,39 +93,46 @@ public class SessionExploderV2 implements SimpleFlow {
                         .filter(this::match)
                         .collect(Collectors.toList());
 
+                Set<String> dedupeNegativeProducts = new HashSet<String>();
                 for (ProductObj clickedProduct : clickedProducts) {
                     String findingMethod = clickedProduct.getFindingmethod();
                     int clickedProductPos = clickedProduct.getPosition();
                     ArrayList<ProductObj> impressionsSorted = new ArrayList<>(impressionProducts);
                     impressionsSorted
                             .sort(Comparator.comparingInt(o -> Math.abs(clickedProductPos - o.getPosition())));
-                    Map<String, Map<String, String>> finalPastClick = pastClick;
-//                    Map<String, Map<String, String>> finalPastBought = pastBought;
-                    List negativeForClicked = impressionsSorted
+                    List<ProductObj> negativeForClicked = impressionsSorted
                             .stream()
                             .filter(this::match)
                             .filter(product -> !product.isClick()) // removing if the product has been clicked
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
-//                            .filter(product -> !finalPastClick.keySet().contains(product.getProductId())) // removed if the product had been clicked in the history
-//                            .filter(product -> !finalPastBought.keySet().contains(product.getProductId()))
                             .filter(product -> clickedProduct.getPosition() + 2 >= product.getPosition()) // removing if the product's position is 2 greater than the clicked product
-                            .map(ProductObj::getAttributes)
                             .limit(numProducts)
                             .collect(Collectors.toList());
-                    pastClick = new LinkedHashMap<>(pastClick);
                     functionCall.getOutputCollector().add(
-                            new Tuple(UUID.randomUUID().toString(),
+                            new Tuple(sqid,
                                     timestamp,
                                     findingMethod,
                                     ACTION_CLICK,
                                     pastClick.values(),
                                     pastBought.values(),
                                     clickedProduct.getAttributes(),
-                                    negativeForClicked));
-                }
+                                    1));
+                    for (ProductObj negatives : negativeForClicked) {
+                        if(!dedupeNegativeProducts.contains(negatives.getProductId())) {
+                            functionCall.getOutputCollector().add(
+                                    new Tuple(sqid,
+                                            timestamp,
+                                            findingMethod,
+                                            ACTION_CLICK,
+                                            pastClick.values(),
+                                            pastBought.values(),
+                                            negatives.getAttributes(),
+                                            0));
+                            dedupeNegativeProducts.add(negatives.getProductId());
+                        }
+                    }
 
-                pastClick = new LinkedHashMap<>(pastClick);
-                for (ProductObj clickedProduct : clickedProducts) {
+                    pastClick = new LinkedHashMap<>(pastClick);
                     pastClick.put(clickedProduct.getProductId(), clickedProduct.getAttributes());
                 }
 
@@ -143,7 +149,7 @@ public class SessionExploderV2 implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000/part-*", "data/sessionexplode-2017-0801.1000", "vertical:mobile"};
+            args = new String[]{"data/session-2017-0801.1000/part-*", "data/sessionexplodeV2-2017-0801.1000", "vertical:mobile"};
         }
 
         String matchConfigStr = args.length > 2 ? args[2] : null;

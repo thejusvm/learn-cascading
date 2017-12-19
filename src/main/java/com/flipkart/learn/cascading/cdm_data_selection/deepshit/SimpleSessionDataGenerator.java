@@ -49,8 +49,7 @@ public class SimpleSessionDataGenerator implements CascadingFlows, Serializable 
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
         Pipe cdmRawPipe = getCDMPipe();
-
-
+        cdmRawPipe = new Each(cdmRawPipe, new ExpressionFilter("(productCardClicks == 0)", Float.class));
         cdmRawPipe = new Retain(cdmRawPipe, new Fields(_ACCOUNTID, _PRODUCTID));
         cdmRawPipe = new Each(cdmRawPipe, new Fields(_PRODUCTID), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));
         cdmRawPipe = new GroupBy(cdmRawPipe, new Fields(_ACCOUNTID));
