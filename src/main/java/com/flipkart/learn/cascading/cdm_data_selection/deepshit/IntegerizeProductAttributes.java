@@ -3,13 +3,13 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 import com.flipkart.images.FileProcessor;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class IntegerizeProductAttributes {
 
@@ -19,7 +19,7 @@ public class IntegerizeProductAttributes {
        attributeToDict = new HashMap<>();
     }
 
-    private void initDicts(String[] fields) {
+    private void initDicts(List<String> fields) {
         for (String field : fields) {
             if(!attributeToDict.containsKey(field)) {
                 attributeToDict.put(field, new DictIntegerizer(field, Helpers.DEFAULT_DICT_KEYS));
@@ -39,8 +39,14 @@ public class IntegerizeProductAttributes {
             if(first) {
                 writer.write(firstLine + "\n");
             }
-            String[] fields = firstLine.split("\t");
-            int numFields = fields.length;
+            List<String> fields = new ArrayList<>();
+            for (String split : firstLine.split("\t")) {
+                if(!"count".equals(split)) {
+                    fields.add(split);
+                }
+            }
+
+            int numFields = fields.size();
             initDicts(fields);
             while(true) {
                 String line = br.readLine();
@@ -49,7 +55,7 @@ public class IntegerizeProductAttributes {
                 Integer[] intValues = new Integer[numFields];
 
                 for (int i = 0; i < numFields; i++) {
-                    String field = fields[i];
+                    String field = fields.get(i);
                     String value = values[i];
                     DictIntegerizer fieldDict = getDict(field);
                     intValues[i] = fieldDict.get(value);
@@ -88,6 +94,9 @@ public class IntegerizeProductAttributes {
         }
 
         Helpers.writeAttributeDicts(attributeToDict, attributeDictsPath);
+        for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
+            System.out.println("attribute : " + attributeToDict.getKey() + ", size : " + attributeToDict.getValue().getCurrentCount());
+        }
 //        for (String attribute : attributeToDict.keySet()) {
 //            DictIntegerizer attributeDict = attributeToDict.get(attribute);
 //            String[] terms = attributeDict.getTerms();
