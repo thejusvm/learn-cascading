@@ -73,6 +73,10 @@ public class PipeRunner {
         return this;
     }
 
+    public static boolean isLocal() {
+        return System.getProperties().getProperty("os.name").toLowerCase().contains("mac");
+    }
+
     public void executeFlowDef(FlowDef flowDef) {
         Joiner joiner = Joiner.on(",").skipNulls();
 
@@ -95,6 +99,11 @@ public class PipeRunner {
         properties.setProperty("mapred.reduce.tasks", "200");
         properties.setProperty("io.serializations", serialization);
         properties.setProperty("mapred.job.queue.name", "search");
+
+        if(isLocal()) {
+            numReducers = 1;
+        }
+
         if (numReducers > 0) {
             String numReducersString = String.valueOf(numReducers);
             properties.setProperty("mapred.reduce.tasks", numReducersString);
