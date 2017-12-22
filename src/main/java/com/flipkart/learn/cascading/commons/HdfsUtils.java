@@ -15,8 +15,14 @@ import java.util.*;
  */
 public class HdfsUtils {
 
+    private static Configuration configuration = new Configuration();
+
+    public static void setConfiguration(Configuration configuration) {
+        HdfsUtils.configuration = configuration;
+    }
+
     public static List<String> listSortedFiles(String path, int num) throws IOException {
-        FileSystem fs = FileSystem.get(new Path(path).toUri(), new Configuration());
+        FileSystem fs = FileSystem.get(new Path(path).toUri(), configuration);
         FileStatus[] items = fs.listStatus(new Path(path));
         List<String> files = new ArrayList<>();
         for (FileStatus item : items) {
@@ -45,7 +51,7 @@ public class HdfsUtils {
     }
 
     public static List<String> listFiles(String path, long minSize) throws IOException {
-        FileSystem fs = FileSystem.get(new Path(path).toUri(), new Configuration());
+        FileSystem fs = FileSystem.get(new Path(path).toUri(), configuration);
         FileStatus[] items = fs.listStatus(new Path(path));
         List<String> files = new ArrayList<>();
         for (FileStatus item : items) {
@@ -59,7 +65,7 @@ public class HdfsUtils {
 
     public static BufferedReader getReader(String pt) throws IOException {
         Path path = new Path(pt);
-        FileSystem fs = FileSystem.get(new Configuration());
+        FileSystem fs = FileSystem.get(configuration);
         BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path)));
         return br;
     }

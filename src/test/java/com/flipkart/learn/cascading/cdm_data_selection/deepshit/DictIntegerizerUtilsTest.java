@@ -1,12 +1,10 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 

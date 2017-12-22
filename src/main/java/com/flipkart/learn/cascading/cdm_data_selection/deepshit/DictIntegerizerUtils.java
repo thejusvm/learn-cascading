@@ -2,6 +2,7 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 import com.flipkart.images.Container;
 import com.flipkart.images.FileProcessor;
+import com.flipkart.learn.cascading.commons.HdfsUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.File;
@@ -20,9 +21,9 @@ public class DictIntegerizerUtils {
 
     public static List<DictIntegerizer> readAttributeDicts(String attributeDictPath) throws IOException {
         List<DictIntegerizer> dicts = new ArrayList<>();
-        for (File file : new File(attributeDictPath).listFiles()) {
+        for (String file : HdfsUtils.listFiles(attributeDictPath, 1)) {
             DictIntegerizerCollector dictCollector = new DictIntegerizerCollector();
-            FileProcessor.eachLine(file, dictCollector);
+            FileProcessor.hdfsEachLine(file, dictCollector);
             DictIntegerizer dict = dictCollector.getDict();
             dicts.add(dict);
         }

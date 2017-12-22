@@ -13,11 +13,9 @@ import cascading.tap.hadoop.Hfs;
 import cascading.tuple.Fields;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.conf.Configuration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -90,7 +88,15 @@ public class PipeRunner {
                 .map(input -> input.getClassName())
                 .collect(Collectors.toList()));
 
-        Properties properties = new Properties();
+        Configuration conf = new Configuration();
+        Iterator<Map.Entry<String, String>> confIter = conf.iterator();
+        Map<Object, Object> confMap = new HashMap<>();
+        while (confIter.hasNext()) {
+            Map.Entry<String, String> nextElement = confIter.next();
+            confMap.put(nextElement.getKey(), nextElement.getValue());
+        }
+
+        Properties properties = AppProps.appProps().buildProperties(confMap);
         properties.setProperty("mapred.task.timeout", "600000");
         String split = "671088640";
         properties.setProperty("mapred.max.split.size", split);

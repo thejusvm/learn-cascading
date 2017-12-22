@@ -12,9 +12,11 @@ import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizer;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils;
+import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 
 public class IntegerizeSessionExploder extends SubAssembly {
 
-    private final Map<String, DictIntegerizer> attribueDict;
+    private String attributeDictPath;
     private boolean jsonize;
 
     public IntegerizeSessionExploder(String attributeDictPath) throws IOException {
@@ -34,9 +36,7 @@ public class IntegerizeSessionExploder extends SubAssembly {
     }
 
     public IntegerizeSessionExploder(String attributeDictPath, boolean jsonize) throws IOException {
-        List<DictIntegerizer> attribueDictList = DictIntegerizerUtils.readAttributeDicts(attributeDictPath);
-        this.attribueDict = DictIntegerizerUtils.indexByName(attribueDictList);
-        System.out.println("read attributes dict from path : " + attributeDictPath);
+        this.attributeDictPath = attributeDictPath;
         this.jsonize = jsonize;
         setTails(getPipe());
     }
@@ -51,7 +51,7 @@ public class IntegerizeSessionExploder extends SubAssembly {
 
         pipe = new Each(pipe, new Fields(POSITIVE_PRODUCTS), new ToList(new Fields(POSITIVE_PRODUCTS)), Fields.SWAP);
         Fields integerizingFields = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS);
-        pipe = new Each(pipe, integerizingFields, new Integerize(integerizingFields, attribueDict), Fields.SWAP);
+        pipe = new Each(pipe, integerizingFields, new Integerize(integerizingFields, attributeDictPath), Fields.SWAP);
 
         if(jsonize) {
             pipe = new JsonEncodeEach(pipe, integerizingFields);
@@ -74,17 +74,32 @@ public class IntegerizeSessionExploder extends SubAssembly {
         }
     }
 
-    private class Integerize extends BaseOperation implements Function {
+    private static class Integerize extends BaseOperation implements Function {
 
-        private final Map<String, DictIntegerizer> attribueDict;
+        private final String attributeDictPath;
+        private static Map<String, DictIntegerizer> attribueDict = null;
 
-        public Integerize(Fields fields, Map<String, DictIntegerizer> attribueDict) {
+        public Integerize(Fields fields, String attributeDictPath) {
             super(fields);
-            this.attribueDict = attribueDict;
+            this.attributeDictPath = attributeDictPath;
+        }
+
+        private static synchronized void init(String attributeDictPath) throws IOException {
+            if(attribueDict == null){
+                List<DictIntegerizer> attribueDictList = DictIntegerizerUtils.readAttributeDicts(attributeDictPath);
+                attribueDict = DictIntegerizerUtils.indexByName(attribueDictList);
+                System.out.println("read attributes dict from path : " + attributeDictPath);
+            }
         }
 
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
+            try {
+                HdfsUtils.setConfiguration((Configuration)flowProcess.getConfigCopy());
+                init(attributeDictPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             TupleEntry arguments = functionCall.getArguments();
             int numArguments = arguments.size();
             Tuple result = new Tuple();
@@ -117,7 +132,7 @@ public class IntegerizeSessionExploder extends SubAssembly {
         if(args.length == 0) {
             args = new String[]{
                     "data/sessionexplode-2017-0801.1000",
-                    "data/product-attributes.MOB.int/attribute_dicts.json",
+                    "data/product-attributes.MOB.int/attribute_dicts",
                     "data/sessionexplode-2017-0801.1000.int"
             };
         }
@@ -130,6 +145,7 @@ public class IntegerizeSessionExploder extends SubAssembly {
         }
 
         PipeRunner runner = new PipeRunner("explode-integerize");
+        runner.addSerializationType(PipeRunner.SerializationType.KRYO);
         runner.setNumReducers(600);
         runner.executeHfs(integerizer, args[0], args[2], true);
 
