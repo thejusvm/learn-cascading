@@ -36,14 +36,16 @@ public class IntegerizeProductAttributes {
         BufferedReader br = HdfsUtils.getReader(inputFile);
         try {
             String firstLine = br.readLine();
-            if(first) {
-                writer.write(firstLine + "\n");
-            }
+
             List<String> fields = new ArrayList<>();
             for (String split : firstLine.split("\t")) {
                 if(!"count".equals(split)) {
                     fields.add(split);
                 }
+            }
+
+            if(first) {
+                writer.write(Joiner.on("\t").join(fields) + "\n");
             }
 
             int numFields = fields.size();

@@ -35,6 +35,7 @@ public class IntegerizeSessionExploder extends SubAssembly {
 
     public IntegerizeSessionExploder(String attributeDictPath, boolean jsonize) throws IOException {
         attribueDict = Helpers.readAttributeDicts(attributeDictPath);
+        System.out.println("read attributes dict from path : " + attributeDictPath);
         this.jsonize = jsonize;
         setTails(getPipe());
     }
