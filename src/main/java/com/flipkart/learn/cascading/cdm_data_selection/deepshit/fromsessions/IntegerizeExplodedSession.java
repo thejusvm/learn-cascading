@@ -26,16 +26,16 @@ import java.util.Map;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
-public class IntegerizeSessionExploder extends SubAssembly {
+public class IntegerizeExplodedSession extends SubAssembly {
 
     private String attributeDictPath;
     private boolean jsonize;
 
-    public IntegerizeSessionExploder(String attributeDictPath) throws IOException {
+    public IntegerizeExplodedSession(String attributeDictPath) throws IOException {
         this(attributeDictPath, true);
     }
 
-    public IntegerizeSessionExploder(String attributeDictPath, boolean jsonize) throws IOException {
+    public IntegerizeExplodedSession(String attributeDictPath, boolean jsonize) throws IOException {
         this.attributeDictPath = attributeDictPath;
         this.jsonize = jsonize;
         setTails(getPipe());
@@ -137,9 +137,9 @@ public class IntegerizeSessionExploder extends SubAssembly {
             };
         }
 
-        IntegerizeSessionExploder integerizer = null;
+        IntegerizeExplodedSession integerizer = null;
         try {
-            integerizer = new IntegerizeSessionExploder(args[1]);
+            integerizer = new IntegerizeExplodedSession(args[1]);
         } catch (IOException e) {
             throw  new RuntimeException(e);
         }
