@@ -31,11 +31,11 @@ public class IntegerizeExplodedSession extends SubAssembly {
     private String attributeDictPath;
     private boolean jsonize;
 
-    public IntegerizeExplodedSession(String attributeDictPath) throws IOException {
+    public IntegerizeExplodedSession(String attributeDictPath) {
         this(attributeDictPath, true);
     }
 
-    public IntegerizeExplodedSession(String attributeDictPath, boolean jsonize) throws IOException {
+    public IntegerizeExplodedSession(String attributeDictPath, boolean jsonize) {
         this.attributeDictPath = attributeDictPath;
         this.jsonize = jsonize;
         setTails(getPipe());
@@ -138,11 +138,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
         }
 
         IntegerizeExplodedSession integerizer = null;
-        try {
-            integerizer = new IntegerizeExplodedSession(args[1]);
-        } catch (IOException e) {
-            throw  new RuntimeException(e);
-        }
+        integerizer = new IntegerizeExplodedSession(args[1]);
 
         PipeRunner runner = new PipeRunner("explode-integerize");
         runner.setNumReducers(600);

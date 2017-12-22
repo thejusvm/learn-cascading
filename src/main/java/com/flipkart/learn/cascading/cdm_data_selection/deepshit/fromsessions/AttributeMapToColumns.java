@@ -99,7 +99,7 @@ public class AttributeMapToColumns extends SubAssembly {
 
         if(args.length == 0) {
             args = new String[]{
-                    "data/sessionexplode-2017-0801.1000.int",
+                    "data/sessionexplode-2017-0801.1000.neg",
                     "data/sessionexplode-2017-0801.1000.attributecols"
             };
         }
