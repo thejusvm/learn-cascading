@@ -16,6 +16,18 @@ public class DictIntegerizerUtils {
     public static String DEFAULT_CLICK = "<defaultclick>";
     public static String[] DEFAULT_DICT_KEYS = new String[] {PAD, MISSING_DATA, DEFAULT_CLICK};
 
+    public static int MISSING_DATA_INDEX = 1;
+
+    static {
+        for (int i = 0; i < DEFAULT_DICT_KEYS.length; i++) {
+            String defaultDictKey = DEFAULT_DICT_KEYS[i];
+            if(MISSING_DATA.equals(defaultDictKey)) {
+                MISSING_DATA_INDEX = i;
+                break;
+            }
+        }
+    }
+
 
     private static ObjectMapper mapper = new ObjectMapper();
 

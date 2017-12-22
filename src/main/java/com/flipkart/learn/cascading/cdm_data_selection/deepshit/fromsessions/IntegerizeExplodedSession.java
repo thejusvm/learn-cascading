@@ -145,7 +145,6 @@ public class IntegerizeExplodedSession extends SubAssembly {
         }
 
         PipeRunner runner = new PipeRunner("explode-integerize");
-        runner.addSerializationType(PipeRunner.SerializationType.KRYO);
         runner.setNumReducers(600);
         runner.executeHfs(integerizer, args[0], args[2], true);
 
