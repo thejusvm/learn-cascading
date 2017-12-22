@@ -98,7 +98,7 @@ public class PipeRunner {
 
         Properties properties = AppProps.appProps().buildProperties(confMap);
         properties.setProperty("mapred.task.timeout", "600000");
-        String split = "671088640";
+        String split = "6710886400";
         properties.setProperty("mapred.max.split.size", split);
         properties.setProperty("mapred.min.split.size", split);
         properties.setProperty("mapreduce.job.reduces", "200");

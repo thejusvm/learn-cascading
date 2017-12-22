@@ -1,11 +1,14 @@
 package com.flipkart.learn.cascading.commons;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
@@ -61,6 +64,20 @@ public class HdfsUtils {
             }
         }
         return files;
+    }
+
+    public static String slurp(String file) throws IOException {
+        FileSystem fs = FileSystem.get(configuration);
+        FSDataInputStream in = null;
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            in = fs.open(new Path(file));
+            IOUtils.copyBytes(in, outputStream, 4096, false);
+            return new String(outputStream.toByteArray());
+        } finally {
+            IOUtils.closeStream(in);
+            IOUtils.closeStream(outputStream);
+        }
     }
 
     public static BufferedReader getReader(String pt) throws IOException {

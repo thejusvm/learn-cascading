@@ -35,6 +35,19 @@ public class FileProcessor {
         }
     }
 
+    public static void hdfsBulkEachLine(String inputFile, Container<String> lineCollector) {
+        try {
+            String[] fileSplit = HdfsUtils.slurp(inputFile).split("\n");
+            for (String line : fileSplit) {
+                lineCollector.collect(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            lineCollector.close();
+        }
+    }
+
     public static void hdfsEachLine(String inputFile, Container<String> lineCollector) {
         BufferedReader br = null;
         try {
