@@ -3,8 +3,7 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 import com.flipkart.images.FileProcessor;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import org.apache.commons.io.FileDeleteStrategy;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,7 +21,7 @@ public class IntegerizeProductAttributes {
     private void initDicts(List<String> fields) {
         for (String field : fields) {
             if(!attributeToDict.containsKey(field)) {
-                attributeToDict.put(field, new DictIntegerizer(field, Helpers.DEFAULT_DICT_KEYS));
+                attributeToDict.put(field, new DictIntegerizer(field, DictIntegerizerUtils.DEFAULT_DICT_KEYS));
             }
         }
     }
@@ -77,15 +76,13 @@ public class IntegerizeProductAttributes {
         File outputDir = new File(outputPath);
 
         if(outputDir.exists()) {
-            for (File file : outputDir.listFiles()) {
-                file.deleteOnExit();
-            }
-        } else {
-            outputDir.mkdir();
+            FileDeleteStrategy.FORCE.delete(outputDir);
         }
 
+        outputDir.mkdir();
+
         String attributeTuplesPath = outputPath + "/integerized_attributes";
-        String attributeDictsPath = outputPath + "/attribute_dicts.json";
+        String attributeDictsPath = outputPath + "/attribute_dicts";
 
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         boolean first = true;
@@ -95,21 +92,10 @@ public class IntegerizeProductAttributes {
             first = false;
         }
 
-        Helpers.writeAttributeDicts(attributeToDict, attributeDictsPath);
+        DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
         for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
             System.out.println("attribute : " + attributeToDict.getKey() + ", size : " + attributeToDict.getValue().getCurrentCount());
         }
-//        for (String attribute : attributeToDict.keySet()) {
-//            DictIntegerizer attributeDict = attributeToDict.get(attribute);
-//            String[] terms = attributeDict.getTerms();
-//            String termDictPath = outputPath + "/termDict." + attribute;
-//            FileProcessor.SyncWriter termDictWriter = new FileProcessor.SyncWriter(termDictPath, false);
-//            for (String term : terms) {
-//                termDictWriter.write(term + "\n");
-//            }
-//            termDictWriter.close();
-//
-//        }
 
     }
 

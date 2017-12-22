@@ -11,7 +11,7 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizer;
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.Helpers;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
@@ -34,7 +34,8 @@ public class IntegerizeSessionExploder extends SubAssembly {
     }
 
     public IntegerizeSessionExploder(String attributeDictPath, boolean jsonize) throws IOException {
-        attribueDict = Helpers.readAttributeDicts(attributeDictPath);
+        List<DictIntegerizer> attribueDictList = DictIntegerizerUtils.readAttributeDicts(attributeDictPath);
+        this.attribueDict = DictIntegerizerUtils.indexByName(attribueDictList);
         System.out.println("read attributes dict from path : " + attributeDictPath);
         this.jsonize = jsonize;
         setTails(getPipe());
@@ -102,7 +103,7 @@ public class IntegerizeSessionExploder extends SubAssembly {
                 for (Map.Entry<String, String> attributeToValue : productAttribute.entrySet()) {
                     String attribute = attributeToValue.getKey();
                     DictIntegerizer dict = attribueDict.get(attribute);
-                    int valInt = dict.only_get(attributeToValue.getValue(), dict.get(Helpers.MISSING_DATA));
+                    int valInt = dict.only_get(attributeToValue.getValue(), dict.get(DictIntegerizerUtils.MISSING_DATA));
                     integerAttribute.put(attribute, valInt);
                 }
                 integerAttributes.add(integerAttribute);

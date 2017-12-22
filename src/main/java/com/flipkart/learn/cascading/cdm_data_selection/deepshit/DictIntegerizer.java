@@ -13,33 +13,18 @@ import java.util.Map;
 
 public class DictIntegerizer implements Serializable{
 
-    @JsonProperty
     private final String name;
 
-    @JsonProperty
-    private final String[] defaultKeys;
-
-    @JsonProperty
     private final Map<String, Integer> termDict;
 
-    @JsonProperty
     private int currentCount;
 
-    @JsonCreator
-    public DictIntegerizer(@JsonProperty(value = "name") String name,
-                           @JsonProperty(value = "defaultKeys") String[] defaultKeys,
-                           @JsonProperty(value = "termDict") Map<String, Integer> termDict,
-                           @JsonProperty(value = "currentCount") int currentCount) {
-        this.name = name;
-        this.defaultKeys = defaultKeys;
-        this.termDict = termDict;
-        this.currentCount = currentCount;
-
+    public DictIntegerizer(String name) {
+        this(name, new String[0]);
     }
 
     public DictIntegerizer(String name, String[] defaultKeys) {
         this.name = name;
-        this.defaultKeys = defaultKeys;
         this.termDict = new HashMap<>();
         this.currentCount = 0;
         for (String defaultKey : defaultKeys) {
@@ -49,10 +34,6 @@ public class DictIntegerizer implements Serializable{
 
     public String getName() {
         return name;
-    }
-
-    public String[] getDefaultKeys() {
-        return defaultKeys;
     }
 
     public Map<String, Integer> getTermDict() {
@@ -102,12 +83,30 @@ public class DictIntegerizer implements Serializable{
     public String toString() {
         return "DictIntegerizer{" +
                 "name='" + name + '\'' +
-                ", defaultKeys=" + Arrays.toString(defaultKeys) +
                 ", termDict=" + termDict +
                 ", currentCount=" + currentCount +
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DictIntegerizer that = (DictIntegerizer) o;
+
+        if (currentCount != that.currentCount) return false;
+        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        return termDict != null ? termDict.equals(that.termDict) : that.termDict == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (termDict != null ? termDict.hashCode() : 0);
+        result = 31 * result + currentCount;
+        return result;
+    }
 
     public static void main(String[] args) throws IOException {
 

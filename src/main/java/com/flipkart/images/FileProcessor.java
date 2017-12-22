@@ -8,6 +8,10 @@ import java.io.*;
 public class FileProcessor {
 
     public static void eachLine(String inputFile, Container<String> lineCollector) {
+        eachLine(new File(inputFile), lineCollector);
+    }
+
+    public static void eachLine(File inputFile, Container<String> lineCollector) {
         BufferedReader br = null;
         try {
             String line;
