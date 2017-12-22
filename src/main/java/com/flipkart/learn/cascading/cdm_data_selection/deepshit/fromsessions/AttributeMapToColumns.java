@@ -13,6 +13,8 @@ import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerU
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.google.common.collect.ImmutableMap;
+import javafx.util.Pair;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -23,31 +25,48 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 
 public class AttributeMapToColumns extends SubAssembly {
 
+    private final List<String> fieldNames;
+    Map<String, String> fieldToPrefix = ImmutableMap.of(
+            POSITIVE_PRODUCTS, "positive",
+            NEGATIVE_PRODUCTS, "negative",
+            PAST_CLICKED_PRODUCTS, "clicked",
+            PAST_BOUGHT_PRODUCTS, "bought"
+            );
+
+
     public AttributeMapToColumns(List<String> fieldNames) {
-        this(fieldNames, true);
+        this(new Pipe("train_data_gen"), fieldNames);
     }
 
-    public AttributeMapToColumns(List<String> fieldNames, boolean jsonify) {
-        Pipe pipe = new Pipe("train_data_gen");
+    public AttributeMapToColumns(Pipe pipe, List<String> fieldNames) {
+        this(pipe, fieldNames, true);
+    }
+
+    public AttributeMapToColumns(Pipe pipe, List<String> fieldNames, boolean jsonify) {
+        this.fieldNames = fieldNames;
 
         if(jsonify) {
             Fields filedsToProcess = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS);
             pipe = new JsonDecodeEach(pipe, filedsToProcess, List.class);
         }
 
-        pipe = new Each(pipe, new Fields(POSITIVE_PRODUCTS), new GenerateAttributeColumns("positive", fieldNames), Fields.SWAP);
-        pipe = new Each(pipe, new Fields(NEGATIVE_PRODUCTS), new GenerateAttributeColumns("negative", fieldNames), Fields.SWAP);
-        pipe = new Each(pipe, new Fields(PAST_CLICKED_PRODUCTS), new GenerateAttributeColumns("clicked", fieldNames), Fields.SWAP);
-        pipe = new Each(pipe, new Fields(PAST_BOUGHT_PRODUCTS), new GenerateAttributeColumns("bought", fieldNames), Fields.SWAP);
+        for (Map.Entry<String, String> fieldToPrefix : fieldToPrefix.entrySet()) {
+            pipe = new Each(pipe, new Fields(fieldToPrefix.getKey()), new GenerateAttributeColumns(fieldToPrefix.getValue(), fieldNames), Fields.SWAP);
+        }
 
         if(jsonify) {
-            pipe = new JsonEncodeEach(pipe, new Fields(generateColumnNames("positive", fieldNames)));
-            pipe = new JsonEncodeEach(pipe, new Fields(generateColumnNames("negative", fieldNames)));
-            pipe = new JsonEncodeEach(pipe, new Fields(generateColumnNames("clicked", fieldNames)));
-            pipe = new JsonEncodeEach(pipe, new Fields(generateColumnNames("bought", fieldNames)));
+            pipe = new JsonEncodeEach(pipe, getAllOutputColumns());
         }
 
         setTails(pipe);
+    }
+
+    public Fields getAllOutputColumns() {
+        Fields allFields = new Fields();
+        for (String prefix : fieldToPrefix.values()) {
+            allFields = Fields.merge(allFields, new Fields(generateColumnNames(prefix, fieldNames)));
+        }
+        return allFields;
     }
 
     private static String[] generateColumnNames(String prefix, List<String> fieldNames) {

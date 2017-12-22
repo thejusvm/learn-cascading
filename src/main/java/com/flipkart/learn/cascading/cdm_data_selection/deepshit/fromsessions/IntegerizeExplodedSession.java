@@ -32,22 +32,23 @@ public class IntegerizeExplodedSession extends SubAssembly {
     private boolean jsonize;
 
     public IntegerizeExplodedSession(String attributeDictPath) {
-        this(attributeDictPath, true);
+        this(new Pipe("session-integerizer"), attributeDictPath);
     }
 
-    public IntegerizeExplodedSession(String attributeDictPath, boolean jsonize) {
+    public IntegerizeExplodedSession(Pipe pipe, String attributeDictPath) {
+        this(pipe, attributeDictPath, true);
+    }
+
+    public IntegerizeExplodedSession(Pipe pipe, String attributeDictPath, boolean jsonize) {
         this.attributeDictPath = attributeDictPath;
         this.jsonize = jsonize;
-        setTails(getPipe());
+        setTails(modifyPipe(pipe));
     }
 
-    private Pipe getPipe() {
-        Pipe pipe = new Pipe("session-integerizer");
+    private Pipe modifyPipe(Pipe pipe) {
 
-        if(jsonize) {
-            pipe = new JsonDecodeEach(pipe, new Fields(POSITIVE_PRODUCTS), Map.class);
-            pipe = new JsonDecodeEach(pipe, new Fields(NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
-        }
+        pipe = new JsonDecodeEach(pipe, new Fields(POSITIVE_PRODUCTS), Map.class);
+        pipe = new JsonDecodeEach(pipe, new Fields(NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
 
         pipe = new Each(pipe, new Fields(POSITIVE_PRODUCTS), new ToList(new Fields(POSITIVE_PRODUCTS)), Fields.SWAP);
         Fields integerizingFields = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS);

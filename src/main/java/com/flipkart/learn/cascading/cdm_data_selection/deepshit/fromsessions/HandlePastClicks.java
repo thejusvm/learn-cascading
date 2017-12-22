@@ -26,12 +26,14 @@ public class HandlePastClicks extends SubAssembly {
     private int numPastClicks;
 
     public HandlePastClicks(int numPastClicks) {
-        this(numPastClicks, true);
+        this(new Pipe("negative_sampler"), numPastClicks);
     }
 
-    public HandlePastClicks(int numPastClicks, boolean jsonify) {
+    public HandlePastClicks(Pipe pipe, int numPastClicks) {
+        this(pipe, numPastClicks, true);
+    }
 
-        Pipe pipe = new Pipe("negative_sampler");
+    public HandlePastClicks(Pipe pipe, int numPastClicks, boolean jsonify) {
 
         this.numPastClicks = numPastClicks;
 

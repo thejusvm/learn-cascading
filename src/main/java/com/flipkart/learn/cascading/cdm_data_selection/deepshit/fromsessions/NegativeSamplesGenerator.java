@@ -29,11 +29,14 @@ public class NegativeSamplesGenerator extends SubAssembly {
     int numNegativeSamples = 20;
 
     public NegativeSamplesGenerator(String integerizedAttributesPath) {
-        this(integerizedAttributesPath, true);
+        this(new Pipe("negative_sampler"), integerizedAttributesPath);
     }
 
-    public NegativeSamplesGenerator(String integerizedAttributesPath, boolean jsonify) {
-        Pipe pipe = new Pipe("negative_sampler");
+    public NegativeSamplesGenerator(Pipe pipe, String integerizedAttributesPath) {
+        this(pipe, integerizedAttributesPath, true);
+    }
+
+    public NegativeSamplesGenerator(Pipe pipe, String integerizedAttributesPath, boolean jsonify) {
 
         Fields negativeField = new Fields(NEGATIVE_PRODUCTS);
         if(jsonify) {

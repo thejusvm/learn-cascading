@@ -81,8 +81,8 @@ public class IntegerizeProductAttributes {
 
         outputDir.mkdir();
 
-        String attributeTuplesPath = outputPath + "/integerized_attributes";
-        String attributeDictsPath = outputPath + "/attribute_dicts";
+        String attributeTuplesPath = getIntegerizedAttributesPath(outputPath);
+        String attributeDictsPath = getAttributeDictsPath(outputPath);
 
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         boolean first = true;
@@ -97,6 +97,14 @@ public class IntegerizeProductAttributes {
             System.out.println("attribute : " + attributeToDict.getKey() + ", size : " + attributeToDict.getValue().getCurrentCount());
         }
 
+    }
+
+    public static String getAttributeDictsPath(String outputPath) {
+        return outputPath + "/attribute_dicts";
+    }
+
+    public static String getIntegerizedAttributesPath(String outputPath) {
+        return outputPath + "/integerized_attributes";
     }
 
     public static void main(String[] args) {
