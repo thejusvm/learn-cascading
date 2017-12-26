@@ -8,6 +8,8 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by thejus on 13/9/17.
@@ -37,6 +39,11 @@ public class SearchSessions implements Serializable{
 
     public Map<String, SearchSession> getSessions() {
         return sessions;
+    }
+
+    @JsonIgnore
+    private void setSessions(Map<String,SearchSession> sessions) {
+        this.sessions = sessions;
     }
 
     public void add(String sqid, String searchQuery, ProductObj product) {
@@ -95,7 +102,25 @@ public class SearchSessions implements Serializable{
 
         allDaysStats.setNumDays(stats.keySet().size());
 
-        return new Pair<SessionsStats, Map<String, SessionsStats>>(allDaysStats, stats);
+        return new Pair<>(allDaysStats, stats);
     }
 
+    public static SearchSessions mergeSessions(List<SearchSessions> sessionsList) {
+        if (sessionsList.size() == 1) {
+            return sessionsList.get(0);
+        } else {
+            SearchSessions finalSessions = new SearchSessions();
+            ArrayList<SearchSession> mergedSessions = new ArrayList<>();
+            for (SearchSessions searchSessions : sessionsList) {
+                mergedSessions.addAll(searchSessions.getSessions().values());
+
+            }
+            mergedSessions.sort(Comparator.comparingLong(SearchSession::getTimestamp));
+            Map<String, SearchSession> mergedSessionsMap = mergedSessions.stream().collect(Collectors.toMap(SearchSession::getSqid, Function.identity(),
+                    (u, v) -> v,
+                    LinkedHashMap::new));
+            finalSessions.setSessions(mergedSessionsMap);
+            return finalSessions;
+        }
+    }
 }
