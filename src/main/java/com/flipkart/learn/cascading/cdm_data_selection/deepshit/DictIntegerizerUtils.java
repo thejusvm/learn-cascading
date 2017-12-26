@@ -34,9 +34,11 @@ public class DictIntegerizerUtils {
     public static List<DictIntegerizer> readAttributeDicts(String attributeDictPath) throws IOException {
         List<DictIntegerizer> dicts = new ArrayList<>();
         for (String file : HdfsUtils.listFiles(attributeDictPath, 1)) {
+            System.out.println("reading dict from file : " + file);
             DictIntegerizerCollector dictCollector = new DictIntegerizerCollector();
             FileProcessor.hdfsEachLine(file, dictCollector);
             DictIntegerizer dict = dictCollector.getDict();
+            System.out.println("done reading dict : " + dict);
             dicts.add(dict);
         }
         return dicts;

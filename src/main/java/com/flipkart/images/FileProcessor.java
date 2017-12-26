@@ -1,13 +1,19 @@
 package com.flipkart.images;
 
 import com.flipkart.learn.cascading.commons.HdfsUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Iterator;
 
 /**
  * Created by thejus on 19/7/16.
  */
 public class FileProcessor {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FileProcessor.class);
+
 
     public static void eachLine(String inputFile, Container<String> lineCollector) {
         eachLine(new File(inputFile), lineCollector);
@@ -54,8 +60,13 @@ public class FileProcessor {
             String line;
             br = HdfsUtils.getReader(inputFile);
 
+            int counter = 1;
             while ((line = br.readLine()) != null) {
                 lineCollector.collect(line);
+                counter ++;
+                if(counter % 10000 == 0) {
+                    LOG.info("read " + inputFile + " lines : " + counter);
+                }
             }
 
         } catch (IOException e) {

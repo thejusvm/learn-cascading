@@ -89,7 +89,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
             if(attribueDict == null){
                 List<DictIntegerizer> attribueDictList = DictIntegerizerUtils.readAttributeDicts(attributeDictPath);
                 attribueDict = DictIntegerizerUtils.indexByName(attribueDictList);
-                System.out.println("read attributes dict from path : " + attributeDictPath);
+                System.out.println("done reading attributes dict from path : " + attributeDictPath + ", " + attribueDict);
             }
         }
 
@@ -119,6 +119,9 @@ public class IntegerizeExplodedSession extends SubAssembly {
                 for (Map.Entry<String, String> attributeToValue : productAttribute.entrySet()) {
                     String attribute = attributeToValue.getKey();
                     DictIntegerizer dict = attribueDict.get(attribute);
+                    if(dict == null) {
+                        throw new NullPointerException("dict for attribute " + attribute + " is missing");
+                    }
                     int valInt = dict.only_get(attributeToValue.getValue(), dict.get(DictIntegerizerUtils.MISSING_DATA));
                     integerAttribute.put(attribute, valInt);
                 }

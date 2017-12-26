@@ -83,7 +83,6 @@ public class DictIntegerizer implements Serializable{
     public String toString() {
         return "DictIntegerizer{" +
                 "name='" + name + '\'' +
-                ", termDict=" + termDict +
                 ", currentCount=" + currentCount +
                 '}';
     }

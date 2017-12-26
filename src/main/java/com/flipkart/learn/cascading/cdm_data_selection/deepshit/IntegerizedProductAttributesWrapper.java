@@ -14,8 +14,7 @@ public class IntegerizedProductAttributesWrapper {
     private List<String> fieldNames;
     private List<List<Integer>> allFieldValues;
 
-    private static final Logger LOG = LoggerFactory.getLogger(FetchImageUrls.class);
-
+    private static final Logger LOG = LoggerFactory.getLogger(IntegerizedProductAttributesWrapper.class);
 
     public IntegerizedProductAttributesWrapper(String path) {
 
@@ -23,7 +22,7 @@ public class IntegerizedProductAttributesWrapper {
         allFieldValues = new ArrayList<>();
 
         LOG.info("starting to read IntegerizedProductAttributes from path : " + path);
-        FileProcessor.hdfsBulkEachLine(path, new Container<String>() {
+        FileProcessor.hdfsEachLine(path, new Container<String>() {
             boolean first = true;
             @Override
             public void collect(String line) {
@@ -52,6 +51,20 @@ public class IntegerizedProductAttributesWrapper {
             attributeValuesMaps.put(fieldNames.get(i), values.get(i));
         }
         return attributeValuesMaps;
+    }
+
+
+    public static void main(String[] args) {
+        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("data/sessions-2017100.products-int/integerized_attributes.small");
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            String next = scanner.next();
+            if("exit".equals(next)) {
+                break;
+            }
+            int val = Integer.parseInt(next);
+            System.out.println(wrapper.getAttributes(val));
+        }
     }
 
 
