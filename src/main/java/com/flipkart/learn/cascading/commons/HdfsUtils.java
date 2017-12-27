@@ -1,16 +1,10 @@
 package com.flipkart.learn.cascading.commons;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -85,6 +79,28 @@ public class HdfsUtils {
         FileSystem fs = FileSystem.get(configuration);
         BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path)));
         return br;
+    }
+
+    public static OutputStream getOuputStream(String pt, boolean overwrite) throws IOException {
+        Path path = new Path(pt);
+        FileSystem fs = FileSystem.get(configuration);
+        FSDataOutputStream outputStream = fs.create(path, overwrite);
+        return outputStream;
+    }
+
+    public static void delete(String pt) throws IOException {
+        Path path = new Path(pt);
+        FileSystem fs = FileSystem.get(configuration);
+        fs.delete(path, false);
+    }
+
+    public static void cleanDir(String pt) throws IOException {
+        Path path = new Path(pt);
+        FileSystem fs = FileSystem.get(configuration);
+        if(fs.exists(path)) {
+            fs.delete(path, true);
+        }
+        fs.mkdirs(path);
     }
 
     public static List<String> nextLines(BufferedReader br, int numLines) throws IOException {

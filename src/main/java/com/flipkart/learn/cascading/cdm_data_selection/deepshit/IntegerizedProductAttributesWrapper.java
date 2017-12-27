@@ -3,9 +3,11 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 import com.flipkart.images.Container;
 import com.flipkart.images.FetchImageUrls;
 import com.flipkart.images.FileProcessor;
+import com.flipkart.learn.cascading.commons.HdfsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,28 +18,31 @@ public class IntegerizedProductAttributesWrapper {
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegerizedProductAttributesWrapper.class);
 
-    public IntegerizedProductAttributesWrapper(String path) {
+    public IntegerizedProductAttributesWrapper(String dir) throws IOException {
 
         fieldNames = new ArrayList<>();
         allFieldValues = new ArrayList<>();
 
-        LOG.info("starting to read IntegerizedProductAttributes from path : " + path);
-        FileProcessor.hdfsEachLine(path, new Container<String>() {
-            boolean first = true;
-            @Override
-            public void collect(String line) {
-                if (first) {
-                    first = false;
-                    fieldNames.addAll(Arrays.asList(line.split("\t")));
-                } else {
-                    List<Integer> values = Arrays.stream(line.split("\t"))
-                            .map(Integer::parseInt)
-                            .collect(Collectors.toList());
-                    allFieldValues.add(values);
+        LOG.info("starting to read IntegerizedProductAttributes from path : " + dir);
+        List<String> paths = HdfsUtils.listFiles(dir, 1);
+        for (String path : paths) {
+            FileProcessor.hdfsEachLine(path, new Container<String>() {
+                boolean first = true;
+                @Override
+                public void collect(String line) {
+                    if (first) {
+                        first = false;
+                        fieldNames = Arrays.asList(line.split("\t"));
+                    } else {
+                        List<Integer> values = Arrays.stream(line.split("\t"))
+                                .map(Integer::parseInt)
+                                .collect(Collectors.toList());
+                        allFieldValues.add(values);
+                    }
                 }
-            }
-        });
-        LOG.info("done to read IntegerizedProductAttributes from path : " + path);
+            });
+            LOG.info("done to read IntegerizedProductAttributes from path : " + path);
+        }
     }
 
     public int getNumProducts() {
@@ -54,8 +59,8 @@ public class IntegerizedProductAttributesWrapper {
     }
 
 
-    public static void main(String[] args) {
-        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("data/sessions-2017100.products-int/integerized_attributes.small");
+    public static void main(String[] args) throws IOException {
+        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int/integerized_attributes");
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String next = scanner.next();

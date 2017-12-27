@@ -2,6 +2,7 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.sa
 
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizedProductAttributesWrapper;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
@@ -11,7 +12,7 @@ public class UniformRandomSampler implements Sampler {
     private final Random random;
     private final int size;
 
-    public UniformRandomSampler(String attributesPath) {
+    public UniformRandomSampler(String attributesPath) throws IOException {
          wrapper = new IntegerizedProductAttributesWrapper(attributesPath);
          random = new Random();
          size = wrapper.getNumProducts();

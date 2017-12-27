@@ -30,8 +30,8 @@ public class IntegerizeProductAttributes {
         return attributeToDict.get(field);
     }
 
-    private void processFile(String inputFile, String outputFile, boolean first) throws IOException {
-        FileProcessor.SyncWriter writer = new FileProcessor.SyncWriter(outputFile, true);
+    private void processFile(String inputFile, String outputFile) throws IOException {
+        FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(outputFile, true);
         BufferedReader br = HdfsUtils.getReader(inputFile);
         try {
             String firstLine = br.readLine();
@@ -43,9 +43,7 @@ public class IntegerizeProductAttributes {
                 }
             }
 
-            if(first) {
-                writer.write(Joiner.on("\t").join(fields) + "\n");
-            }
+            writer.write(Joiner.on("\t").join(fields) + "\n");
 
             int numFields = fields.size();
             initDicts(fields);
@@ -67,29 +65,27 @@ public class IntegerizeProductAttributes {
             br.close();
             writer.close();
             throw e;
+        } finally {
+            br.close();
+            writer.flush();
+            writer.close();
         }
 
     }
 
     private void processPath(String inputPath, String outputPath) throws IOException {
 
-        File outputDir = new File(outputPath);
-
-        if(outputDir.exists()) {
-            FileDeleteStrategy.FORCE.delete(outputDir);
-        }
-
-        outputDir.mkdir();
+        HdfsUtils.cleanDir(outputPath);
 
         String attributeTuplesPath = getIntegerizedAttributesPath(outputPath);
         String attributeDictsPath = getAttributeDictsPath(outputPath);
 
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
-        boolean first = true;
-        for (String file : files) {
-            processFile(file, attributeTuplesPath, first);
-            System.out.println("processed file : " + file);
-            first = false;
+        for (int i = 0; i < files.size(); i++) {
+            String inputFile = files.get(i);
+            String outputFile = attributeTuplesPath + "/part-" + i;
+            processFile(inputFile, outputFile);
+            System.out.println("processed file : " + inputFile);
         }
 
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);

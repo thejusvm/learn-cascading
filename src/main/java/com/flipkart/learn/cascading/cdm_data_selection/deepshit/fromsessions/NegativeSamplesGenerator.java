@@ -67,7 +67,11 @@ public class NegativeSamplesGenerator extends SubAssembly {
 
         public static synchronized void init(String attributesPath) {
             if(sampler == null) {
-                sampler = new UniformRandomSampler(attributesPath);
+                try {
+                    sampler = new UniformRandomSampler(attributesPath);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 

@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.Iterator;
 
 /**
  * Created by thejus on 19/7/16.
@@ -89,6 +88,27 @@ public class FileProcessor {
         public SyncWriter(String fileName, boolean append) throws FileNotFoundException {
             file = new File(fileName);
             fop = new FileOutputStream(file, append);
+        }
+
+        public synchronized void write(String line) throws IOException {
+            fop.write(line.getBytes());
+        }
+
+        public synchronized void flush() throws IOException {
+            fop.flush();
+        }
+
+        public void close() throws IOException {
+            fop.close();
+        }
+    }
+
+    public static class HDFSSyncWriter {
+
+        private final OutputStream fop;
+
+        public HDFSSyncWriter(String fileName, boolean overwrite) throws IOException {
+            fop = HdfsUtils.getOuputStream(fileName, overwrite);
         }
 
         public synchronized void write(String line) throws IOException {

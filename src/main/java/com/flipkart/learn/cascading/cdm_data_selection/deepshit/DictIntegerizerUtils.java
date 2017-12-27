@@ -46,16 +46,7 @@ public class DictIntegerizerUtils {
 
     public static void writeAttributeDicts(Collection<DictIntegerizer> dicts, String outputPath) throws IOException {
 
-        File outputDir = new File(outputPath);
-
-        if(outputDir.exists()) {
-            for (File file : outputDir.listFiles()) {
-                file.deleteOnExit();
-            }
-        } else {
-            outputDir.mkdir();
-        }
-
+//        HdfsUtils.cleanDir(outputPath);
         for (DictIntegerizer dict : dicts) {
             String attributeDictPath = getAttributeDictPath(outputPath, dict.getName());
             writeAttributeDict(dict, attributeDictPath);
@@ -65,7 +56,7 @@ public class DictIntegerizerUtils {
 
     private static void writeAttributeDict(DictIntegerizer attributeDict, String attributeDictPath) throws IOException {
         String[] terms = attributeDict.getTerms();
-        FileProcessor.SyncWriter termDictWriter = new FileProcessor.SyncWriter(attributeDictPath, false);
+        FileProcessor.HDFSSyncWriter termDictWriter = new FileProcessor.HDFSSyncWriter(attributeDictPath, false);
         termDictWriter.write(attributeDict.getName() + "\n");
         for (String term : terms) {
             termDictWriter.write(term + "\n");
