@@ -53,7 +53,7 @@ public class SplitTrainTest extends SubAssembly {
         @Override
         public boolean isRemove(FlowProcess flowProcess, FilterCall filterCall) {
             long longVal = filterCall.getArguments().getLong(fieldname);
-            boolean boolVal = longVal > timestamp;
+            boolean boolVal = longVal < timestamp;
             return reverse == boolVal;
         }
     }
