@@ -1,5 +1,6 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
+import com.google.common.collect.ImmutableList;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -9,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +28,10 @@ public class SearchSession implements Serializable {
     private String date;
     @JsonProperty(value = "products")
     private List<ProductObj> products;
+
+    public SearchSession clone() {
+        return new SearchSession(sqid, searchQuery, timestamp, date, ImmutableList.copyOf(products));
+    }
 
     @JsonCreator
     public SearchSession(@JsonProperty(value = "sqid") String sqid,
@@ -101,6 +107,11 @@ public class SearchSession implements Serializable {
                 .stream()
                 .filter(ProductObj::isClick)
                 .collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    public void filterProducts(Predicate<ProductObj> predicate) {
+        products = products.stream().filter(predicate).collect(Collectors.toList());
     }
 
     @JsonIgnore

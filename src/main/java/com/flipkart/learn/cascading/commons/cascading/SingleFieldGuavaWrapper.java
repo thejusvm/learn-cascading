@@ -14,9 +14,9 @@ import cascading.tuple.TupleEntry;
 */
 public class SingleFieldGuavaWrapper extends BaseOperation implements Function {
 
-    private final com.google.common.base.Function transformFn;
+    private final SerializableFunction transformFn;
 
-    public SingleFieldGuavaWrapper(Fields outputField, com.google.common.base.Function transformFn) {
+    public SingleFieldGuavaWrapper(Fields outputField, SerializableFunction transformFn) {
         super(1, outputField);
         this.transformFn = transformFn;
     }

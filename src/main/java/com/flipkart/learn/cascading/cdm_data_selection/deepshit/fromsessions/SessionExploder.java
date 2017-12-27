@@ -39,19 +39,13 @@ public class SessionExploder implements SimpleFlow {
 
     private static int numProducts = 10;
 
-    private Map<String, Set<String>> matchConfig = Collections.emptyMap();
-
-    public void setMatchConfig(Map<String, Set<String>> matchConfig) {
-        this.matchConfig = matchConfig;
-    }
-
     @Override
     public Pipe getPipe() {
         Pipe pipe = new Pipe("session-exploder-pipe");
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
         Fields expodedFields = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
-        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields, matchConfig), Fields.ALL);
+        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
         pipe = new JsonEncodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
         return pipe;
@@ -59,23 +53,8 @@ public class SessionExploder implements SimpleFlow {
 
     private class ExplodeSessions extends BaseOperation implements Function, Serializable {
 
-        private final Map<String, Set<String>> matchConfig;
-
-        public ExplodeSessions(Fields fields, Map<String, Set<String>> matchConfig) {
+        public ExplodeSessions(Fields fields) {
             super(fields);
-            this.matchConfig = matchConfig;
-        }
-
-        private boolean match(ProductObj productObj) {
-
-            return Arrays.stream(lifeStylePrefixes).anyMatch(prefix -> productObj.getProductId().startsWith(prefix));
-
-//            if(matchConfig == null || matchConfig.isEmpty()) {
-//                return true;
-//            } else {
-//                Map<String, String> attributes = productObj.getAttributes();
-//                return matchConfig.entrySet().stream().allMatch(x -> x.getValue().contains(attributes.get(x.getKey())));
-//            }
         }
 
         @Override
@@ -91,11 +70,6 @@ public class SessionExploder implements SimpleFlow {
                 List<ProductObj> clickedProducts = session.getClickedProduct();
                 List<ProductObj> boughtProducts = session.getBoughtProducts();
 
-                clickedProducts = clickedProducts
-                        .stream()
-                        .filter(this::match)
-                        .collect(Collectors.toList());
-
                 Set<String> dedupeNegativeProducts = new HashSet<>();
                 for (ProductObj clickedProduct : clickedProducts) {
                     String findingMethod = clickedProduct.getFindingmethod();
@@ -105,7 +79,6 @@ public class SessionExploder implements SimpleFlow {
                             .sort(Comparator.comparingInt(o -> Math.abs(clickedProductPos - o.getPosition())));
                     List<ProductObj> negativeProducts = impressionsSorted
                             .stream()
-                            .filter(this::match)
                             .filter(product -> !product.isClick()) // removing if the product has been clicked
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
                             .filter(product -> clickedProduct.getPosition() + 2 >= product.getPosition()) // removing if the product's position is 2 greater than the clicked product
@@ -133,7 +106,6 @@ public class SessionExploder implements SimpleFlow {
                     pastClick.put(clickedProduct.getProductId(), clickedProduct.getAttributes());
                 }
 
-                boughtProducts = boughtProducts.stream().filter(this::match).collect(Collectors.toList());
                 pastBought = new LinkedHashMap<>(pastBought);
                 for (ProductObj boughtProduct : boughtProducts) {
                     pastBought.put(boughtProduct.getProductId(), boughtProduct.getAttributes());
@@ -146,27 +118,13 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000/part-*", "data/sessionexplode-2017-0801.1000", "vertical:mobile"};
+            args = new String[]{"data/session-2017-0801.1000.filter/part-*", "data/sessionexplode-2017-0801.1000"};
         }
-
-        String matchConfigStr = args.length > 2 ? args[2] : null;
 
         PipeRunner runner = new PipeRunner("session-explode");
         runner.setNumReducers(600);
         SessionExploder sessionExploder = new SessionExploder();
 
-        if(matchConfigStr != null) {
-            Map<String, Set<String>> matchConfig = new HashMap<>();
-            String[] matchConfigSplits = matchConfigStr.split("::");
-            for (String matchConfigSplit : matchConfigSplits) {
-                String[] perAttributeConf = matchConfigSplit.split(":", 2);
-                String attributeKey = perAttributeConf[0];
-                String attributeValue = perAttributeConf[1];
-                ImmutableSet<String> attributeValues = ImmutableSet.copyOf(attributeValue.split(","));
-                matchConfig.put(attributeKey, attributeValues);
-            }
-            sessionExploder.setMatchConfig(matchConfig);
-        }
         runner.executeHfs(sessionExploder.getPipe(), args[0], args[1], true);
 
     }

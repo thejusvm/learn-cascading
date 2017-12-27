@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -122,5 +123,22 @@ public class SearchSessions implements Serializable{
             finalSessions.setSessions(mergedSessionsMap);
             return finalSessions;
         }
+    }
+
+    public static SearchSessions filterSessions(SearchSessions sessions, Predicate<ProductObj> predicate) {
+
+        SearchSessions filteredSessions = new SearchSessions();
+        Map<String, SearchSession> sessionsMap = new HashMap<String, SearchSession>();
+
+        for (SearchSession searchSession : sessions.getSessions().values()) {
+            searchSession = searchSession.clone();
+            searchSession.filterProducts(predicate);
+            if(searchSession.numImpressions() > 0) {
+                sessionsMap.put(searchSession.getSqid(), searchSession);
+            }
+        }
+
+        filteredSessions.setSessions(sessionsMap);
+        return filteredSessions;
     }
 }
