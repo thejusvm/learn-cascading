@@ -8,10 +8,23 @@ import cascading.pipe.Each;
 import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
+import com.flipkart.images.FileProcessor;
 import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
+import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 
 public class SplitTrainTest extends SubAssembly {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SplitTrainTest.class);
+
 
     public SplitTrainTest(Pipe pipe, long timestamp) {
 
@@ -44,4 +57,49 @@ public class SplitTrainTest extends SubAssembly {
             return reverse == boolVal;
         }
     }
+
+    public static void main(String[] args) {
+
+        if(args.length == 0) {
+            args = new String[]{
+                    "data/sessionexplode-2017-0801.1000.final/part-*",
+                    "2017-08-01",
+                    "data/sessionexplode-2017-0801.1000.tt"
+            };
+        }
+
+
+
+        String inputPath = args[0];
+        String trainTestSplitDate = args[1];
+        String outputPath = args[2];
+        String trainPath = outputPath + "/train";
+        String testPath = outputPath + "/test";
+
+
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        long timestamp;
+        try {
+            Date date = format.parse(trainTestSplitDate);
+            timestamp = date.getTime();
+        } catch (ParseException e) {
+            LOG.error("unable to parse date format", e);
+            throw new RuntimeException(e);
+        }
+
+        Pipe pipe = new Pipe("sessionexplode-translation");
+
+        SplitTrainTest toPrep = new SplitTrainTest(pipe, timestamp);
+        Pipe[] ouputPipes = toPrep.getTails();
+
+        PipeRunner runner = new PipeRunner("prep_data");
+        runner.setNumReducers(600);
+
+        runner.addHFSSource(pipe, inputPath);
+        runner.addHFSTailSink(ouputPipes[0], trainPath, true);
+        runner.addHFSTailSink(ouputPipes[1], testPath, true);
+        runner.execute();
+
+    }
+
 }
