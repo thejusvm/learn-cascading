@@ -7,8 +7,12 @@ import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizeProduc
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,29 +20,28 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 
 public class SessionExplodeToPrep extends SubAssembly {
 
-    public SessionExplodeToPrep(List<String> fields, String attributeDataDir) {
-        String attributeDictPath = IntegerizeProductAttributes.getAttributeDictsPath(attributeDataDir);
+    private static final Logger LOG = LoggerFactory.getLogger(SessionExplodeToPrep.class);
+
+    public SessionExplodeToPrep(Pipe pipe, List<String> fields, String attributeDataDir, long timestamp) {
         String integerizedAttributesPath = IntegerizeProductAttributes.getIntegerizedAttributesPath(attributeDataDir);
         int numpastClicks = 32;
-
-        Pipe pipe = new Pipe("sessionexplode-translation");
 
         pipe = new JsonDecodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
         pipe = new NegativeSamplesGenerator(pipe, integerizedAttributesPath, false);
         pipe = new HandlePastClicks(pipe, numpastClicks, false);
         pipe = new AttributeMapToColumns(pipe, fields, false);
-
         pipe = new JsonEncodeEach(pipe, ((AttributeMapToColumns)pipe).getAllOutputColumns());
-
-        setTails(pipe);
+        Pipe[] pipes = new SplitTrainTest(pipe, timestamp).getTails();
+        setTails(pipes);
     }
 
     public static void main(String[] args) {
 
         if(args.length == 0) {
             args = new String[]{
-                    "data/sessionexplode-2017-0801.1000",
+                    "data/sessionexplode-2017-0801.1000.int/part-*",
                     "data/product-attributes.MOB.int",
+                    "2017-08-01",
                     "data/sessionexplode-2017-0801.1000.final"
             };
         }
@@ -55,12 +58,36 @@ public class SessionExplodeToPrep extends SubAssembly {
         fields.add("fabric");
         fields.add("vertical");
 
+        String inputPath = args[0];
+        String attributeDataDir = args[1];
+        String trainTestSplitDate = args[2];
+        String outputPath = args[3];
+        String trainPath = outputPath + "/train";
+        String testPath = outputPath + "/test";
 
 
-        SessionExplodeToPrep toPrep = new SessionExplodeToPrep(fields, args[1]);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        long timestamp;
+        try {
+            Date date = format.parse(trainTestSplitDate);
+            timestamp = date.getTime();
+        } catch (ParseException e) {
+            LOG.error("unable to parse date format", e);
+            throw new RuntimeException(e);
+        }
+
+        Pipe pipe = new Pipe("sessionexplode-translation");
+
+        SessionExplodeToPrep toPrep = new SessionExplodeToPrep(pipe, fields, attributeDataDir, timestamp);
+        Pipe[] ouputPipes = toPrep.getTails();
+
         PipeRunner runner = new PipeRunner("prep_data");
         runner.setNumReducers(600);
-        runner.executeHfs(toPrep, args[0], args[2], true);
+
+        runner.addHFSSource(pipe, inputPath);
+        runner.addHFSTailSink(ouputPipes[0], trainPath, true);
+        runner.addHFSTailSink(ouputPipes[1], testPath, true);
+        runner.execute();
 
     }
 
