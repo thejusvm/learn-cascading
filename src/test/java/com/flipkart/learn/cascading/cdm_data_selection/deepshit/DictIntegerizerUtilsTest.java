@@ -1,5 +1,6 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
+import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
@@ -25,6 +26,7 @@ public class DictIntegerizerUtilsTest {
         ImmutableList<DictIntegerizer> dictsMap = ImmutableList.of(a1, a2);
 
         String outputPath = "data/ditest";
+        HdfsUtils.cleanDir(outputPath);
         DictIntegerizerUtils.writeAttributeDicts(dictsMap, outputPath);
         List<DictIntegerizer> reconstructedDictMap = DictIntegerizerUtils.readAttributeDicts(outputPath);
 
@@ -32,6 +34,7 @@ public class DictIntegerizerUtilsTest {
 //        System.out.println(reconstructedDictMap);
 
         assertEquals(dictsMap, reconstructedDictMap);
+        HdfsUtils.cleanDir(outputPath);
 
     }
 
