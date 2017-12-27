@@ -4,6 +4,7 @@ import os
 import tensorflow as tf
 import time
 import sys
+import json
 
 import argparse
 
@@ -34,6 +35,10 @@ def save_traincxt(trainCxt) :
     with open(train_context_model_dir, 'w+b') as handle:
         pickle.dump(trainCxt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+def get_attribute_summary(data_path) :
+    with open(data_path, 'rb') as handle:
+        return json.loads(handle.readline())
+
 def train(train_cxt) :
     """@type train_cxt: trainingcontext"""
 
@@ -53,11 +58,10 @@ def train(train_cxt) :
     test_dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=False)
     ################################### Start model building
 
-    attribute_dicts = get_attributedict(train_cxt.attributedict_path)
+    attribute_summary = get_attribute_summary(train_cxt.attribute_summary_path)
     for attribute_config in modelconf.attributes_config :
         attribute_name = attribute_config.name
-        attribute_dict = attribute_dicts[attribute_name]
-        attribute_config.vocab_size = attribute_dict.dictSize()
+        attribute_config.vocab_size = attribute_summary[attribute_name]
 
     mod = mf.get_model(modelconf) #type: model
     logBreak()
@@ -208,8 +212,12 @@ if __name__ == '__main__' :
             trainCxt.__dict__[arg] = arg_val
             print arg, arg_val
 
-    if not (trainCxt.input_path or trainCxt.restore_model_path) :
+    if not (trainCxt.input_path or trainCxt.restore_model_path):
         print "provide one of the two options --input_path | --restore_model_path"
+        sys.exit(0)
+
+    if trainCxt.input_path and not trainCxt.attribute_summary_path:
+        print "provide --attribute_summary_path"
         sys.exit(0)
 
     if trainCxt.restore_model_path :
@@ -220,8 +228,6 @@ if __name__ == '__main__' :
     else :
         trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.test_path = glob.glob(get_test_data_path(trainCxt.input_path) + "/part-*")
-        trainCxt.attributedict_path = get_attributedicts_path(trainCxt.input_path)
-        trainCxt.product_attributes_path = get_integerized_attributes_path(trainCxt.input_path)
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
 

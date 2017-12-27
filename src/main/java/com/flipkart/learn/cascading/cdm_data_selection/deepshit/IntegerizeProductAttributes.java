@@ -4,6 +4,7 @@ import com.flipkart.images.FileProcessor;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.base.Joiner;
 import org.apache.commons.io.FileDeleteStrategy;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -73,12 +74,15 @@ public class IntegerizeProductAttributes {
 
     }
 
+    private static ObjectMapper mapper = new ObjectMapper();
+
     private void processPath(String inputPath, String outputPath) throws IOException {
 
         HdfsUtils.cleanDir(outputPath);
 
         String attributeTuplesPath = getIntegerizedAttributesPath(outputPath);
         String attributeDictsPath = getAttributeDictsPath(outputPath);
+        String attributeSummaryPath = getAttributeSummaryPath(outputPath);
 
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         for (int i = 0; i < files.size(); i++) {
@@ -89,10 +93,29 @@ public class IntegerizeProductAttributes {
         }
 
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
+        Map<String, Integer> attributesSummary = new HashMap<>();
         for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
+            attributesSummary.put(attributeToDict.getKey(), attributeToDict.getValue().getCurrentCount());
             System.out.println("attribute : " + attributeToDict.getKey() + ", size : " + attributeToDict.getValue().getCurrentCount());
         }
+        writeSummary(attributeSummaryPath, attributesSummary);
 
+
+    }
+
+    private void writeSummary(String attributeSummaryPath, Map<String, Integer> attributesSummary) throws IOException {
+        String summaryString = mapper.writeValueAsString(attributesSummary);
+        FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(attributeSummaryPath, false);
+        try {
+            writer.write(summaryString);
+        } finally {
+            writer.flush();
+            writer.close();
+        }
+    }
+
+    public static String getAttributeSummaryPath(String outputPath) {
+        return outputPath + "/attribute_summary";
     }
 
     public static String getAttributeDictsPath(String outputPath) {

@@ -40,6 +40,8 @@ class trainingcontext :
         self.train_path = ""
         self.test_path = ""
 
+        self.attribute_summary_path = ""
+
     def getTrainCxtDir(self) :
         return self.model_dir + train_context_pickle
 
