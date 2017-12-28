@@ -61,7 +61,7 @@ def enhance_file(attributes, io):
     write_df_toFile(df, output_file)
     logBreak()
 
-def enhance_clickstream(attributes, ctr_data_path, output_path, num_parallel=-1) :
+def enhance_clickstream(attributes, ctr_data_path, output_path, num_parallel=6) :
 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
