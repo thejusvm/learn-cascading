@@ -5,6 +5,7 @@ import glob
 import os
 import tensorflow as tf
 import pandas as pd
+import sys
 
 from contextlib import closing
 from functools import partial
@@ -78,9 +79,9 @@ def process_dir(attributes, ctr_data_path, output_path, cxt) :
 
 if __name__ == '__main__' :
 
-    attributes = ["productId", "brand", "vertical"]
-    data_path = "/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.final"
-    output_path = "/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tfr"
+    attributes = ["productId", "brand", "ideal_for", "type", "color", "pattern", "occasion", "fit", "fabric", "vertical"]
+    data_path = sys.argv[1] #"/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.final"
+    output_path = sys.argv[2] #"/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tfr"
 
     process_dir(attributes, data_path, output_path, "train")
     process_dir(attributes, data_path, output_path, "test")
