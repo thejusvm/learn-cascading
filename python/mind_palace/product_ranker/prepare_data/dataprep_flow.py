@@ -33,10 +33,10 @@ def get_enhanced_test_data_path(output_path, version) :
     return output_path + "/" + test_enhanced_clickstream_path_suffix + "." + str(version)
 
 def get_train_data_path(output_path) :
-    return output_path + "/train/part-*"
+    return output_path + "/train"
 
 def get_test_data_path(output_path) :
-    return output_path + "/test/part-*"
+    return output_path + "/test"
 
 def flow(attributes,
          attributes_path,
