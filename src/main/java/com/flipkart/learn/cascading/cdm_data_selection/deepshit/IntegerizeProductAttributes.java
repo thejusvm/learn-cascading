@@ -1,34 +1,97 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
+import com.flipkart.images.Container;
 import com.flipkart.images.FileProcessor;
+import com.flipkart.learn.cascading.commons.CountTracker;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.base.Joiner;
-import org.apache.commons.io.FileDeleteStrategy;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils.MISSING_DATA_INDEX;
 
 public class IntegerizeProductAttributes {
 
     private Map<String, DictIntegerizer> attributeToDict;
+    Map<String, CountTracker> fieldToCountTracker = new LinkedHashMap<>();
 
     public IntegerizeProductAttributes() {
        attributeToDict = new HashMap<>();
     }
 
-    private void initDicts(List<String> fields) {
-        for (String field : fields) {
+    private void initDicts() {
+        for (String field : fieldToCountTracker.keySet()) {
             if(!attributeToDict.containsKey(field)) {
                 attributeToDict.put(field, new DictIntegerizer(field, DictIntegerizerUtils.DEFAULT_DICT_KEYS));
             }
+            CountTracker countTracker = fieldToCountTracker.get(field);
+            DictIntegerizer dict = attributeToDict.get(field);
+            countTracker.getValsSortedByCount().forEach(dict::get);
         }
     }
 
     private DictIntegerizer getDict(String field) {
         return attributeToDict.get(field);
+    }
+
+    private void collectStatsFromFile(String inputFile) throws IOException {
+
+        FileProcessor.hdfsEachLine(inputFile, new Container<String>() {
+
+            boolean first = true;
+            List<String> fieldNames = null;
+            int countIndex = 0;
+
+            private void initFieldData(Iterable<String> fieldNames) {
+                for (String fieldName : fieldNames) {
+                    if(!fieldToCountTracker.containsKey(fieldName)) {
+                        fieldToCountTracker.put(fieldName, new CountTracker());
+                    }
+                }
+            }
+
+            private void inc(String fieldName, String val, int count) {
+                fieldToCountTracker.get(fieldName).add(val.toLowerCase(), count);
+            }
+
+            @Override
+            public void collect(String line) {
+                if (first) {
+                    first = false;
+                    fieldNames = Arrays.asList(line.split("\t"));
+                    countIndex = fieldNames.indexOf("count");
+                    Set<String> fieldNamesSet = new HashSet<>(fieldNames);
+                    fieldNamesSet.remove("count");
+                    initFieldData(fieldNamesSet);
+                } else {
+                    String[] lineSplit = line.split("\t");
+                    int count = Integer.parseInt(lineSplit[countIndex]);
+                    for (int i = 0; i < fieldNames.size(); i++) {
+                        if(i == countIndex) {
+                            continue;
+                        }
+                        String fieldName = fieldNames.get(i);
+                        String fieldVal = lineSplit[i];
+                        inc(fieldName, fieldVal, count);
+                    }
+                }
+            }
+        });
+
+    }
+
+
+    private void collectStatsFromPath(String inputPath) throws IOException {
+        List<String> files = HdfsUtils.listFiles(inputPath, 1);
+        for (int i = 0; i < files.size(); i++) {
+            String inputFile = files.get(i);
+            collectStatsFromFile(inputFile);
+            System.out.println("stats collected from file : " + inputFile);
+        }
+        initDicts();
     }
 
     private void processFile(String inputFile, String outputFile) throws IOException {
@@ -47,7 +110,6 @@ public class IntegerizeProductAttributes {
             writer.write(Joiner.on("\t").join(fields) + "\n");
 
             int numFields = fields.size();
-            initDicts(fields);
             while(true) {
                 String line = br.readLine();
                 if (line == null) break;
@@ -58,7 +120,7 @@ public class IntegerizeProductAttributes {
                     String field = fields.get(i);
                     String value = values[i];
                     DictIntegerizer fieldDict = getDict(field);
-                    intValues[i] = fieldDict.get(value);
+                    intValues[i] = fieldDict.only_get(value, MISSING_DATA_INDEX);
                 }
                 writer.write(Joiner.on("\t").join(intValues) + "\n");
             }
@@ -130,8 +192,8 @@ public class IntegerizeProductAttributes {
 
         if(args.length == 0) {
             args = new String[]{
-                    "/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB",
-                    "/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int",
+                    "data/sessions-2017100.products",
+                    "data/sessions-2017100.products-int.1",
             };
         }
 
@@ -140,6 +202,10 @@ public class IntegerizeProductAttributes {
 
         IntegerizeProductAttributes integerizeProductAttributes = new IntegerizeProductAttributes();
         try {
+            integerizeProductAttributes.collectStatsFromPath(inputPath);
+            System.out.println("---------------------------------------------");
+            System.out.println("Done collecting stats");
+            System.out.println("---------------------------------------------");
             integerizeProductAttributes.processPath(inputPath, outputPath);
         } catch (IOException e) {
             e.printStackTrace();
