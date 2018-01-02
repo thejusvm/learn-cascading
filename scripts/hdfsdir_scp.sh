@@ -22,4 +22,4 @@ for file in $(hadoop fs -ls $hdfs_path | grep part | awk -F" " '{print $8}'); do
     fi
 done
 
-rm "part-*"
+rm "$tempdir/part-*"
