@@ -5,8 +5,11 @@ import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizeProductAttributes;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
+import com.flipkart.learn.cascading.commons.cascading.SerializableFunction;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collections;
@@ -29,8 +32,15 @@ public class SessionExplodeToPrep extends SubAssembly {
         pipe = new HandlePastClicks(pipe, numpastClicks, false);
         pipe = new AttributeMapToColumns(pipe, fields, false);
 
-        pipe = new JsonEncodeEach(pipe, ((AttributeMapToColumns)pipe).getAllOutputColumns());
-
+        Fields outputColumns = ((AttributeMapToColumns) pipe).getAllOutputColumns();
+        for (Comparable outputColumn : outputColumns) {
+            //Hacking the zero empty value since tensorflow 1.3 code doesnt handle string split with empty values
+            //tensorflow 1.4 has the issue fixed. we cant move to it as of now
+            //assumption : negatives is already processed and the set of negatives is non empty
+            //this is for clicked and bought signals. and 0 is the index of PAD_TEXT for clicked products
+            SerializableFunction serializableFunction = x -> ((List) x).isEmpty() ? "0" : Joiner.on(",").join((List) x);
+            pipe = new TransformEach(pipe, new Fields(outputColumn), serializableFunction, Fields.SWAP);
+        }
         setTails(pipe);
     }
 

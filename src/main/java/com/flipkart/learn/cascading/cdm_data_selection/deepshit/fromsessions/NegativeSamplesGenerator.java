@@ -82,15 +82,13 @@ public class NegativeSamplesGenerator extends SubAssembly {
                 init(integerizedAttributesPath);
             }
 
-            List<Map<String, Integer>> originalNegativesList = (List<Map<String, Integer>>) functionCall.getArguments().getObject(0);
+            List<Map<String, Integer>> originalList = (List<Map<String, Integer>>) functionCall.getArguments().getObject(0);
             List<Map<String, Integer>> negativesList = new ArrayList<>(numNegativeSamples);
 
-            for (int i = 0; i < Math.min(numNegativeSamples, originalNegativesList.size()); i++) {
-                Map<String, Integer> negative = originalNegativesList.get(i);
-                negativesList.add(negative);
-            }
+            negativesList.addAll(originalList.subList(0, Math.min(originalList.size(), numNegativeSamples)));
 
-            for (int i = 0; i < numNegativeSamples - negativesList.size(); i++) {
+            int slotsToFill = numNegativeSamples - negativesList.size();
+            for (int i = 0; i < slotsToFill; i++) {
                 negativesList.add(sampler.getNextSample());
             }
 
