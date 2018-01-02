@@ -21,6 +21,20 @@ import java.util.Set;
  */
 public class ExtractCmsAttributes implements SimpleFlow {
 
+    public static final Map<String, Set<String>> FETCH_CONFIG = new LinkedHashMap<>();
+    static {
+        FETCH_CONFIG.put("brand", null);
+        FETCH_CONFIG.put("ideal_for", ImmutableSet.of("Women","Men","Women's","Men's","Girls","Boys","Baby","Girl's","Boy's","Kids","Adults","Couple","Junior","Senior","Unisex","Infants"));
+        FETCH_CONFIG.put("type", null);
+        FETCH_CONFIG.put("color", null);
+        FETCH_CONFIG.put("pattern", null);
+        FETCH_CONFIG.put("occasion", null);
+        FETCH_CONFIG.put("fit", null);
+        FETCH_CONFIG.put("fabric", null);
+        FETCH_CONFIG.put("vertical", null);
+    }
+
+
     private final Map<String, Set<String>> fetchConfig;
     private Map<String, String> renameConfig;
 
@@ -42,17 +56,8 @@ public class ExtractCmsAttributes implements SimpleFlow {
             args = new String[]{"data/catalog-data.MOB", "data/product-attributes.MOB", "brand,sim_type,vertical"};
         }
         Map<String, String> renameConfig = ImmutableMap.of("Women's","Women", "Men's", "Mens", "Girl's","Girls", "Boy's", "Boys");
-        Map<String, Set<String>> fetchConfig = new LinkedHashMap<>();
-        fetchConfig.put("brand", null);
-        fetchConfig.put("ideal_for", ImmutableSet.of("Women","Men","Women's","Men's","Girls","Boys","Baby","Girl's","Boy's","Kids","Adults","Couple","Junior","Senior","Unisex","Infants"));
-        fetchConfig.put("type", null);
-        fetchConfig.put("color", null);
-        fetchConfig.put("pattern", null);
-        fetchConfig.put("occasion", null);
-        fetchConfig.put("fit", null);
-        fetchConfig.put("fabric", null);
-        fetchConfig.put("vertical", null);
+
         Fields inputFields = new Fields(DataFields._PRODUCTID, DataFields._CMS);
-        SimpleFlowRunner.execute(new ExtractCmsAttributes(fetchConfig, renameConfig), args[0], inputFields, args[1]);
+        SimpleFlowRunner.execute(new ExtractCmsAttributes(FETCH_CONFIG, renameConfig), args[0], inputFields, args[1]);
     }
 }

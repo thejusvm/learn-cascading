@@ -7,11 +7,13 @@ import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizeProduc
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.google.common.collect.ImmutableList;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
 public class SessionExplodeToPrep extends SubAssembly {
@@ -42,19 +44,7 @@ public class SessionExplodeToPrep extends SubAssembly {
             };
         }
 
-        List<String> fields = new LinkedList<>();
-        fields.add("productId");
-        fields.add("brand");
-        fields.add("ideal_for");
-        fields.add("type");
-        fields.add("color");
-        fields.add("pattern");
-        fields.add("occasion");
-        fields.add("fit");
-        fields.add("fabric");
-        fields.add("vertical");
-
-
+        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
 
         SessionExplodeToPrep toPrep = new SessionExplodeToPrep(fields, args[1]);
         PipeRunner runner = new PipeRunner("prep_data");

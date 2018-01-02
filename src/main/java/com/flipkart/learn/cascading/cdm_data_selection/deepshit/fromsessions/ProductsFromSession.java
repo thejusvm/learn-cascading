@@ -22,11 +22,13 @@ import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields._ACCOUNTID;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator.lifeStylePrefixes;
 
 public class ProductsFromSession implements SimpleFlow {
@@ -77,17 +79,7 @@ public class ProductsFromSession implements SimpleFlow {
         PipeRunner runner = new PipeRunner("session-explode");
         runner.setNumReducers(600);
 
-        List<String> fields = new LinkedList<>();
-        fields.add("productId");
-        fields.add("brand");
-        fields.add("ideal_for");
-        fields.add("type");
-        fields.add("color");
-        fields.add("pattern");
-        fields.add("occasion");
-        fields.add("fit");
-        fields.add("fabric");
-        fields.add("vertical");
+        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
 
         ProductsFromSession productsFromExplode = new ProductsFromSession(fields);
 

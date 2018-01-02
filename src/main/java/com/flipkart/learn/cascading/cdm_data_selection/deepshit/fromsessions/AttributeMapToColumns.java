@@ -13,6 +13,7 @@ import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerU
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import javafx.util.Pair;
 
@@ -21,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
 public class AttributeMapToColumns extends SubAssembly {
@@ -123,17 +125,7 @@ public class AttributeMapToColumns extends SubAssembly {
             };
         }
 
-        List<String> fields = new LinkedList<>();
-        fields.add("productId");
-        fields.add("brand");
-        fields.add("ideal_for");
-        fields.add("type");
-        fields.add("color");
-        fields.add("pattern");
-        fields.add("occasion");
-        fields.add("fit");
-        fields.add("fabric");
-        fields.add("vertical");
+        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
 
         AttributeMapToColumns prepPipe = null;
         prepPipe = new AttributeMapToColumns(fields);
