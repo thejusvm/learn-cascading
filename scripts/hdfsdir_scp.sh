@@ -1,10 +1,10 @@
 #!/bin/bash
 
-hdfs_path='/projects/search/tmp/thejus/cdm-dump/sessions-2017100.split/train'
-dest_ip='10.89.0.22'
+hdfs_path= $1 #'/projects/search/tmp/thejus/cdm-dump/sessions-2017100.split/train'
+dest_ip= $2 #'10.89.0.22'
 dest_base_path='/mnt/mind_palace/product_ranker/data'
-dest_data_path="sessions-2017100.split/train"
-tempdir="/var/lib/semantic/thejus/transfer_2"
+dest_data_path=$3 #"sessions-2017100.split/train"
+tempdir=$4 #"/var/lib/semantic/thejus/transfer_2"
 
 destpath="$dest_base_path/$dest_data_path"
 echo "creating dest path " $destpath;
