@@ -11,7 +11,7 @@ import argparse
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, parse_attribute_config
-from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
+from mind_palace.product_ranker.prepare_data_v2.clickstream_iterator_v2 import ClickstreamDataset_V2, get_column_names
 from mind_palace.product_ranker.prepare_data.integerize_clickstream import get_attributedict_path, get_attributedict
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
 from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_train_data_path, get_test_data_path, get_integerized_attributes_path
@@ -54,8 +54,8 @@ def train(train_cxt) :
 
     ################################### Prepareing datasets
     attributes = map(lambda x : x.name, modelconf.attributes_config)
-    dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=True)
-    test_dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=False)
+    dataset = ClickstreamDataset_V2(attributes, train_cxt.columns_in_data, batch_size=train_cxt.batch_size, shuffle=True)
+    test_dataset = ClickstreamDataset_V2(attributes, train_cxt.columns_in_data, batch_size=train_cxt.batch_size, shuffle=False)
     ################################### Start model building
 
     attribute_summary = get_attribute_summary(train_cxt.attribute_summary_path)
@@ -227,6 +227,7 @@ if __name__ == '__main__' :
             trainCxt = pickle.load(handle)
     else :
         trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
+        trainCxt.columns_in_data = get_column_names(trainCxt.train_path)
         trainCxt.test_path = glob.glob(get_test_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
@@ -250,3 +251,4 @@ if __name__ == '__main__' :
 
     train(trainCxt)
 
+#--input_path=/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt --attribute_summary_path=/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int/attribute_summary

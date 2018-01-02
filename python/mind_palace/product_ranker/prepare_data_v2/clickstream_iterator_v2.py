@@ -5,26 +5,37 @@ import mind_palace.product_ranker.constants as CONST
 from mind_palace.product_ranker.commons import generate_feature_names
 
 
-# def _deserialize_function(_example_protos):
-#     return [tf.deserialize_many_sparse(_example_proto, tf.int64) for _example_proto in _example_protos]
+def dense_split(tensor, delimiter="\t"):
+    tensor = tf.expand_dims(tensor, 0)
+    tensor = tf.string_split(tensor, delimiter=delimiter)
+    tensor = tf.sparse_tensor_to_dense(tensor, default_value="")
+    tensor = tf.squeeze(tensor, axis=0)
+    return tensor
+
+def _parse_feature(feature_tensor) :
+    feature_tensor = dense_split(feature_tensor, ",")
+    feature_tensor = tf.string_to_number(feature_tensor, out_type=tf.int64)
+    return feature_tensor
+
+def _parse_function(feature_indices, row):
+    row_split = dense_split(row)
+    result = [row_split[i] for i in feature_indices]
+    return tuple([_parse_feature(x) for x in result])
 
 
-def _parse_function(feature_names, features, example_proto):
-    parsed_features = tf.parse_single_example(example_proto, features)
-    # return parsed_features[feature_names[0]]
-    return tuple([parsed_features[feature_name].values for feature_name in feature_names])
-    # return tuple([tf.sparse_tensor_to_dense(parsed_features[feature_name]) for feature_name in feature_names])
-    # return tf.sparse_tensor_to_dense(parsed_features[feature_names[0]])
+class ClickstreamDataset_V2 :
 
-class ClickstreamDataset :
-
-    def __init__(self, attributes, shuffle=True, batch_size=None):
+    def __init__(self, attributes, column_names, shuffle=True, batch_size=None):
         self.filenames = tf.placeholder(tf.string, shape=[None])
-        self.dataset = tf.contrib.data.TFRecordDataset(self.filenames)
+        self.dataset = tf.contrib.data.Dataset.from_tensor_slices(self.filenames)
+        self.dataset = self.dataset.flat_map(
+            lambda filename: (
+                tf.contrib.data.TextLineDataset(filename).skip(1)))
         self.feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
-        features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in self.feature_names])
-        self.dataset = self.dataset.map(lambda row : _parse_function(self.feature_names, features, row),
-                                        num_threads = 25, output_buffer_size = 100 * batch_size)
+
+        feature_indices = [column_names.index(feature_name) for feature_name in self.feature_names]
+        self.dataset = self.dataset.map(lambda row: _parse_function(feature_indices, row),
+                                        num_threads = 25, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)
@@ -41,14 +52,22 @@ class ClickstreamDataset :
     def initialize_iterator(self, sess, ctr_data_path):
         sess.run(self.iterator.initializer, feed_dict={self.filenames : ctr_data_path})
 
+def get_column_names(file_list) :
+    with open(file_list[0]) as fh:
+        column_names = fh.readline().split("\t")
+    return column_names
+
+
 if __name__ == '__main__' :
 
-    path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.final/part-*")
+    path = glob.glob("/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt/test/part-00000")
     sess = tf.Session()
     attributes = ["productId", "brand", "vertical"]
     attributes = ["productId"]
-    dataset = ClickstreamDataset(attributes, batch_size=10)
+
+    column_names = get_column_names(path)
+    dataset = ClickstreamDataset_V2(attributes, column_names, batch_size=3, shuffle=False)
     dataset.initialize_iterator(sess, path)
     get_next = dataset.get_next
-    print get_next
+    print sess.run(get_next)
     print sess.run(get_next)

@@ -24,7 +24,7 @@ class ClickstreamDataset :
         self.feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
         features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in self.feature_names])
         self.dataset = self.dataset.map(lambda row : _parse_function(self.feature_names, features, row),
-                                        num_threads = 25, output_buffer_size = 100 * batch_size)
+                                        num_threads = 25, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)
@@ -43,7 +43,7 @@ class ClickstreamDataset :
 
 if __name__ == '__main__' :
 
-    path = glob.glob("/home/thejus/workspace/learn-cascading/data/sessionExplodeWithAttributes-201708.MOB.large.search.tfr/part-*")
+    path = glob.glob("/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tfr/train/part-0")
     sess = tf.Session()
     attributes = ["productId", "brand", "vertical"]
     attributes = ["productId"]

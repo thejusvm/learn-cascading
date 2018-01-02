@@ -38,6 +38,7 @@ class trainingcontext :
         #train_v2 only args (file train_v2.py)
         self.attributedict_path = ""
         self.train_path = ""
+        self.columns_in_data = ""
         self.test_path = ""
 
         self.attribute_summary_path = ""
