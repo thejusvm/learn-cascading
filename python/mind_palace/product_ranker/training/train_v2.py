@@ -227,12 +227,12 @@ if __name__ == '__main__' :
             trainCxt = pickle.load(handle)
     else :
         if args.train_path :
-            trainCxt.train_path = args.train_path
+            trainCxt.train_path = glob.glob(args.train_path)
         else:
             trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.columns_in_data = get_column_names(trainCxt.train_path)
         if args.test_path :
-            trainCxt.test_path = args.test_path
+            trainCxt.test_path = glob.glob(args.test_path)
         else:
             trainCxt.test_path = glob.glob(get_test_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
