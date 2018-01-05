@@ -2,20 +2,20 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions;
 
 import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
+import cascading.pipe.assembly.Retain;
 import cascading.tuple.Fields;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizeProductAttributes;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SerializableFunction;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
-import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang.StringUtils;
 
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
+import static com.flipkart.learn.cascading.cdm_data_selection.DataFields._TIMESTAMP;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
@@ -41,6 +41,11 @@ public class SessionExplodeToPrep extends SubAssembly {
             SerializableFunction serializableFunction = x -> ((List) x).isEmpty() ? "0" : Joiner.on(",").join((List) x);
             pipe = new TransformEach(pipe, new Fields(outputColumn), serializableFunction, Fields.SWAP);
         }
+
+        Fields timestampField = new Fields(_TIMESTAMP);
+        pipe = new TransformEach(pipe, timestampField, x -> x == null || StringUtils.isEmpty((String) x) ? "0" : x, Fields.SWAP);
+        pipe = new Retain(pipe, Fields.merge(timestampField, outputColumns));
+
         setTails(pipe);
     }
 
