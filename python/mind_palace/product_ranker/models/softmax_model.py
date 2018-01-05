@@ -168,13 +168,13 @@ class AttributeEmbeddings :
                 # init_softmax_weights = tf.random_uniform([self.vocab_size, self.embedding_size], -1, 1)
                 init_softmax_weights = tf.zeros([self.vocab_size, self.embedding_size])
                 self.softmax_weights = tf.Variable(init_softmax_weights,
-                                                   name="sm_w_t")
+                                                   name=self.attribute_name + "_sm_w_t")
             else:
                 self.softmax_weights = tf.Variable(override_embedding.softmax_weights, dtype=tf.float32)
         if override_embedding.softmax_bias is None:
             # init_softmax_bias = tf.random_uniform([self.vocab_size], -1, 1)
             init_softmax_bias = tf.zeros([self.vocab_size])
-            self.softmax_bias = tf.Variable(init_softmax_bias, name="sm_b")
+            self.softmax_bias = tf.Variable(init_softmax_bias, name=self.attribute_name + "_sm_b")
         else:
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
 
