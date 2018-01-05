@@ -226,9 +226,15 @@ if __name__ == '__main__' :
         with open(dir, 'rb') as handle:
             trainCxt = pickle.load(handle)
     else :
-        trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
+        if args.train_path :
+            trainCxt.train_path = args.train_path
+        else:
+            trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.columns_in_data = get_column_names(trainCxt.train_path)
-        trainCxt.test_path = glob.glob(get_test_data_path(trainCxt.input_path) + "/part-*")
+        if args.test_path :
+            trainCxt.test_path = args.test_path
+        else:
+            trainCxt.test_path = glob.glob(get_test_data_path(trainCxt.input_path) + "/part-*")
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
 
