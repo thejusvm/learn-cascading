@@ -35,7 +35,7 @@ class ClickstreamDataset_V2 :
 
         feature_indices = [column_names.index(feature_name) for feature_name in self.feature_names]
         self.dataset = self.dataset.map(lambda row: _parse_function(feature_indices, row),
-                                        num_threads = 25, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
+                                        num_threads = 6, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)
@@ -60,13 +60,13 @@ def get_column_names(file_list) :
 
 if __name__ == '__main__' :
 
-    path = glob.glob("/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt/test/part-00000")
+    path = glob.glob("/Users/thejus/workspace/learn-cascading/data/sessions-2017100.split-part/train/part-test")
     sess = tf.Session()
     attributes = ["productId", "brand", "vertical"]
-    attributes = ["productId"]
+    # attributes = ["productId"]
 
     column_names = get_column_names(path)
-    dataset = ClickstreamDataset_V2(attributes, column_names, batch_size=3, shuffle=False)
+    dataset = ClickstreamDataset_V2(attributes, column_names, batch_size=None, shuffle=False)
     dataset.initialize_iterator(sess, path)
     get_next = dataset.get_next
     print sess.run(get_next)
