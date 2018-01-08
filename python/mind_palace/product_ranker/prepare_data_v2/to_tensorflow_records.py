@@ -16,7 +16,7 @@ from mind_palace.commons.helpers import logBreak
 from mind_palace.product_ranker.commons import generate_feature_names
 
 def int_json(s):
-    loads = json.loads(s)
+    loads = s.split(",")
     return np.array(loads, dtype=int)
 
 def add_to_record(record, feature_name, feature_value) :
@@ -37,7 +37,7 @@ def write_df_toFile(df, output_file):
     print "wrote file in " + str(time.time() - start)
 
 def get_processed_data_frame(input_file, attributes) :
-    df = pd.read_csv(input_file, sep ="\t")
+    df = pd.read_csv(input_file, sep ="\t", dtype=str)
     feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
     for feature_name in feature_names:
         df[feature_name] = df[feature_name].apply(int_json)
@@ -80,7 +80,7 @@ def process_dir(attributes, ctr_data_path, output_path, cxt) :
 if __name__ == '__main__' :
 
     attributes = ["productId", "brand", "ideal_for", "type", "color", "pattern", "occasion", "fit", "fabric", "vertical"]
-    data_path = sys.argv[1] #"/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.final"
+    data_path = sys.argv[1] #"/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt"
     output_path = sys.argv[2] #"/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tfr"
 
     process_dir(attributes, data_path, output_path, "train")
