@@ -16,9 +16,10 @@ def _parse_function(feature_names, features, example_proto):
     # return tuple([tf.sparse_tensor_to_dense(parsed_features[feature_name]) for feature_name in feature_names])
     # return tf.sparse_tensor_to_dense(parsed_features[feature_names[0]])
 
-class ClickstreamDataset :
+class TFR_ClickstreamDataset :
 
-    def __init__(self, attributes, shuffle=True, batch_size=None):
+    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None):
+        self.ctr_data_path = ctr_data_path
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.TFRecordDataset(self.filenames)
         self.feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
@@ -38,8 +39,8 @@ class ClickstreamDataset :
         self.iterator = self.dataset.make_initializable_iterator()
         self.get_next = self.iterator.get_next()
 
-    def initialize_iterator(self, sess, ctr_data_path):
-        sess.run(self.iterator.initializer, feed_dict={self.filenames : ctr_data_path})
+    def initialize_iterator(self, sess):
+        sess.run(self.iterator.initializer, feed_dict={self.filenames : self.ctr_data_path})
 
 if __name__ == '__main__' :
 
@@ -47,7 +48,7 @@ if __name__ == '__main__' :
     sess = tf.Session()
     attributes = ["productId", "brand", "vertical"]
     attributes = ["productId"]
-    dataset = ClickstreamDataset(attributes, batch_size=10)
+    dataset = TFR_ClickstreamDataset(attributes, batch_size=10)
     dataset.initialize_iterator(sess, path)
     get_next = dataset.get_next
     print get_next

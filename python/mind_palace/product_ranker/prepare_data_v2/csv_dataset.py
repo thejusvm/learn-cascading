@@ -23,9 +23,10 @@ def _parse_function(feature_indices, row):
     return tuple([_parse_feature(x) for x in result])
 
 
-class ClickstreamDataset_V2 :
+class CSV_ClickstreamDataset :
 
-    def __init__(self, attributes, column_names, shuffle=True, batch_size=None):
+    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None):
+        self.ctr_data_path = ctr_data_path
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.Dataset.from_tensor_slices(self.filenames)
         self.dataset = self.dataset.flat_map(
@@ -33,6 +34,7 @@ class ClickstreamDataset_V2 :
                 tf.contrib.data.TextLineDataset(filename).skip(1)))
         self.feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
 
+        column_names = get_column_names(ctr_data_path)
         feature_indices = [column_names.index(feature_name) for feature_name in self.feature_names]
         self.dataset = self.dataset.map(lambda row: _parse_function(feature_indices, row),
                                         num_threads = 6, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
@@ -49,8 +51,8 @@ class ClickstreamDataset_V2 :
         self.iterator = self.dataset.make_initializable_iterator()
         self.get_next = self.iterator.get_next()
 
-    def initialize_iterator(self, sess, ctr_data_path):
-        sess.run(self.iterator.initializer, feed_dict={self.filenames : ctr_data_path})
+    def initialize_iterator(self, sess):
+        sess.run(self.iterator.initializer, feed_dict={self.filenames : self.ctr_data_path})
 
 def get_column_names(file_list) :
     with open(file_list[0]) as fh:
@@ -66,7 +68,7 @@ if __name__ == '__main__' :
     # attributes = ["productId"]
 
     column_names = get_column_names(path)
-    dataset = ClickstreamDataset_V2(attributes, column_names, batch_size=None, shuffle=False)
+    dataset = CSV_ClickstreamDataset(attributes, column_names, batch_size=None, shuffle=False)
     dataset.initialize_iterator(sess, path)
     get_next = dataset.get_next
     print sess.run(get_next)

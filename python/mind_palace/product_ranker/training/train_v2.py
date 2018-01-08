@@ -11,8 +11,8 @@ import argparse
 from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, parse_attribute_config
-from mind_palace.product_ranker.prepare_data_v2.clickstream_iterator_v2 import ClickstreamDataset_V2, get_column_names
-from mind_palace.product_ranker.prepare_data.clickstream_iterator import ClickstreamDataset
+from mind_palace.product_ranker.prepare_data_v2.csv_dataset import CSV_ClickstreamDataset
+from mind_palace.product_ranker.prepare_data.tfr_dataset import TFR_ClickstreamDataset
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
 from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_train_data_path, get_test_data_path, get_integerized_attributes_path
 
@@ -55,12 +55,12 @@ def train(train_cxt) :
     ################################### Prepareing datasets
     attributes = map(lambda x: x.name, modelconf.attributes_config)
     if trainCxt.input_type == "csv":
-        dataset = ClickstreamDataset_V2(attributes, train_cxt.columns_in_data, batch_size=train_cxt.batch_size, shuffle=True)
-        test_dataset = ClickstreamDataset_V2(attributes, train_cxt.columns_in_data, batch_size=train_cxt.batch_size, shuffle=False)
+        dataset = CSV_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
+        test_dataset = CSV_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=False)
     else:
         if trainCxt.input_type == "tfr":
-            dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=True)
-            test_dataset = ClickstreamDataset(attributes, batch_size=train_cxt.batch_size, shuffle=False)
+            dataset = TFR_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
+            test_dataset = TFR_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=False)
         else:
             print "unknown intput_type"
             sys.exit(1)
@@ -130,7 +130,7 @@ def train(train_cxt) :
     elapsed_time = 0
     for epoch in range(trainCxt.num_epochs) :
         print "epoch : " + str(epoch)
-        dataset.initialize_iterator(sess, train_cxt.train_path)
+        dataset.initialize_iterator(sess)
         epoch_start = time.time()
         while True :
             try :
@@ -148,7 +148,7 @@ def train(train_cxt) :
                 trainCxt.train_counter = trainCxt.train_counter + 1
 
                 if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
-                    test_dataset.initialize_iterator(sess, train_cxt.test_path)
+                    test_dataset.initialize_iterator(sess)
                     start = time.time()
                     test_metric_names = ["test_" + x[0] for x in test_metric_nodes]
                     test_metrics_ops = [x[1] for x in test_metric_nodes]
@@ -239,8 +239,6 @@ if __name__ == '__main__' :
             trainCxt.train_path = glob.glob(args.train_path)
         else:
             trainCxt.train_path = glob.glob(get_train_data_path(trainCxt.input_path) + "/part-*")
-        if "csv" == trainCxt.input_type:
-            trainCxt.columns_in_data = get_column_names(trainCxt.train_path)
         if args.test_path:
             trainCxt.test_path = glob.glob(args.test_path)
         else:
