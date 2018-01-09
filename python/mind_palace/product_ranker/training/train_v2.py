@@ -78,10 +78,10 @@ def train(train_cxt) :
     mod.feed_input(dataset.feature_names, dataset.get_next)
     loss = mod.loss()
 
-    if train_cxt.optimizer is "adam":
+    if train_cxt.optimizer == "adam":
         minimize_step = tf.train.AdamOptimizer(train_cxt.learning_rate).minimize(loss)
     else:
-        if train_cxt.optimizer is "sgd":
+        if train_cxt.optimizer == "sgd":
             minimize_step = tf.train.GradientDescentOptimizer(train_cxt.learning_rate).minimize(loss)
         else:
             print "unknown optimizer"
