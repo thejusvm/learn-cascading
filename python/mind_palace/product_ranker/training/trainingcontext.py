@@ -34,6 +34,10 @@ class trainingcontext :
         self.latency_track_iters = 10000
         self.batch_size = 500
 
+        self.learning_rate = 1e-3
+        self.optimizer = "adam" #adam/sgd
+
+
 
         #train_v2 only args (file train_v2.py)
         self.attributedict_path = ""

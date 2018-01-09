@@ -77,7 +77,17 @@ def train(train_cxt) :
 
     mod.feed_input(dataset.feature_names, dataset.get_next)
     loss = mod.loss()
-    minimize_step = tf.train.AdamOptimizer(modelconf.learning_rate).minimize(loss)
+
+    if train_cxt.optimizer is "adam":
+        minimize_step = tf.train.AdamOptimizer(train_cxt.learning_rate).minimize(loss)
+    else:
+        if train_cxt.optimizer is "sgd":
+            minimize_step = tf.train.GradientDescentOptimizer(train_cxt.learning_rate).minimize(loss)
+        else:
+            print "unknown optimizer"
+            sys.exit(1)
+
+
     loss_summary = tf.summary.scalar("loss", loss)
 
     mod.feed_input(test_dataset.feature_names, test_dataset.get_next)
@@ -206,7 +216,6 @@ if __name__ == '__main__' :
     for train_key in train_cxt_dict :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
-    parser.add_argument("--learning_rate", type=float)
     parser.add_argument("--click_non_linearity", type=bool, default=False)
     parser.add_argument("--click_layer_count", type=str)
     parser.add_argument("--probability_function", type=str)
@@ -260,8 +269,7 @@ if __name__ == '__main__' :
             modelconf.use_context = args.use_context
         trainCxt.model_config = modelconf
 
-    if args.learning_rate is not None :
-        trainCxt.model_config.learning_rate = args.learning_rate
+    trainCxt.model_config.learning_rate = trainCxt.learning_rate
 
     train(trainCxt)
 
