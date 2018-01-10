@@ -222,7 +222,7 @@ if __name__ == '__main__' :
     parser.add_argument("--layer_count", type=str)
     parser.add_argument("--model_name", type=str)
     parser.add_argument("--use_context", type=bool, default=True)
-    parser.add_argument("--click_pooling", type=bool, default=True)
+    parser.add_argument("--click_pooling", type=str, default=True)
     args = parser.parse_args()
 
     attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
