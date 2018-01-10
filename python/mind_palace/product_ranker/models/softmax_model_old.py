@@ -59,7 +59,7 @@ class softmax_model_old(model) :
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_sigmoid.xent) + tf.reduce_sum(self.negative_sigmoid.xent)) / tf.cast(self.batch_size, tf.float32)
 
-        self.train_step = tf.train.AdamOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
+        # self.train_step = tf.train.AdamOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
         # self.train_step = tf.train.GradientDescentOptimizer(self.modelConf.learning_rate).minimize(self.sigmoid_loss)
 
 
@@ -104,7 +104,7 @@ class softmax_model_old(model) :
         return self.sigmoid_loss
 
     def minimize_step(self):
-        return self.train_step
+        pass
 
 class sigmoid :
     def __init__(self, weights, bias, context_embedding, positive = True):
