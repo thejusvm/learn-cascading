@@ -220,6 +220,7 @@ if __name__ == '__main__' :
     parser.add_argument("--click_layer_count", type=str)
     parser.add_argument("--probability_function", type=str)
     parser.add_argument("--layer_count", type=str)
+    parser.add_argument("--model_name", type=str)
     parser.add_argument("--use_context", type=bool, default=True)
     args = parser.parse_args()
 
@@ -255,7 +256,10 @@ if __name__ == '__main__' :
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
 
-        modelconf = modelconfig("softmax_model")
+        model_name = "softmax_model"
+        if args.model_name :
+            model_name = args.model_name
+        modelconf = modelconfig(model_name)
         modelconf.attributes_config = attributes_config
         if args.probability_function :
             modelconf.probability_function = args.probability_function
