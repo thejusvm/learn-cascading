@@ -10,7 +10,7 @@ import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.Sampler;
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.UniformRandomSampler;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.ZiphianRandomSampler;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
@@ -68,7 +68,7 @@ public class NegativeSamplesGenerator extends SubAssembly {
         public static synchronized void init(String attributesPath) {
             if(sampler == null) {
                 try {
-                    sampler = new UniformRandomSampler(attributesPath);
+                    sampler = new ZiphianRandomSampler(attributesPath);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -101,7 +101,7 @@ public class NegativeSamplesGenerator extends SubAssembly {
         if(args.length == 0) {
             args = new String[]{
                     "data/sessionexplode-2017-0801.1000.int",
-                    "data/product-attributes.MOB.int/integerized_attributes",
+                    "data/sessions-2017100.products-int.1/integerized_attributes",
                     "data/sessionexplode-2017-0801.1000.neg"
             };
         }

@@ -5,11 +5,14 @@ import com.flipkart.images.FileProcessor;
 import com.flipkart.learn.cascading.commons.CountTracker;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.base.Joiner;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils.MISSING_DATA_INDEX;
 
@@ -17,6 +20,8 @@ public class IntegerizeProductAttributes {
 
     private Map<String, DictIntegerizer> attributeToDict;
     Map<String, CountTracker> fieldToCountTracker = new LinkedHashMap<>();
+    private String firstLine;
+    List<Pair<List<Integer>, Integer>> integerizedProductsAndCounts = new ArrayList<>();
 
     public IntegerizeProductAttributes() {
        attributeToDict = new HashMap<>();
@@ -94,11 +99,10 @@ public class IntegerizeProductAttributes {
         initDicts();
     }
 
-    private void processFile(String inputFile, String outputFile) throws IOException {
-        FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(outputFile, true);
+    private void processFile(String inputFile) throws IOException {
         BufferedReader br = HdfsUtils.getReader(inputFile);
         try {
-            String firstLine = br.readLine();
+            firstLine = br.readLine();
 
             List<String> fields = new ArrayList<>();
             for (String split : firstLine.split("\t")) {
@@ -107,31 +111,28 @@ public class IntegerizeProductAttributes {
                 }
             }
 
-            writer.write(Joiner.on("\t").join(fields) + "\n");
-
             int numFields = fields.size();
             while(true) {
                 String line = br.readLine();
                 if (line == null) break;
                 String[] values = line.split("\t");
-                Integer[] intValues = new Integer[numFields];
+                List<Integer> intValues = new ArrayList<>();
 
                 for (int i = 0; i < numFields; i++) {
                     String field = fields.get(i);
                     String value = values[i];
                     DictIntegerizer fieldDict = getDict(field);
-                    intValues[i] = fieldDict.only_get(value, MISSING_DATA_INDEX);
+                    intValues.add(fieldDict.only_get(value, MISSING_DATA_INDEX));
                 }
-                writer.write(Joiner.on("\t").join(intValues) + "\n");
+                int count = Integer.parseInt(values[numFields]);
+                intValues.add(count);
+                integerizedProductsAndCounts.add(new ImmutablePair<>(intValues, count));
             }
         } catch (Exception e) {
             br.close();
-            writer.close();
             throw e;
         } finally {
             br.close();
-            writer.flush();
-            writer.close();
         }
 
     }
@@ -149,11 +150,13 @@ public class IntegerizeProductAttributes {
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         for (int i = 0; i < files.size(); i++) {
             String inputFile = files.get(i);
-            String outputFile = attributeTuplesPath + "/part-" + i;
-            processFile(inputFile, outputFile);
+            processFile(inputFile);
             System.out.println("processed file : " + inputFile);
         }
 
+        integerizedProductsAndCounts.sort(Comparator.comparing(x -> -1 * x.getValue()));
+        List<List<Integer>> integerizedProducts = integerizedProductsAndCounts.stream().map(Pair::getKey).collect(Collectors.toList());
+        writeIntegerizedAttributes(firstLine, integerizedProducts, attributeTuplesPath + "/part-0");
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
         Map<String, Integer> attributesSummary = new HashMap<>();
         for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
@@ -162,6 +165,19 @@ public class IntegerizeProductAttributes {
         }
         writeSummary(attributeSummaryPath, attributesSummary);
 
+    }
+
+    private static void writeIntegerizedAttributes(String firstLine, List<List<Integer>> integerizedProducts, String outputPath) throws IOException {
+        FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(outputPath, true);
+        writer.write(firstLine + "\n");
+        try {
+            for (List<Integer> integerizedProduct : integerizedProducts) {
+                writer.write(Joiner.on("\t").join(integerizedProduct) + "\n");
+            }
+        } finally {
+            writer.flush();
+            writer.close();
+        }
 
     }
 

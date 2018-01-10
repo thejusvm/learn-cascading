@@ -53,14 +53,18 @@ public class IntegerizedProductAttributesWrapper {
         List<Integer> values = allFieldValues.get(index);
         Map<String, Integer> attributeValuesMaps = new HashMap<>();
         for (int i = 0; i < fieldNames.size(); i++) {
-            attributeValuesMaps.put(fieldNames.get(i), values.get(i));
+            String fieldName = fieldNames.get(i);
+            if("count".equals(fieldName)) {
+                continue;
+            }
+            attributeValuesMaps.put(fieldName, values.get(i));
         }
         return attributeValuesMaps;
     }
 
 
     public static void main(String[] args) throws IOException {
-        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int/integerized_attributes");
+        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("/Users/thejus/workspace/learn-cascading/data/sessions-2017100.products-int.1/integerized_attributes");
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String next = scanner.next();
