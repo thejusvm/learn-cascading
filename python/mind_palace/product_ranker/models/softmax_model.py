@@ -40,7 +40,8 @@ class softmax_model(model) :
         negative_features = fetch_features(attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
         self.negative_embedder = ScoringProductHandler(self.per_attribute_embeddings, negative_features)
 
-        self.click_embeddings = self.click_embedder.embeddings_mean
+        click_pooling_methods = {"mean" : self.click_embedder.embeddings_mean, "sum" : self.click_embedder.embeddings_sum}
+        self.click_embeddings = click_pooling_methods[self.model_config.click_pooling]
         self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
         self.positive_weights = self.positive_embedder.weights
         self.positive_bias = self.positive_embedder.bias

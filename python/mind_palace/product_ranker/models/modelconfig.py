@@ -17,6 +17,8 @@ class modelconfig :
         self.reuse_context_dict = False
         self.learning_rate = 1e-3
 
+        self.click_pooling = "mean" #values : mean/sum
+
         self.probability_function = "sigmoid" #values: sigmoid/nn
         self.layer_count = []
 
