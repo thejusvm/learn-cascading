@@ -45,4 +45,9 @@ public class GroupAggregatorFlow implements CascadingFlows{
                 .addTailSink(groupByPipe, sampleOutputSink)
                 .setAssertionLevel(AssertionLevel.VALID);
     }
+
+    @Override
+    public void cleanup() {
+
+    }
 }

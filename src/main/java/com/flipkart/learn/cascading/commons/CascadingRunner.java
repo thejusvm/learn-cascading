@@ -42,6 +42,7 @@ public class CascadingRunner {
         PipeRunner runner = new PipeRunner(flowDef);
         runner.setNumReducers(1000);
         runner.execute();
+        cascadingFlow.cleanup();
 //        wcFlow.complete();
     }
 }

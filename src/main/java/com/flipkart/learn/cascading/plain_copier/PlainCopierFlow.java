@@ -35,4 +35,9 @@ public class PlainCopierFlow implements CascadingFlows {
                 .addTailSink(sampleInputPipe, sampleOutputSink)
                 .setAssertionLevel(AssertionLevel.VALID);
     }
+
+    @Override
+    public void cleanup() {
+
+    }
 }

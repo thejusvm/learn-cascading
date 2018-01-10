@@ -25,4 +25,9 @@ public class PassThroughFlow implements CascadingFlows {
         return FlowDef.flowDef().addSource(inputPipe, inputSource)
                 .addTailSink(inputPipe, outputSink);
     }
+
+    @Override
+    public void cleanup() {
+
+    }
 }

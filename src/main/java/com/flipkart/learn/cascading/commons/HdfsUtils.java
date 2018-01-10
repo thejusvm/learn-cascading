@@ -91,7 +91,7 @@ public class HdfsUtils {
     public static void delete(String pt) throws IOException {
         Path path = new Path(pt);
         FileSystem fs = FileSystem.get(configuration);
-        fs.delete(path, false);
+        fs.delete(path, true);
     }
 
     public static void cleanDir(String pt) throws IOException {

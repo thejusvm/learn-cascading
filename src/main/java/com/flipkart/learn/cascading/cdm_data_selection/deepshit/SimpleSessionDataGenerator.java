@@ -65,6 +65,11 @@ public class SimpleSessionDataGenerator implements CascadingFlows, Serializable 
                 .setAssertionLevel(AssertionLevel.VALID);
     }
 
+    @Override
+    public void cleanup() {
+
+    }
+
     public static void main(String[] args) {
         if(args.length == 0) {
             args = new String[] {

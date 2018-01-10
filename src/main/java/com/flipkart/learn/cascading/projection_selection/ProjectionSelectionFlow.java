@@ -41,4 +41,9 @@ public class ProjectionSelectionFlow implements CascadingFlows{
                 .addTailSink(highSalaryPipe, sampleOutputSink)
                 .setAssertionLevel(AssertionLevel.VALID);
     }
+
+    @Override
+    public void cleanup() {
+
+    }
 }

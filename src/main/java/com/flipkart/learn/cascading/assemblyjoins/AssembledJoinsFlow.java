@@ -36,4 +36,9 @@ public class AssembledJoinsFlow implements CascadingFlows{
                 .addTailSink(joinerAssembly.getTails()[1], outerJoinedInformation);
 
     }
+
+    @Override
+    public void cleanup() {
+
+    }
 }

@@ -65,4 +65,9 @@ public class CPRDataFlow implements CascadingFlows {
                 .setAssertionLevel(AssertionLevel.VALID);
     }
 
+    @Override
+    public void cleanup() {
+
+    }
+
 }

@@ -11,4 +11,7 @@ public interface CascadingFlows {
 
     //Single method which submits a run with the flow.
     FlowDef getFlowDefinition(Map<String, String> options);
+
+    void cleanup();
+
 }
