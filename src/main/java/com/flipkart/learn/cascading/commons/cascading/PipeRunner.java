@@ -10,6 +10,7 @@ import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.hadoop.GlobHfs;
 import cascading.tap.hadoop.Hfs;
+import cascading.tap.hadoop.HfsProps;
 import cascading.tuple.Fields;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +31,8 @@ public class PipeRunner {
     private int numReducers;
 
     private String mapChildJavaOpts;
+
+    private long combinedSize = 1024l *1024l * 1024l;
 
     public enum SerializationType {
 
@@ -75,6 +78,10 @@ public class PipeRunner {
         return System.getProperties().getProperty("os.name").toLowerCase().contains("mac");
     }
 
+    public void setCombinedSize(long combinedSize) {
+        this.combinedSize = combinedSize;
+    }
+
     public void executeFlowDef(FlowDef flowDef) {
         Joiner joiner = Joiner.on(",").skipNulls();
 
@@ -98,7 +105,7 @@ public class PipeRunner {
 
         Properties properties = AppProps.appProps().buildProperties(confMap);
         properties.setProperty("mapred.task.timeout", "600000");
-        String split = "6710886400";
+        String split = "671088640";
         properties.setProperty("mapred.max.split.size", split);
         properties.setProperty("mapred.min.split.size", split);
         properties.setProperty("mapreduce.job.reduces", "200");
@@ -108,6 +115,18 @@ public class PipeRunner {
         properties.setProperty("mapred.map.child.java.opts", "-Xmx1024m");
         properties.setProperty("mapred.child.java.opts", "-Xmx1024m");
         properties.setProperty("mapreduce.task.timeout", "6000000");
+        properties.setProperty("mapreduce.job.reduce.slowstart.completedmaps", "0.7");
+        properties.setProperty("mapreduce.input.fileinputformat.split.maxsize", "4294967296");
+        properties.setProperty("mapreduce.input.fileinputformat.split.minsize", "4294967296");
+        properties.setProperty("mapreduce.task.io.sort.mb", "1024");
+        properties.setProperty("mapreduce.task.io.sort.factor", "50");
+
+        properties.setProperty("mapreduce.map.speculative", "true");
+        properties.setProperty("mapreduce.reduce.speculative", "true");
+        properties.setProperty("mapreduce.job.speculative.slowtaskthreshold", "1.0");
+
+        HfsProps.setCombinedInputMaxSize(properties, combinedSize);
+        HfsProps.setUseCombinedInput(properties, true);
 
         if(isLocal()) {
             numReducers = 1;
