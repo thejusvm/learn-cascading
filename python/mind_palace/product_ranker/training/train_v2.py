@@ -56,11 +56,11 @@ def train(train_cxt) :
     attributes = map(lambda x: x.name, modelconf.attributes_config)
     if trainCxt.input_type == "csv":
         dataset = CSV_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
-        test_dataset = CSV_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=False)
+        test_dataset = CSV_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
     else:
         if trainCxt.input_type == "tfr":
             dataset = TFR_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
-            test_dataset = TFR_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=False)
+            test_dataset = TFR_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
         else:
             print "unknown intput_type"
             sys.exit(1)
