@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import glob
 
 import mind_palace.product_ranker.constants as CONST
 
@@ -8,10 +9,22 @@ import mind_palace.product_ranker.constants as CONST
     returns tuples of integer representation for each attribute.
 """
 
+def getDataFrameForDir(path, attributes, index_field, col_types):
+    files = glob.glob(path)
+    merged_df = None
+    for file in files:
+        df = pd.read_csv(file, sep="\t", index_col=index_field, usecols=attributes, dtype=col_types)
+        if merged_df is None:
+            merged_df = df
+        else:
+            merged_df.append(df)
+    return merged_df
+
+
 def read_integerized_attributes(attributes, attributes_path, index_field):
     num_defaults = len(CONST.DEFAULT_DICT_KEYS)
     col_types = dict(zip(attributes, [np.int32 for _ in range(len(attributes))]))
-    df = pd.read_csv(attributes_path, sep="\t", index_col=index_field, usecols=attributes, dtype=col_types)
+    df = getDataFrameForDir(attributes_path, attributes, index_field, col_types)
     index_attribute = attributes[0]
     df[index_attribute] = df.index
     df=df[attributes]

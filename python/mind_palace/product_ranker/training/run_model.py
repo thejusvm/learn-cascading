@@ -2,6 +2,8 @@ import cPickle as pickle
 import collections
 import numpy as np
 import tensorflow as tf
+import os
+import sys
 from operator import itemgetter
 
 import mind_palace.product_ranker.constants as CONST
@@ -13,10 +15,36 @@ from mind_palace.product_ranker.prepare_data.product_attributes_dataset import r
 from mind_palace.product_ranker.training import trainingcontext as tc
 from mind_palace.product_ranker.commons import generate_feature_names
 
+def read_attribute_dict(path):
+
+    with open(path, 'rb') as handle:
+        attribute = handle.readline()
+        attribute.rstrip('\n')
+        di = DictIntegerizer(name=attribute)
+        while True :
+            line = handle.readline()
+            line = line.rstrip('\n')
+            if not line:
+                break
+            else:
+                di.get(line)
+        return di
+
+
+def read_attribute_dicts(path, attributes):
+    attribute_dicts = {}
+    for attribute in attributes :
+        attribute_path = path + "/" + attribute + ".dict"
+        attribute_dicts[attribute] = read_attribute_dict(attribute_path)
+    return attribute_dicts
+
+# di = read_attribute_dicts("/Users/thejus/workspace/learn-cascading/data/sessions-2017100.products-int.1/attribute_dicts", ["color"])
+# print di["color"].termdict
+# sys.exit()
 
 class Scorer :
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, product_data_path):
 
         self.model_path = model_path
         dir = tc.getTraningContextDir(model_path)
@@ -26,14 +54,14 @@ class Scorer :
             self.trainCxt = pickle.load(handle)
 
         self.trainCxt.model_dir = model_path
+        self.model_conf = self.trainCxt.model_config  # type: modelconfig
+        self.attributes = map(lambda x: x.name, self.model_conf.attributes_config)
 
-        attribute_dict_path = self.trainCxt.attributedict_path
-        print "attribute dict path : " + attribute_dict_path
-        with open(attribute_dict_path, 'rb') as handle:
-            attribute_dict = pickle.load(handle)
+        attribute_dict_path = product_data_path + "/attribute_dicts"
+        product_attributes_path = product_data_path + "/integerized_attributes/part-*"
 
-        self.model_conf = self.trainCxt.model_config # type: modelconfig
-        self.attributes = map(lambda x : x.name, self.model_conf.attributes_config)
+        attribute_dict = read_attribute_dicts(attribute_dict_path, self.attributes)
+
 
         self.model_conf.enable_default_click = False
 
@@ -41,7 +69,7 @@ class Scorer :
 
         index_field = "productId"
         self.pid_dict = attribute_dict[index_field] #type: DictIntegerizer
-        self.product_attributes = read_integerized_attributes(self.attributes, self.trainCxt.product_attributes_path, index_field)
+        self.product_attributes = read_integerized_attributes(self.attributes, product_attributes_path, index_field)
         self.missing_data_index = CONST.DEFAULT_DICT_KEYS.index(CONST.MISSING_DATA_TEXT)
         print "loaded model, ready to run now"
 
@@ -116,10 +144,11 @@ class Scorer :
 
 
 if __name__ == '__main__' :
-    model_path = "saved_models/run.20171117-14-39-02"
-    rm = Scorer(model_path)
-    products_to_rank = ["MOBEQ98MNXHY4RU9", "MOBES9G5SJHYT9QX", "MOBEQ98TABTWXGTD", "MOBEWN63JHHEXPTD", "MOBEXNP9FJ9K5K53", "MOBEX9WXUSZVYHET", "MOBET6RH4XSXKM7D", "MOBEQ98TWG8X4HH3", "MOBECCA5FHQD43KA", "MOBEWN63NBDSMVPG", "MOBEU9WRGVXDPBSF", "MOBEU9WRZFFUYAXJ", "MOBEU9WRZHRVWXTK", "MOBEMK62PN2HU7EE", "MOBEX9WXZCZHWXUZ", "MOBEWXHUSBXVJ7NZ", "MOBET6RHXVZBJFNT", "MOBESDYMGHC37GCS", "MOBEN2YYKU9386TQ", "MOBEN2YYQH8PSYXG", "MOBECCA5Y5HBYR3Q", "MOBECCA5SMRSKCNY", "MOBEG4XWMBDGZVEX", "MOBEG4XWDK4WBGNU", "MOBEV7YDBCAFG3ZH", "MOBEN2XYK8WFEGM8", "MOBEJFHUFVAJ45YA", "MOBEJFHUGPWTZFQJ", "MOBEV7YD3CFBTENW", "MOBEVKFTCFFU2FE7", "MOBETM9FZWW5UEZG", "MOBEUF42PGDRYCQA", "MOBEUF424KXTP9CT", "MOBEUF42VHXZSQV7", "MOBEQ98T82CYVHGZ", "MOBETM93F7DGJNN5", "MOBETMH3ZYNDPVVC", "MOBEU35JUQMQQHWK", "MOBEU35JAZKVWRPV", "MOBESDYCQD3FJCFW", "MOBEZEMYH7FQBGBQ", "MOBEZENFZBPW8UMF", "MOBEKGT2HGDGADFW", "MOBEMK62JSRHU85T", "MOBEZPVEGADXHMHT", "MOBEZPVENHEVMQDZ", "MOBEQRYTXZXC8FZZ", "MOBETM93HMBGUQKH", "MOBEXHHKDHSA9UZC", "MOBECCA5BJUVUGNP", "MOBEHZTGXSGG2GRX", "MOBEK4ABQFH3SSP7", "MOBE9TGVE7ZBRAEN"]
-    clicked_products = ["MOBETMH3ZYNDPVVC"]
+    model_path = "saved_models/run.20180110-20-06-26"
+    product_data_path = "/Users/thejus/workspace/learn-cascading/data/sessions-2017100.products-int.1"
+    rm = Scorer(model_path, product_data_path)
+    products_to_rank = ["saresnf8hcpxctwx","sarephfghwhth2dj","saretpv3rgd7hswt","sarecj42hrbgf4mg","saresn4gwdg4rhr6","sarecgrgvdkyeyt2","sarewngdwhgd2hs8","sarezr5dweha7ryy","saremxhcbmbgbsqg","saredzuf2yjcwjp7"]
+    clicked_products = ["sarexdfd7rgnhexg"]
     ps = rm.print_score(products_to_rank, clicked_products)
     print "---------------------------------------------------------"
     # clicked_products = [CONST.DEFAULT_CLICK_TEXT]
