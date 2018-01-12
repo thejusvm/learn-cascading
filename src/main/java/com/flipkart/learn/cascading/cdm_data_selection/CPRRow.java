@@ -27,6 +27,10 @@ public class CPRRow extends BaseOperation implements Function {
         }
     }
 
+    public String cleanString(String str){
+        return str.replaceAll("\n", " ").replaceAll("\t", " ");
+    }
+
     //protected String[] compoundFields;
 
     public CPRRow(Fields outputFields) {
@@ -147,7 +151,7 @@ public class CPRRow extends BaseOperation implements Function {
         String searchQuery = null;
         if(searchAttributes != null) {
             sqId = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SEARCHQUERYID).get().getIdx());
-            searchQuery = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._ORIGINALSEARCHQUERY).get().getIdx());
+            searchQuery = cleanString(searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._ORIGINALSEARCHQUERY).get().getIdx()));
         } else {
 //            sqId = fetchId;
         }
