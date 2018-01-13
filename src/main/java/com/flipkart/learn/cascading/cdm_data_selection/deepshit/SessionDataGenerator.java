@@ -60,7 +60,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             _FINDINGMETHOD,
             _TIMESTAMP,
             _SEARCHQUERYID,
-            _ORIGINALSEARCHQUERY,
+//            _ORIGINALSEARCHQUERY,
             _PRODUCTID,
 //            _ISVIDEOAVAILABLE,
 //            _ISIMAGESAVAILABLE,
@@ -228,7 +228,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             userContext.setPlatform(aggregatorCall.getArguments().getString(_PLATFORM));
 
             String sqid = aggregatorCall.getArguments().getString(_SEARCHQUERYID);
-            String searchQuery = aggregatorCall.getArguments().getString(_ORIGINALSEARCHQUERY);
+            String searchQuery = "ignore"; //aggregatorCall.getArguments().getString(_ORIGINALSEARCHQUERY);
             String findingmethod = aggregatorCall.getArguments().getString(_FINDINGMETHOD);
             String productId = aggregatorCall.getArguments().getString(_PRODUCTID);
             int pos = aggregatorCall.getArguments().getInteger(_POSITION);

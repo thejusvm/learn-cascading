@@ -32,7 +32,7 @@ public class PipeRunner {
 
     private String mapChildJavaOpts;
 
-    private long combinedSize = 1024l *1024l * 1024l;
+    private long combinedSize = 512l * 1024l * 1024l;
 
     public enum SerializationType {
 
@@ -115,15 +115,15 @@ public class PipeRunner {
         properties.setProperty("mapred.map.child.java.opts", "-Xmx1024m");
         properties.setProperty("mapred.child.java.opts", "-Xmx1024m");
         properties.setProperty("mapreduce.task.timeout", "6000000");
-        properties.setProperty("mapreduce.job.reduce.slowstart.completedmaps", "0.7");
-        properties.setProperty("mapreduce.input.fileinputformat.split.maxsize", "4294967296");
-        properties.setProperty("mapreduce.input.fileinputformat.split.minsize", "4294967296");
-        properties.setProperty("mapreduce.task.io.sort.mb", "1024");
-        properties.setProperty("mapreduce.task.io.sort.factor", "50");
+//        properties.setProperty("mapreduce.job.reduce.slowstart.completedmaps", "0.7");
+//        properties.setProperty("mapreduce.input.fileinputformat.split.maxsize", "2294967296");
+//        properties.setProperty("mapreduce.input.fileinputformat.split.minsize", "2294967296");
+//        properties.setProperty("mapreduce.task.io.sort.mb", "1024");
+//        properties.setProperty("mapreduce.task.io.sort.factor", "50");
 
-        properties.setProperty("mapreduce.map.speculative", "true");
-        properties.setProperty("mapreduce.reduce.speculative", "true");
-        properties.setProperty("mapreduce.job.speculative.slowtaskthreshold", "1.0");
+//        properties.setProperty("mapreduce.map.speculative", "true");
+//        properties.setProperty("mapreduce.reduce.speculative", "true");
+//        properties.setProperty("mapreduce.job.speculative.slowtaskthreshold", "1.0");
 
         HfsProps.setCombinedInputMaxSize(properties, combinedSize);
         HfsProps.setUseCombinedInput(properties, true);
