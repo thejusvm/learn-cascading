@@ -40,7 +40,7 @@ public class CascadingRunner {
 //        Hadoop2MR1FlowConnector flowConnector = new Hadoop2MR1FlowConnector(properties);
 //        Flow wcFlow = flowConnector.connect(flowDef);
         PipeRunner runner = new PipeRunner(flowDef);
-        runner.setNumReducers(1500);
+        runner.setNumReducers(2000);
         runner.execute();
         cascadingFlow.cleanup();
 //        wcFlow.complete();
