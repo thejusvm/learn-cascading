@@ -221,7 +221,7 @@ if __name__ == '__main__' :
     parser.add_argument("--probability_function", type=str)
     parser.add_argument("--layer_count", type=str)
     parser.add_argument("--model_name", type=str)
-    parser.add_argument("--use_context", type=bool, default=True)
+    parser.add_argument("--use_context", type=str, default="True")
     parser.add_argument("--click_pooling", type=str, default="sum")
     args = parser.parse_args()
 
@@ -271,7 +271,7 @@ if __name__ == '__main__' :
         if args.click_layer_count :
             modelconf.click_layer_count = [int(x) for x in args.click_layer_count.split(",")]
         if args.use_context :
-            modelconf.use_context = args.use_context
+            modelconf.use_context = True if args.use_context != "False" else False
         if args.click_pooling :
             modelconf.click_pooling = args.click_pooling
         trainCxt.model_config = modelconf
