@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class SearchSessions implements Serializable{
 
     @JsonProperty(value = "sessions")
-    Map<String, SearchSession> sessions;
+    LinkedHashMap<String, SearchSession> sessions;
 
     int lastPosition;
 
@@ -27,7 +27,7 @@ public class SearchSessions implements Serializable{
     String lastSQID;
 
     @JsonCreator
-    public SearchSessions(@JsonProperty(value = "sessions") Map<String, SearchSession> sessions) {
+    public SearchSessions(@JsonProperty(value = "sessions") LinkedHashMap<String, SearchSession> sessions) {
         this.sessions = sessions;
         this.lastFindingMethod = null;
         this.lastSQID = null;
@@ -43,7 +43,7 @@ public class SearchSessions implements Serializable{
     }
 
     @JsonIgnore
-    private void setSessions(Map<String,SearchSession> sessions) {
+    private void setSessions(LinkedHashMap<String,SearchSession> sessions) {
         this.sessions = sessions;
     }
 
@@ -117,7 +117,7 @@ public class SearchSessions implements Serializable{
 
             }
             mergedSessions.sort(Comparator.comparingLong(SearchSession::getTimestamp));
-            Map<String, SearchSession> mergedSessionsMap = mergedSessions.stream().collect(Collectors.toMap(SearchSession::getSqid, Function.identity(),
+            LinkedHashMap<String, SearchSession> mergedSessionsMap = mergedSessions.stream().collect(Collectors.toMap(SearchSession::getSqid, Function.identity(),
                     (u, v) -> v,
                     LinkedHashMap::new));
             finalSessions.setSessions(mergedSessionsMap);
@@ -128,7 +128,7 @@ public class SearchSessions implements Serializable{
     public static SearchSessions filterSessions(SearchSessions sessions, Predicate<ProductObj> predicate) {
 
         SearchSessions filteredSessions = new SearchSessions();
-        Map<String, SearchSession> sessionsMap = new HashMap<String, SearchSession>();
+        LinkedHashMap<String, SearchSession> sessionsMap = new LinkedHashMap<>();
 
         for (SearchSession searchSession : sessions.getSessions().values()) {
             searchSession = searchSession.clone();

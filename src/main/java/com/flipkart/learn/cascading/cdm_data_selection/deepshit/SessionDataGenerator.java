@@ -27,7 +27,6 @@ import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
-import com.flipkart.learn.cascading.commons.cascading.SingleFieldListAggregator;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -120,7 +119,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         return cdmPipe;
     }
 
-    private String[] getAttributeFields(String cmsInput) {
+    private static String[] getAttributeFields(String cmsInput) {
         String[] attributes;
         try {
             String cmsInputFile = HdfsUtils.listFiles(cmsInput, 1).get(0);
@@ -134,18 +133,18 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
     @Override
     public void cleanup() {
-        try {
-            HdfsUtils.delete(checkpointFile);
-        } catch (IOException e) {
-            LOG.error("error cleaning up checkpoint file", e);
-        }
+//        try {
+//            HdfsUtils.delete(checkpointFile);
+//        } catch (IOException e) {
+//            LOG.error("error cleaning up checkpoint file", e);
+//        }
     }
     @Override
     public FlowDef getFlowDefinition(Map<String, String> options) {
         Tap inputData = new GlobHfs( (Scheme)new AvroScheme(), options.get("input"));
         String cmsInput = options.get("cmsInput");
         Tap cmsData = new GlobHfs(new TextDelimited(Fields.ALL, true, "\t"), cmsInput);
-        String[] attributes = getAttributeFields(cmsInput);
+
 
         String runId = options.get("runId");
         if (runId == null) {
@@ -167,7 +166,22 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                 new LeftJoin());
 
         Checkpoint checkpointPipe = new Checkpoint("checkpoint", cdmCmsPipe);
-        Pipe sessionPipe = new GroupBy(checkpointPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
+        Pipe sessionPipe = aggregateSessionsPipe(checkpointPipe, cmsInput);
+
+        return FlowDef.flowDef().setName(options.get("flowName"))
+                .addSource(cdmRawPipe, inputData)
+                .addSource(cmsPipe, cmsData)
+                .addCheckpoint(checkpointPipe, checkpointTap)
+                .addTailSink(sessionPipe, outputTap)
+                .setRunID(runId)
+                .setAssertionLevel(AssertionLevel.VALID);
+
+    }
+
+    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput) {
+
+        String[] attributes = getAttributeFields(cmsInput);
+        Pipe sessionPipe = new GroupBy(cmsCdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
@@ -179,15 +193,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         sessionPipe = new JsonEncodeEach(sessionPipe, userStats);
         sessionPipe = new JsonEncodeEach(sessionPipe, userDayStats);
         sessionPipe = new JsonEncodeEach(sessionPipe, userContext);
-
-        return FlowDef.flowDef().setName(options.get("flowName"))
-                .addSource(cdmRawPipe, inputData)
-                .addSource(cmsPipe, cmsData)
-                .addCheckpoint(checkpointPipe, checkpointTap)
-                .addTailSink(sessionPipe, outputTap)
-                .setRunID(runId)
-                .setAssertionLevel(AssertionLevel.VALID);
-
+        return sessionPipe;
     }
 
     public static void main(String[] args) {
