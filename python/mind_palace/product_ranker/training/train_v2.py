@@ -216,6 +216,9 @@ if __name__ == '__main__' :
     for train_key in train_cxt_dict :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
+    parser.add_argument("--ranking_attributes", type=str, default=None)
+    parser.add_argument("--regularizer_id", type=str, default="productId")
+    parser.add_argument("--regularizer_attributes", type=str, default=None)
     parser.add_argument("--click_non_linearity", type=bool, default=False)
     parser.add_argument("--click_layer_count", type=str)
     parser.add_argument("--probability_function", type=str)
@@ -226,6 +229,22 @@ if __name__ == '__main__' :
     args = parser.parse_args()
 
     attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
+    attributes_config_map = dict([[ac.name, ac] for ac in attributes_config])
+
+    if args.ranking_attributes:
+        for ac in attributes_config:
+            ac.for_ranking = False
+        for attr in args.ranking_attributes.split(","):
+            attributes_config_map[attr].for_ranking = True
+
+    if args.regularizer_attributes:
+        for ac in attributes_config:
+            ac.for_regularization = False
+        for attr in args.regularizer_attributes.split(","):
+            attributes_config_map[attr].for_regularization = True
+
+
+
     for arg in args.__dict__:
         arg_val = args.__dict__[arg]
         if arg_val != None:
@@ -262,6 +281,8 @@ if __name__ == '__main__' :
             model_name = args.model_name
         modelconf = modelconfig(model_name)
         modelconf.attributes_config = attributes_config
+        if args.regularizer_id:
+            modelconfig.regularizer_id = args.regularizer_id
         if args.probability_function :
             modelconf.probability_function = args.probability_function
         if args.layer_count :

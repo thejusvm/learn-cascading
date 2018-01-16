@@ -21,24 +21,43 @@ class softmax_model(model) :
         model.__init__(self, modelConf)
         self.modelConf = modelConf # type: modelconfig
         self.per_attribute_embeddings = []
+        self.ranking_attributes_embeddings = [] # type:list of AttributeEmbeddings
+        self.regularizer_attributes_embeddings = []
+        self.regularizer_id_embeddings = None
 
-        self.attributes_config = self.modelConf.attributes_config
+        self.attributes_config = self.modelConf.attributes_config #type:list of AttributeConfig
+
+        id_attribute_config = None
+        for attribute_config in self.attributes_config:
+            if self.modelConf.regularizer_id == attribute_config.name:
+                id_attribute_config = attribute_config
+
+        if not id_attribute_config:
+            for attribute_config in self.attributes_config:
+                attribute_config.for_regularization = False
+
         for attribute_config in self.attributes_config :
-            attribute_embeddings = AttributeEmbeddings(modelConf, attribute_config)
+            attribute_embeddings = AttributeEmbeddings(modelConf, attribute_config, id_attribute_config)
             self.per_attribute_embeddings.append(attribute_embeddings)
+            if attribute_config.for_ranking:
+                self.ranking_attributes_embeddings.append(attribute_embeddings)
+            if self.modelConf.regularizer_id != attribute_config.name and attribute_config.for_regularization:
+                self.regularizer_attributes_embeddings.append(attribute_embeddings)
+            if self.modelConf.regularizer_id == attribute_config.name:
+                self.regularizer_id_embeddings = attribute_embeddings
+
+        self.enable_regularizer = len(self.regularizer_attributes_embeddings) != 0 and self.regularizer_id_embeddings is not None
 
     def feed_input(self, feature_names, inputs):
-        num_attributes = len(self.attributes_config)
-        attribute_names = [self.attributes_config[i].name for i in range(num_attributes)]
-
-        click_features = fetch_features(attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
+        ranking_attribute_names = [ranking_embeddings.attribute_name for ranking_embeddings in self.ranking_attributes_embeddings]
+        click_features = fetch_features(ranking_attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
+        postive_features = fetch_features(ranking_attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
+        negative_features = fetch_features(ranking_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
         if not self.modelConf.use_context:
             click_features = tf.zeros_like(click_features)
-        self.click_embedder = ContextClickProductHandler(self.per_attribute_embeddings, click_features, self.model_config)
-        postive_features = fetch_features(attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
-        self.positive_embedder = ScoringProductHandler(self.per_attribute_embeddings, postive_features)
-        negative_features = fetch_features(attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
-        self.negative_embedder = ScoringProductHandler(self.per_attribute_embeddings, negative_features)
+        self.click_embedder = ContextClickProductHandler(self.ranking_attributes_embeddings, click_features, self.model_config)
+        self.positive_embedder = ScoringProductHandler(self.ranking_attributes_embeddings, postive_features)
+        self.negative_embedder = ScoringProductHandler(self.ranking_attributes_embeddings, negative_features)
 
         click_pooling_methods = {"mean" : self.click_embedder.embeddings_mean, "sum" : self.click_embedder.embeddings_sum}
         self.click_embeddings = click_pooling_methods[self.model_config.click_pooling]
@@ -54,7 +73,27 @@ class softmax_model(model) :
         self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
         self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
 
-        self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent)) / tf.cast(self.batch_size, tf.float32)
+        self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent))
+
+        if self.enable_regularizer:
+            regularizer_attribute_names = [regularizer_embeddings.attribute_name for regularizer_embeddings in self.regularizer_attributes_embeddings]
+            regularizer_id_name = [self.regularizer_id_embeddings.attribute_name]
+            click_features = fetch_features(regularizer_attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
+            click_id = fetch_features(regularizer_id_name, CONST.CLICK_COL_PRERFIX, feature_names, inputs)[0]
+
+            postive_features = fetch_features(regularizer_attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
+            postive_id = fetch_features(regularizer_id_name, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)[0]
+
+            negative_features = fetch_features(regularizer_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
+            negative_id = fetch_features(regularizer_id_name, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)[0]
+
+            self.click_regularization_loss = ClickRegularizationLoss(self.regularizer_id_embeddings, click_id, self.regularizer_attributes_embeddings, click_features).loss
+            self.postive_regularization_loss = RegularizationLoss(self.regularizer_id_embeddings, postive_id, self.regularizer_attributes_embeddings, postive_features).loss
+            self.negative_regularization_loss = RegularizationLoss(self.regularizer_id_embeddings, negative_id, self.regularizer_attributes_embeddings, negative_features).loss
+
+            self.sigmoid_loss = self.sigmoid_loss + self.click_regularization_loss + self.postive_regularization_loss + self.negative_regularization_loss
+
+        self.sigmoid_loss = self.sigmoid_loss / tf.cast(self.batch_size, tf.float32)
 
         self.max_negative_score = tf.reduce_max(self.negative_handler.logits, reduction_indices = [1])
         self.max_negative_score = tf.reshape(self.max_negative_score, [tf.size(self.max_negative_score)])
@@ -145,10 +184,11 @@ class nn_probability :
 
 class AttributeEmbeddings :
 
-    def __init__(self, modelConf, attribute_config):
+    def __init__(self, modelConf, attribute_config, id_attribute_config):
         """
         :type modelConf: modelconfig
         :type attribute_config: AttributeConfig
+        :type id_attribute_config: AttributeConfig
         """
         self.attribute_config = attribute_config
         self.attribute_name = attribute_config.name
@@ -178,6 +218,10 @@ class AttributeEmbeddings :
             self.softmax_bias = tf.Variable(init_softmax_bias, name=self.attribute_name + "_sm_b")
         else:
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
+
+        if attribute_config.for_regularization:
+            self.context_to_id = self.context_dict = tf.Variable(
+                tf.random_uniform([id_attribute_config.embedding_size, self.embedding_size], -0.01, 0.01), dtype=tf.float32)
 
 PerAttrClickEmb = collections.namedtuple('PerAttrClickEmb', 'pad_handler click_embedding')
 
@@ -269,5 +313,90 @@ class ScoringProductHandler() :
         self.weights = tf.concat(self.per_attr_weights, 2)
         self.bias = tf.concat(self.per_attr_bias, 1)
 
+
+class ClickRegularizationLoss:
+
+
+    def __init__(self, id_attributeembeddings, ids, attributes_attributeembeddings, attributes):
+        """
+        :type id_attributeembeddings: AttributeEmbeddings
+        :type ids:
+        :type attributes_attributeembeddings: list of AttributeEmbeddings
+        :type attributes:
+        """
+        self.id_attributeembeddings, self.ids, self.attributes_attributeembeddings, self.attributes = \
+            id_attributeembeddings, ids, attributes_attributeembeddings, attributes
+
+        pad_text_index = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
+
+        self.id_embeddings = padding_handler(ids, id_attributeembeddings.context_dict, padding_index=pad_text_index).tensor_embeddings
+        self.id_embeddings = tf.transpose(self.id_embeddings)
+        self.per_attr_loss = []
+
+        for i in range(len(attributes_attributeembeddings)):
+            attribute_embedding = attributes_attributeembeddings[i]
+            context_to_id = attribute_embedding.context_to_id
+            self.attribute_embeddings = padding_handler(attributes[i], attribute_embedding.context_dict,
+                                                        padding_index=pad_text_index).tensor_embeddings
+            self.attribute_embeddings_T = tf.transpose(self.attribute_embeddings)
+
+            self.attribute_embeddings_adjusted = tf.expand_dims(self.attribute_embeddings_T, axis=0)
+
+            context_to_id = tf.expand_dims(context_to_id, axis=-1)
+            context_to_id = tf.expand_dims(context_to_id, axis=-1)
+
+            self.attribute_in_id_space = tf.multiply(context_to_id, self.attribute_embeddings_adjusted)
+            self.attribute_in_id_space = tf.reduce_sum(self.attribute_in_id_space, reduction_indices=1)
+
+            self.attr_loss_mult = tf.multiply(self.attribute_in_id_space, self.id_embeddings)
+            self.attr_loss = tf.reduce_sum(self.attr_loss_mult, reduction_indices=0)
+            self.per_attr_loss.append(self.attr_loss)
+
+        self.logits = tf.add_n(self.per_attr_loss)
+
+        self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.logits), logits=self.logits)
+
+        self.loss = tf.reduce_sum(self.xent)
+
+
+class RegularizationLoss:
+
+    def __init__(self, id_attributeembeddings, ids, attributes_attributeembeddings, attributes):
+        """
+        :type id_attributeembeddings: AttributeEmbeddings
+        :type ids:
+        :type attributes_attributeembeddings: list of AttributeEmbeddings
+        :type attributes:
+        """
+        self.id_attributeembeddings, self.ids, self.attributes_attributeembeddings, self.attributes = \
+            id_attributeembeddings, ids, attributes_attributeembeddings, attributes
+
+        self.id_embeddings = tf.nn.embedding_lookup(id_attributeembeddings.softmax_weights, ids)
+        self.id_embeddings = tf.transpose(self.id_embeddings)
+        self.per_attr_loss = []
+
+        for i in range(len(attributes_attributeembeddings)):
+            attribute_embedding = attributes_attributeembeddings[i]
+            context_to_id = attribute_embedding.context_to_id
+            self.attribute_embeddings = tf.nn.embedding_lookup(attribute_embedding.softmax_weights, attributes[i])
+            self.attribute_embeddings_T = tf.transpose(self.attribute_embeddings)
+
+            self.attribute_embeddings_adjusted = tf.expand_dims(self.attribute_embeddings_T, axis=0)
+
+            context_to_id = tf.expand_dims(context_to_id, axis=-1)
+            context_to_id = tf.expand_dims(context_to_id, axis=-1)
+
+            self.attribute_in_id_space = tf.multiply(context_to_id, self.attribute_embeddings_adjusted)
+            self.attribute_in_id_space = tf.reduce_sum(self.attribute_in_id_space, reduction_indices=1)
+
+            self.attr_loss_mult = tf.multiply(self.attribute_in_id_space, self.id_embeddings)
+            self.attr_loss = tf.reduce_sum(self.attr_loss_mult, reduction_indices=0)
+            self.per_attr_loss.append(self.attr_loss)
+
+        self.logits = tf.add_n(self.per_attr_loss)
+
+        self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.logits), logits=self.logits)
+
+        self.loss = tf.reduce_sum(self.xent)
 
 

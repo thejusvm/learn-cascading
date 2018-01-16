@@ -7,8 +7,8 @@ class modelconfig :
 
     def __init__(self, model_name):
         self.model_name = model_name
-
         self.attributes_config = None
+        self.regularizer_id = None
         self.enable_default_click = False
         self.pad_index = 0
         self.use_context = True
@@ -24,10 +24,16 @@ class modelconfig :
 
 class AttributeConfig :
 
-    def __init__(self, name, embedding_size, vocab_size = 0, override_embeddings = empty_embeddingdict, per_attribute_learning_rate = None):
+    def __init__(self, name, embedding_size, vocab_size=0,
+                 for_ranking=True,
+                 for_regularization=False,
+                 override_embeddings=empty_embeddingdict,
+                 per_attribute_learning_rate=None):
         self.name = name
         self.embedding_size = embedding_size
         self.vocab_size = vocab_size
+        self.for_ranking = for_ranking
+        self.for_regularization = for_regularization
         self.override_embeddings = override_embeddings
         self.per_attribute_learning_rate = per_attribute_learning_rate
 
