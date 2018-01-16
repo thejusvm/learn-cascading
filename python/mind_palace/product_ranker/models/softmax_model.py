@@ -15,6 +15,13 @@ def fetch_features(attribute_names, prefix, feature_names, inputs):
     features = [inputs[i] for i in feature_indices]
     return features
 
+def softmax_lookup_method(embeddingsrepo, ids) :
+    return tf.nn.embedding_lookup(embeddingsrepo.softmax_weights, ids)
+
+def context_lookup_method(embeddingsrepo, ids) :
+    pad_text_index = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
+    return padding_handler(ids, embeddingsrepo.context_dict, padding_index=pad_text_index).tensor_embeddings
+
 class softmax_model(model) :
 
     def __init__(self, modelConf):
@@ -86,9 +93,9 @@ class softmax_model(model) :
             negative_features = fetch_features(regularizer_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
             negative_id = fetch_features(regularizer_id_name, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)[0]
 
-            self.click_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features).loss
-            self.postive_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, postive_id, self.regularizer_attributes_embeddingsrepo, postive_features).loss
-            self.negative_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, negative_id, self.regularizer_attributes_embeddingsrepo, negative_features).loss
+            self.click_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features, context_lookup_method).loss
+            self.postive_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, postive_id, self.regularizer_attributes_embeddingsrepo, postive_features, softmax_lookup_method).loss
+            self.negative_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, negative_id, self.regularizer_attributes_embeddingsrepo, negative_features, softmax_lookup_method).loss
 
             self.sigmoid_loss = self.sigmoid_loss + self.click_regularization_loss + self.postive_regularization_loss + self.negative_regularization_loss
 
@@ -312,55 +319,9 @@ class ScoringProductHandler() :
         self.weights = tf.concat(self.per_attr_weights, 2)
         self.bias = tf.concat(self.per_attr_bias, 1)
 
-
-# class ClickRegularizationLoss:
-#
-#
-#     def __init__(self, id_embeddingsrepo, ids, attributes_embeddingsrepo, attributes):
-#         """
-#         :type id_attributeembeddings: AttributeEmbeddings
-#         :type ids:
-#         :type attributes_attributeembeddings: list of AttributeEmbeddings
-#         :type attributes:
-#         """
-#         self.id_embeddingsrepo, self.ids, self.attributes_embeddingsrepo, self.attributes = \
-#             id_embeddingsrepo, ids, attributes_embeddingsrepo, attributes
-#
-#         pad_text_index = CONST.DEFAULT_DICT_KEYS.index(CONST.PAD_TEXT)
-#
-#         self.id_embeddings = padding_handler(ids, id_embeddingsrepo.context_dict, padding_index=pad_text_index).tensor_embeddings
-#         self.id_embeddings = tf.transpose(self.id_embeddings)
-#         self.per_attr_loss = []
-#
-#         for i in range(len(attributes_embeddingsrepo)):
-#             attribute_embeddingsrepo = attributes_embeddingsrepo[i]
-#             context_to_id = attribute_embeddingsrepo.context_to_id
-#             self.attribute_embeddings = padding_handler(attributes[i], attribute_embeddingsrepo.context_dict,
-#                                                         padding_index=pad_text_index).tensor_embeddings
-#             self.attribute_embeddings_T = tf.transpose(self.attribute_embeddings)
-#
-#             self.attribute_embeddings_adjusted = tf.expand_dims(self.attribute_embeddings_T, axis=0)
-#
-#             context_to_id = tf.expand_dims(context_to_id, axis=-1)
-#             context_to_id = tf.expand_dims(context_to_id, axis=-1)
-#
-#             self.attribute_in_id_space = tf.multiply(context_to_id, self.attribute_embeddings_adjusted)
-#             self.attribute_in_id_space = tf.reduce_sum(self.attribute_in_id_space, reduction_indices=1)
-#
-#             self.attr_loss_mult = tf.multiply(self.attribute_in_id_space, self.id_embeddings)
-#             self.attr_loss = tf.reduce_sum(self.attr_loss_mult, reduction_indices=0)
-#             self.per_attr_loss.append(self.attr_loss)
-#
-#         self.logits = tf.add_n(self.per_attr_loss)
-#
-#         self.xent = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.logits), logits=self.logits)
-#
-#         self.loss = tf.reduce_sum(self.xent)
-
-
 class RegularizationLoss:
 
-    def __init__(self, id_embeddingsrepo, ids, attributes_embeddingsrepo, attributes):
+    def __init__(self, id_embeddingsrepo, ids, attributes_embeddingsrepo, attributes, lookup_method):
         """
         :type id_attributeembeddings: AttributeEmbeddings
         :type ids:
@@ -370,14 +331,14 @@ class RegularizationLoss:
         self.id_embeddingsrepo, self.ids, self.attributes_embeddingsrepo, self.attributes = \
             id_embeddingsrepo, ids, attributes_embeddingsrepo, attributes
 
-        self.id_embeddings = tf.nn.embedding_lookup(id_embeddingsrepo.softmax_weights, ids)
+        self.id_embeddings = lookup_method(id_embeddingsrepo, ids)
         self.id_embeddings = tf.transpose(self.id_embeddings)
         self.per_attr_loss = []
 
         for i in range(len(attributes_embeddingsrepo)):
             attribute_embeddingsrepo = attributes_embeddingsrepo[i]
             context_to_id = attribute_embeddingsrepo.context_to_id
-            self.attribute_embeddings = tf.nn.embedding_lookup(attribute_embeddingsrepo.softmax_weights, attributes[i])
+            self.attribute_embeddings = lookup_method(attribute_embeddingsrepo, attributes[i])
             self.attribute_embeddings_T = tf.transpose(self.attribute_embeddings)
 
             self.attribute_embeddings_adjusted = tf.expand_dims(self.attribute_embeddings_T, axis=0)
