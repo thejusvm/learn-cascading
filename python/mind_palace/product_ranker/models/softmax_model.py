@@ -93,9 +93,9 @@ class softmax_model(model) :
             negative_features = fetch_features(regularizer_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
             negative_id = fetch_features(regularizer_id_name, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)[0]
 
-            self.click_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features, context_lookup_method).loss
-            self.postive_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, postive_id, self.regularizer_attributes_embeddingsrepo, postive_features, softmax_lookup_method).loss
-            self.negative_regularization_loss = RegularizationLoss(self.regularizer_id_embeddingsrepo, negative_id, self.regularizer_attributes_embeddingsrepo, negative_features, softmax_lookup_method).loss
+            self.click_regularization_loss = AttributeRegularization(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features, context_lookup_method).loss
+            self.postive_regularization_loss = AttributeRegularization(self.regularizer_id_embeddingsrepo, postive_id, self.regularizer_attributes_embeddingsrepo, postive_features, softmax_lookup_method).loss
+            self.negative_regularization_loss = AttributeRegularization(self.regularizer_id_embeddingsrepo, negative_id, self.regularizer_attributes_embeddingsrepo, negative_features, softmax_lookup_method).loss
 
             self.sigmoid_loss = self.sigmoid_loss + self.click_regularization_loss + self.postive_regularization_loss + self.negative_regularization_loss
 
@@ -319,7 +319,7 @@ class ScoringProductHandler() :
         self.weights = tf.concat(self.per_attr_weights, 2)
         self.bias = tf.concat(self.per_attr_bias, 1)
 
-class RegularizationLoss:
+class AttributeRegularization:
 
     def __init__(self, id_embeddingsrepo, ids, attributes_embeddingsrepo, attributes, lookup_method):
         """
