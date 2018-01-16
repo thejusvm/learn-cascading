@@ -8,12 +8,12 @@ from mind_palace.product_ranker.models.softmax_model_old import softmax_model_ol
 from mind_palace.product_ranker.commons import generate_feature_names
 from mind_palace.product_ranker.constants import TRAINING_COL_PREFIXES
 
-init_emb = np.ones([5, 10]) * range(10)
-init_weight = np.ones([5, 10]) * range(10)
+init_emb = np.ones([9, 10]) * range(10)
+init_weight = np.ones([9, 10]) * range(10)
 init_bias = range(10) #+ np.ones(10)
 
-init_emb_1 = np.ones([3, 10]) * range(10) + 10
-init_weight_1 = np.ones([3, 10]) * range(10) + 10
+init_emb_1 = np.ones([8, 10]) * range(10) + 10
+init_weight_1 = np.ones([8, 10]) * range(10) + 10
 init_bias_1 = range(10) + np.ones(10) * 10
 
 # print "emb"
@@ -29,9 +29,9 @@ mdl_conf.click_non_linearity = False
 mdl_conf.enable_default_click = False
 embedding_dicts = EmbeddingDicts(context_dict=init_emb.T, softmax_weights=init_weight.T, softmax_bias=init_bias)
 embedding_dicts_1 = EmbeddingDicts(context_dict=init_emb_1.T, softmax_weights=init_weight_1.T, softmax_bias=init_bias_1)
-mdl_conf.attributes_config = [AttributeConfig("pid", 5, 10, override_embeddings=embedding_dicts),
-                              AttributeConfig("brand", 3, 10, for_ranking=True, for_regularization=True, override_embeddings=embedding_dicts_1)]
-mdl_conf.regularizer_id = "pid"
+mdl_conf.attributes_config = [AttributeConfig("pid", 9, 10, override_embeddings=embedding_dicts),
+                              AttributeConfig("brand", 8, 10, for_ranking=True, for_regularization=True, override_embeddings=embedding_dicts_1)]
+mdl_conf.attribute_regularizer_id = "pid"
 md = softmax_model(mdl_conf) #type: softmax_model
 
 sess = tf.Session()
@@ -48,13 +48,10 @@ feature_names = generate_feature_names([x.name for x in mdl_conf.attributes_conf
 md.feed_input(feature_names, feed_vals)
 sess.run(tf.global_variables_initializer())
 
-print md.enable_regularizer
-# scorre = [x[1] for x in md.score()]
-# pfn = md.negative_handler.probability_fn
-# scorre = [pfn.embeddings, pfn.context, pfn.layer_1, pfn.logits]
-# for score in sess.run(scorre):
-#     print score
-#     print "---------"
+scorre = [md.click_regularization_loss, md.sigmoid_loss]
+for score in sess.run(scorre):
+    print score
+    print "---------"
 # sess.run(md.embeddings_dict[0].assign(tf.zeros([md.embedding_size])))
 
 

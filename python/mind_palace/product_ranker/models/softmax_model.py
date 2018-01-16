@@ -36,7 +36,7 @@ class softmax_model(model) :
 
         id_attribute_config = None
         for attribute_config in self.attributes_config:
-            if self.modelConf.regularizer_id == attribute_config.name:
+            if self.modelConf.attribute_regularizer_id == attribute_config.name:
                 id_attribute_config = attribute_config
 
         if not id_attribute_config:
@@ -47,9 +47,9 @@ class softmax_model(model) :
             attribute_embeddings = EmbeddingsRepo(modelConf, attribute_config, id_attribute_config)
             if attribute_config.for_ranking:
                 self.ranking_attributes_embeddingsrepo.append(attribute_embeddings)
-            if self.modelConf.regularizer_id != attribute_config.name and attribute_config.for_regularization:
+            if self.modelConf.attribute_regularizer_id != attribute_config.name and attribute_config.for_regularization:
                 self.regularizer_attributes_embeddingsrepo.append(attribute_embeddings)
-            if self.modelConf.regularizer_id == attribute_config.name:
+            if self.modelConf.attribute_regularizer_id == attribute_config.name:
                 self.regularizer_id_embeddingsrepo = attribute_embeddings
 
         self.enable_regularizer = len(self.regularizer_attributes_embeddingsrepo) != 0 and self.regularizer_id_embeddingsrepo is not None
@@ -98,11 +98,16 @@ class softmax_model(model) :
             negative_features = fetch_features(regularizer_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
             negative_id = fetch_features(regularizer_id_name, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)[0]
 
-            self.click_regularization_loss = AttributeRegularization(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features, context_lookup_method).loss
-            self.postive_regularization_loss = AttributeRegularization(self.regularizer_id_embeddingsrepo, postive_id, self.regularizer_attributes_embeddingsrepo, postive_features, softmax_lookup_method).loss
-            self.negative_regularization_loss = AttributeRegularization(self.regularizer_id_embeddingsrepo, negative_id, self.regularizer_attributes_embeddingsrepo, negative_features, softmax_lookup_method).loss
+            self.click_regularization = AttributeRegularization(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features, context_lookup_method)
+            self.click_regularization_loss = self.click_regularization.loss
+            self.postive_regularization = AttributeRegularization(self.regularizer_id_embeddingsrepo, postive_id, self.regularizer_attributes_embeddingsrepo, postive_features, softmax_lookup_method)
+            self.postive_regularization_loss = self.postive_regularization.loss
+            self.negative_regularization = AttributeRegularization(self.regularizer_id_embeddingsrepo, negative_id, self.regularizer_attributes_embeddingsrepo, negative_features, softmax_lookup_method)
+            self.negative_regularization_loss = self.negative_regularization.loss
 
-            self.sigmoid_loss = self.sigmoid_loss + self.click_regularization_loss + self.postive_regularization_loss + self.negative_regularization_loss
+            self.attribute_regularization_loss = self.click_regularization_loss + self.postive_regularization_loss + self.negative_regularization_loss
+            attribute_regularizer_weight = self.modelConf.attribute_regularizer_weight
+            self.sigmoid_loss = self.sigmoid_loss + attribute_regularizer_weight * self.attribute_regularization_loss
 
         self.sigmoid_loss = self.sigmoid_loss / tf.cast(self.batch_size, tf.float32)
 
