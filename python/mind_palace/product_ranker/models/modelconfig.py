@@ -39,7 +39,7 @@ class AttributeConfig :
         self.per_attribute_learning_rate = per_attribute_learning_rate
 
     def __str__(self):
-        return self.name, ":", str(self.embedding_size), ":ranking-", self.for_ranking,  ":regularization-", self.for_regularization
+        return self.name + ":" + str(self.embedding_size) + ":ranking-" + str(self.for_ranking) + ":regularization-" + str(self.for_regularization)
 
     def __repr__(self):
         return self.__str__()
