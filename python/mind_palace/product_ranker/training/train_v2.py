@@ -217,7 +217,7 @@ if __name__ == '__main__' :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
     parser.add_argument("--ranking_attributes", type=str, default=None)
-    parser.add_argument("--attribute_regularizer_id", type=str, default="productId")
+    parser.add_argument("--attribute_regularizer_id", type=str, default=None)
     parser.add_argument("--attribute_regularizer_weight", type=float, default=0.5)
     parser.add_argument("--regularizer_attributes", type=str, default=None)
     parser.add_argument("--click_non_linearity", type=bool, default=False)
