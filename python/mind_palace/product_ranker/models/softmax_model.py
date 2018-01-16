@@ -54,6 +54,11 @@ class softmax_model(model) :
 
         self.enable_regularizer = len(self.regularizer_attributes_embeddingsrepo) != 0 and self.regularizer_id_embeddingsrepo is not None
 
+        if self.enable_regularizer:
+            print "attribute regularizer enabled"
+        else:
+            print "attribute regularizer disabled"
+
     def feed_input(self, feature_names, inputs):
         ranking_attribute_names = [embeddingsrepo.attribute_name for embeddingsrepo in self.ranking_attributes_embeddingsrepo]
         click_features = fetch_features(ranking_attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
