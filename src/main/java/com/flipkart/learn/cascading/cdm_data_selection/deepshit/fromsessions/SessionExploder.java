@@ -5,9 +5,7 @@ import cascading.operation.BaseOperation;
 import cascading.operation.Function;
 import cascading.operation.FunctionCall;
 import cascading.pipe.Each;
-import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
-import cascading.pipe.assembly.Discard;
 import cascading.pipe.assembly.Retain;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
@@ -19,14 +17,12 @@ import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
-import com.google.common.collect.ImmutableSet;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator.lifeStylePrefixes;
 
 public class SessionExploder implements SimpleFlow {
 
@@ -36,6 +32,9 @@ public class SessionExploder implements SimpleFlow {
     public static final String NEGATIVE_PRODUCTS = "negativeProducts";
     public static final String ACTION = "action";
     public static final String ACTION_CLICK = "action.click";
+    public static final Fields EXPODED_FIELDS = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
+    public static final Fields EXPLODER_TO_ENCODE_FIELDS = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS);
+
 
     private static int numProducts = 10;
 
@@ -44,14 +43,13 @@ public class SessionExploder implements SimpleFlow {
         Pipe pipe = new Pipe("session-exploder-pipe");
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
-        Fields expodedFields = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
-        pipe = new Each(pipe, userContext, new ExplodeSessions(expodedFields), Fields.ALL);
-        pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), expodedFields));
-        pipe = new JsonEncodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS));
+        pipe = new Each(pipe, userContext, new ExplodeSessions(EXPODED_FIELDS), Fields.ALL);
+        pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), EXPODED_FIELDS));
+        pipe = new JsonEncodeEach(pipe, EXPLODER_TO_ENCODE_FIELDS);
         return pipe;
     }
 
-    private class ExplodeSessions extends BaseOperation implements Function, Serializable {
+    public static class ExplodeSessions extends BaseOperation implements Function, Serializable {
 
         public ExplodeSessions(Fields fields) {
             super(fields);

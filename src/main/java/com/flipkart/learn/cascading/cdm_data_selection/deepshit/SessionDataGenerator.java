@@ -183,7 +183,10 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
     }
 
     public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput) {
+        return aggregateSessionsPipe(cmsCdmPipe, cmsInput, true);
+    }
 
+    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput, boolean shouldSerialize) {
         String[] attributes = getAttributeFields(cmsInput);
         Pipe sessionPipe = new GroupBy(cmsCdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
@@ -194,9 +197,12 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         sessionPipe = new Each(sessionPipe, userStats, new ExpandUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
         sessionPipe = new Each(sessionPipe, new ExpressionFilter("(numClicks == 0)", Float.class));
 
-        sessionPipe = new JsonEncodeEach(sessionPipe, userStats);
-        sessionPipe = new JsonEncodeEach(sessionPipe, userDayStats);
-        sessionPipe = new JsonEncodeEach(sessionPipe, userContext);
+        if(shouldSerialize) {
+            sessionPipe = new JsonEncodeEach(sessionPipe, userStats);
+            sessionPipe = new JsonEncodeEach(sessionPipe, userDayStats);
+            sessionPipe = new JsonEncodeEach(sessionPipe, userContext);
+        }
+
         return sessionPipe;
     }
 
