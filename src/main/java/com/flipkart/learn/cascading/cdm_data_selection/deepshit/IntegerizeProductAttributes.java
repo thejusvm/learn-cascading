@@ -145,6 +145,7 @@ public class IntegerizeProductAttributes {
 
         String attributeTuplesPath = getIntegerizedAttributesPath(outputPath);
         String attributeDictsPath = getAttributeDictsPath(outputPath);
+        String countsTrackerPath = getCountsTrackerPath(outputPath);
         String attributeSummaryPath = getAttributeSummaryPath(outputPath);
 
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
@@ -158,6 +159,7 @@ public class IntegerizeProductAttributes {
         List<List<Integer>> integerizedProducts = integerizedProductsAndCounts.stream().map(Pair::getKey).collect(Collectors.toList());
         writeIntegerizedAttributes(firstLine, integerizedProducts, attributeTuplesPath + "/part-0");
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
+        writeCounts(fieldToCountTracker, countsTrackerPath);
         Map<String, Integer> attributesSummary = new HashMap<>();
         for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
             attributesSummary.put(attributeToDict.getKey(), attributeToDict.getValue().getCurrentCount());
@@ -166,6 +168,29 @@ public class IntegerizeProductAttributes {
         writeSummary(attributeSummaryPath, attributesSummary);
 
     }
+
+    private static void writeCounts(Map<String, CountTracker> dicts, String outputPath) throws IOException {
+        for (Map.Entry<String, CountTracker> dict : dicts.entrySet()) {
+            String attributeDictPath = getCountsTrackerAttributePath(outputPath, dict.getKey());
+            writeCounts(dict.getValue(), attributeDictPath);
+        }
+
+    }
+
+    private static String getCountsTrackerAttributePath(String outputPath, String name) {
+        return outputPath + "/" + name + ".counts";
+    }
+
+    private static void writeCounts(CountTracker countTracker, String attributeDictPath) throws IOException {
+        List<org.apache.commons.math3.util.Pair<String, Integer>> terms = countTracker.getSortedByCount();
+        FileProcessor.HDFSSyncWriter termDictWriter = new FileProcessor.HDFSSyncWriter(attributeDictPath, false);
+        for (org.apache.commons.math3.util.Pair<String, Integer> term : terms) {
+            termDictWriter.write(term.getFirst() + "\t" + term.getSecond() + "\n");
+        }
+        termDictWriter.flush();
+        termDictWriter.close();
+    }
+
 
     private static void writeIntegerizedAttributes(String firstLine, List<List<Integer>> integerizedProducts, String outputPath) throws IOException {
         FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(outputPath, true);
@@ -198,6 +223,10 @@ public class IntegerizeProductAttributes {
 
     public static String getAttributeDictsPath(String outputPath) {
         return outputPath + "/attribute_dicts";
+    }
+
+    public static String getCountsTrackerPath(String outputPath) {
+        return outputPath + "/count_tracker";
     }
 
     public static String getIntegerizedAttributesPath(String outputPath) {
