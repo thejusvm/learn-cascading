@@ -179,7 +179,7 @@ def train(train_cxt) :
                     print str(trainCxt.train_counter) + " processing test batch of size ~" + str(num_test_records) + " records took  : " + str(time.time() - start)
 
                     test_loss = test_metric_mean[0]
-                    print "best loss val : " + str(trainCxt.best_loss_val) + ", new loss val : " + test_loss
+                    print "best loss val : " + str(trainCxt.best_loss_val) + ", new loss val : " + str(test_loss)
                     if trainCxt.save_model and (trainCxt.best_loss_val is None or test_loss < trainCxt.best_loss_val):
                         print "new_loss < best_loss; hence replacing best saved model"
                         saver.save(sess, nn_model_dir + ".best")
