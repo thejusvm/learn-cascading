@@ -178,6 +178,15 @@ def train(train_cxt) :
                     num_test_records = test_batch_counter * trainCxt.batch_size
                     print str(trainCxt.train_counter) + " processing test batch of size ~" + str(num_test_records) + " records took  : " + str(time.time() - start)
 
+                    test_loss = test_metric_mean[0]
+                    print "best loss val : " + str(trainCxt.best_loss_val) + ", new loss val : " + test_loss
+                    if trainCxt.save_model and (trainCxt.best_loss_val is None or test_loss < trainCxt.best_loss_val):
+                        print "new_loss < best_loss; hence replacing best saved model"
+                        saver.save(sess, nn_model_dir + ".best")
+                        trainCxt.best_loss_val = test_loss
+                        trainCxt.best_loss_iters = trainCxt.train_counter
+                        save_traincxt(trainCxt)
+
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
                     saver.save(sess, nn_model_dir + ".counter" , global_step = trainCxt.train_counter)
                     save_traincxt(trainCxt)

@@ -31,6 +31,8 @@ class trainingcontext :
         self.test_size = 0.03
         self.restore_model_path = ""
         self.train_counter = 0
+        self.best_loss_val = None
+        self.best_loss_iters = None
         self.latency_track_iters = 10000
         self.batch_size = 500
 
