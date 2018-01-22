@@ -10,6 +10,7 @@ import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.Sampler;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.UniformRandomSampler;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.ZiphianRandomSampler;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
@@ -68,7 +69,7 @@ public class NegativeSamplesGenerator extends SubAssembly {
         public static synchronized void init(String attributesPath) {
             if(sampler == null) {
                 try {
-                    sampler = new ZiphianRandomSampler(attributesPath);
+                    sampler = new UniformRandomSampler(attributesPath);//new ZiphianRandomSampler(attributesPath);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
