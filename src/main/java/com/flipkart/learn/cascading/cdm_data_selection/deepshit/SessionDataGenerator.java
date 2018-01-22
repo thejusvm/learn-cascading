@@ -113,9 +113,8 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
         cdmPipe = new Each(cdmPipe, Fields.ALL, new CPRRow(DataFields.cdmOutputFields), Fields.RESULTS);
         cdmPipe = new Retain(cdmPipe, subFields);
-//        cdmPipe = new Each(cdmPipe, Fields.ALL, new Limit(100));
         cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTCARDIMPRESSIONFILTER), new RegexFilter("true"));
-//        cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTID), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));
+        cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTID), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));
         cdmPipe = new Discard(cdmPipe, new Fields(_PRODUCTCARDIMPRESSIONFILTER));
         Fields buyIntentFields = new Fields(_BUYNOWCLICKS, _ADDTOCARTCLICKS);
         cdmPipe = new Each(cdmPipe, buyIntentFields, new ExpressionFunction(new Fields(_BUYINTENT), _BUYNOWCLICKS + "+" + _ADDTOCARTCLICKS, Float.class), Fields.ALL);
@@ -163,7 +162,9 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Pipe cdmRawPipe = getCDMPipe();
 
         Pipe cmsPipe = new Pipe("attributePipe");
-        cmsPipe = new Rename(cmsPipe, new Fields(DataFields._PRODUCTID), new Fields(DataFields._FSN));
+        cmsPipe = new Rename(cmsPipe, new Fields(_PRODUCTID), new Fields(_FSN));
+        cmsPipe = new Each(cmsPipe, new Fields(_FSN), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));
+
 
         Pipe cdmCmsPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
                 new Fields(DataFields._FSN),
@@ -281,7 +282,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
         @Override
         public boolean isRemove(FlowProcess flowProcess, FilterCall filterCall) {
-            String productId = filterCall.getArguments().getString(_PRODUCTID);
+            String productId = (String) filterCall.getArguments().getObject(0);
             return !Iterables.any(prefixes, productId::startsWith);
         }
     }
