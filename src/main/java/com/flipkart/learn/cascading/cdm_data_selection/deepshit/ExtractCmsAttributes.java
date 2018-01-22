@@ -31,6 +31,9 @@ public class ExtractCmsAttributes implements SimpleFlow {
         FETCH_CONFIG.put("pattern", null);
         FETCH_CONFIG.put("occasion", null);
         FETCH_CONFIG.put("fit", null);
+        FETCH_CONFIG.put("material", null);
+//        FETCH_CONFIG.put("neck_type", null);
+//        FETCH_CONFIG.put("sleeve_type", null);
         FETCH_CONFIG.put("fabric", null);
         FETCH_CONFIG.put("vertical", null);
     }
