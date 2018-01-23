@@ -94,6 +94,7 @@ def train(train_cxt) :
     mod.feed_input(test_dataset.feature_names, test_dataset.get_next)
     test_metric_nodes = mod.test_summaries()
     per_record_test_metric_nodes = mod.per_record_test_summaries()
+    per_record_metrics_enabled = True if len(per_record_test_metric_nodes) > 0 else False
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
@@ -175,22 +176,24 @@ def train(train_cxt) :
                     while True:
                         try :
                             test_metrics_per_record, test_metrics_batch = sess.run([per_record_test_metrics_ops, test_metrics_ops])
-                            df = test_metrics_per_record_to_dataframe(test_metrics_per_record)
-                            per_record_test_metrics_df = df if per_record_test_metrics_df is None else per_record_test_metrics_df.append(df)
+                            if per_record_metrics_enabled:
+                                df = test_metrics_per_record_to_dataframe(test_metrics_per_record)
+                                per_record_test_metrics_df = df if per_record_test_metrics_df is None else per_record_test_metrics_df.append(df)
 
                             test_batch_counter += 1
                             test_metric_aggregated = map(lambda x, y : x + y, test_metric_aggregated, test_metrics_batch)
                         except tf.errors.OutOfRangeError:
                             break
 
-                    per_record_test_metrics_df = per_record_test_metrics_df.groupby([0]).sum()
-                    test_per_record_summary_values = get_head_tail_summaries(per_record_test_metrics_df,
-                                                                           per_record_test_metrics_names)
-
                     test_metric_mean = [x/test_batch_counter for x in test_metric_aggregated]
                     test_summary_values = map(lambda x, y : tf.Summary.Value(tag=x, simple_value=y), test_metric_names, test_metric_mean)
-                    test_summary_values += test_per_record_summary_values
-                    # print test_summary_values
+
+                    if per_record_metrics_enabled:
+                        per_record_test_metrics_df = per_record_test_metrics_df.groupby([0]).sum()
+                        test_per_record_summary_values = get_head_tail_summaries(per_record_test_metrics_df,
+                                                                           per_record_test_metrics_names)
+                        test_summary_values += test_per_record_summary_values
+
                     test_metric_summary = tf.Summary(value=test_summary_values)
                     summary_writer.add_summary(test_metric_summary, trainCxt.train_counter)
                     num_test_records = test_batch_counter * trainCxt.batch_size
