@@ -28,3 +28,8 @@ class model :
     def test_summaries(self):
         """ :return an nx2 array with first column as the summary name and second column as the tensor for the summary"""
         pass
+
+    def per_record_test_summaries(self):
+        """ :return an nx2 array with first column as the summary name and second column as the tensor for the summary
+                    the summary needs to be record level with the first row representing head tail boolean"""
+        pass

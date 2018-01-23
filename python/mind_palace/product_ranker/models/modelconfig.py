@@ -18,6 +18,9 @@ class modelconfig :
         self.reuse_context_dict = False
         self.learning_rate = 1e-3
 
+        self.head_tail_id = "productId"
+        self.head_tail_split = 10000
+
         self.click_pooling = "mean" #values : mean/sum
 
         self.probability_function = "sigmoid" #values: sigmoid/nn

@@ -84,6 +84,9 @@ class softmax_model(model) :
         self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
         self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
 
+        self.head_tail_id = fetch_features([self.model_config.head_tail_id], CONST.POSITIVE_COL_PREFIX, feature_names, inputs)[0]
+        self.head_tail_id = tf.less(self.head_tail_id, self.model_config.head_tail_split)
+
         self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent))
 
         if self.enable_regularizer:
@@ -130,6 +133,11 @@ class softmax_model(model) :
         self.positive_probability = tf.sigmoid(self.positive_handler.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
+
+    def per_record_test_summaries(self):
+        return [["isHead", self.head_tail_id],
+                ["mean_reciprocal_rank", self.reciprocal_rank_per_record],
+                ["prec-1", self.prec_vector]]
 
     def test_summaries(self):
         return [["loss", self.sigmoid_loss],
