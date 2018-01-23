@@ -85,7 +85,8 @@ class softmax_model(model) :
         self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
 
         self.head_tail_id = fetch_features([self.model_config.head_tail_id], CONST.POSITIVE_COL_PREFIX, feature_names, inputs)[0]
-        self.head_tail_id = tf.less(self.head_tail_id, self.model_config.head_tail_split)
+        self.head_ids = tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32)
+        self.tail_ids = tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32)
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent))
 
@@ -133,9 +134,22 @@ class softmax_model(model) :
         self.positive_probability = tf.sigmoid(self.positive_handler.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
+        self.head_count = tf.reduce_sum(self.head_ids)
+        self.tail_count = tf.reduce_sum(self.tail_ids)
+
+        self.head_prec_1 = tf.reduce_sum(tf.multiply(self.prec_vector, self.head_ids))
+        self.tail_prec_1 = tf.reduce_sum(tf.multiply(self.prec_vector, self.tail_ids))
+
+        self.head_mrr = tf.reduce_sum(tf.multiply(self.reciprocal_rank_per_record, self.head_ids))
+        self.tail_mrr = tf.reduce_sum(tf.multiply(self.reciprocal_rank_per_record, self.tail_ids))
+
+
 
     def per_record_test_summaries(self):
-        return []
+        return [["head_perc-1", [self.head_prec_1, self.head_count]],
+                ["tail_prec-1", [self.tail_prec_1, self.tail_count]],
+                ["head_mrr", [self.head_mrr, self.head_count]],
+                ["tail_mrr", [self.tail_mrr, self.tail_count]]]
 
     def test_summaries(self):
         return [["loss", self.sigmoid_loss],

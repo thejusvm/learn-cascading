@@ -166,19 +166,18 @@ def train(train_cxt) :
                     test_metric_names = ["test_" + x[0] for x in test_metric_nodes]
                     test_metrics_ops = [x[1] for x in test_metric_nodes]
 
-                    per_record_test_metrics_names = [x[0] for x in per_record_test_metric_nodes]
+                    per_record_test_metrics_names = ["test_" + x[0] for x in per_record_test_metric_nodes]
                     per_record_test_metrics_ops = [x[1] for x in per_record_test_metric_nodes]
 
                     test_batch_counter = 0
                     test_metric_aggregated = [0 for _ in range(len(test_metric_names))]
-                    per_record_test_metrics_df = None
+                    per_record_test_metrics_aggregated = [[0, 0] for _ in range(len(per_record_test_metrics_names))]
 
                     while True:
                         try :
                             test_metrics_per_record, test_metrics_batch = sess.run([per_record_test_metrics_ops, test_metrics_ops])
                             if per_record_metrics_enabled:
-                                df = test_metrics_per_record_to_dataframe(test_metrics_per_record)
-                                per_record_test_metrics_df = df if per_record_test_metrics_df is None else per_record_test_metrics_df.append(df)
+                                per_record_test_metrics_aggregated = map(lambda x, y : [x[0] + y[0], x[1] + y[1]], per_record_test_metrics_aggregated, test_metrics_per_record)
 
                             test_batch_counter += 1
                             test_metric_aggregated = map(lambda x, y : x + y, test_metric_aggregated, test_metrics_batch)
@@ -189,10 +188,10 @@ def train(train_cxt) :
                     test_summary_values = map(lambda x, y : tf.Summary.Value(tag=x, simple_value=y), test_metric_names, test_metric_mean)
 
                     if per_record_metrics_enabled:
-                        per_record_test_metrics_df = per_record_test_metrics_df.groupby([0]).sum()
-                        test_per_record_summary_values = get_head_tail_summaries(per_record_test_metrics_df,
-                                                                           per_record_test_metrics_names)
-                        test_summary_values += test_per_record_summary_values
+                        per_record_test_metrics_mean = [x[0]/ (x[1] if x[1] != 0 else 1) for x in per_record_test_metrics_aggregated]
+                        per_record_test_summary_values = map(lambda x, y: tf.Summary.Value(tag=x, simple_value=y),
+                                                  per_record_test_metrics_names, per_record_test_metrics_mean)
+                        test_summary_values += per_record_test_summary_values
 
                     test_metric_summary = tf.Summary(value=test_summary_values)
                     summary_writer.add_summary(test_metric_summary, trainCxt.train_counter)
@@ -237,39 +236,6 @@ def train(train_cxt) :
     logBreak()
 
     ################################### End model training
-
-
-def test_metrics_per_record_to_dataframe(test_metrics_per_record):
-    df = None
-    i = 0
-    for test_metric_per_record in test_metrics_per_record:
-        if df is None:
-            df = pd.DataFrame(test_metric_per_record)
-        else:
-            df[i] = test_metric_per_record
-        i = i + 1
-    df = df.groupby([0]).agg(['sum', 'count'])
-    return df
-
-
-def get_head_tail_summaries(per_record_test_metrics_df, per_record_test_metrics_names):
-    head_tail_metrics_names = []
-    head_tail_test_metric_mean = []
-    for i in range(len(per_record_test_metrics_names) - 1):
-        index = i + 1
-        index_df = per_record_test_metrics_df[index].reset_index()
-        index_df["mean"] = index_df[["sum", "count"]].apply(lambda x: x[0] / x[1], axis=1)
-        index_df = index_df[[0, "mean"]]
-        index_matrix = index_df.as_matrix()
-        for j in index_matrix:
-            ishead = j[0]
-            val = j[1]
-            headOrTail = "head" if ishead else "tail"
-            head_tail_test_metric_mean.append(val)
-            head_tail_metrics_names.append("test_" + headOrTail + "_" + per_record_test_metrics_names[index])
-    test_per_record_summary_values = map(lambda x, y: tf.Summary.Value(tag=x, simple_value=y), head_tail_metrics_names,
-                                         head_tail_test_metric_mean)
-    return test_per_record_summary_values
 
 
 if __name__ == '__main__' :
