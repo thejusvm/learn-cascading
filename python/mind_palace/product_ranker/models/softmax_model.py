@@ -85,8 +85,8 @@ class softmax_model(model) :
         self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
 
         self.head_tail_id = fetch_features([self.model_config.head_tail_id], CONST.POSITIVE_COL_PREFIX, feature_names, inputs)[0]
-        self.head_ids = tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32)
-        self.tail_ids = tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32)
+        self.head_ids = tf.squeeze(tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
+        self.tail_ids = tf.squeeze(tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent))
 
