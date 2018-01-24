@@ -20,7 +20,7 @@ class trainingcontext :
         self.model_dir = "saved_models/"
         self.test_summary_publish_iters = 5000
         self.save_model_on_epoch = False
-        self.save_model_num_iter =  5000
+        self.save_model_num_iter = 5000000
         self.save_model = True
         self.timestamp = time.localtime()
         self.date = time.strftime('%Y%m%d-%H-%M-%S', self.timestamp)
@@ -38,6 +38,10 @@ class trainingcontext :
 
         self.learning_rate = 1e-3
         self.optimizer = "adam" #adam/sgd
+
+        self.early_stopping = False
+        self.num_iters_for_early_stop = 3 # num of consecutive iters before early stopping
+        self.num_iters_since_best_score = 0
 
 
 

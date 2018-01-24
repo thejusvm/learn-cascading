@@ -24,6 +24,10 @@ from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributed
     Operates on top of output of integerize_clickstream
 """
 
+class EarlyStop(Exception):
+    def __init__(self,*args,**kwargs):
+        Exception.__init__(self,*args,**kwargs)
+
 def logBreak() :
     print "------------------------------------------"
 
@@ -203,9 +207,20 @@ def train(train_cxt) :
                     if trainCxt.save_model and (trainCxt.best_loss_val is None or test_loss < trainCxt.best_loss_val):
                         print "new_loss < best_loss; hence replacing best saved model"
                         saver.save(sess, nn_model_dir + ".best")
-                        trainCxt.best_loss_val = test_loss
-                        trainCxt.best_loss_iters = trainCxt.train_counter
+                        train_cxt.best_loss_val = test_loss
+                        train_cxt.best_loss_iters = trainCxt.train_counter
+                        train_cxt.num_iters_since_best_score = 0
                         save_traincxt(trainCxt)
+                    else:
+                        train_cxt.num_iters_since_best_score = train_cxt.num_iters_since_best_score + 1
+                        print "new_loss > best_loss; incrementing num_iters_since_best_score to : " + str(train_cxt.num_iters_since_best_score)
+
+                    if train_cxt.early_stopping and train_cxt.num_iters_since_best_score >= train_cxt.num_iters_for_early_stop:
+                        print "num_iters_since_best_score : " + str(train_cxt.num_iters_since_best_score) + " >= num_iters_for_early_stop : " + str(train_cxt.num_iters_for_early_stop)
+                        print "Early Stopping"
+                        raise EarlyStop()
+
+                    print "--------------------------------------------"
 
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
                     saver.save(sess, nn_model_dir + ".counter" , global_step = trainCxt.train_counter)
@@ -332,6 +347,9 @@ if __name__ == '__main__' :
 
     trainCxt.model_config.learning_rate = trainCxt.learning_rate
 
-    train(trainCxt)
+    try:
+        train(trainCxt)
+    except EarlyStop:
+        pass
 
 #--input_path=/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt --attribute_summary_path=/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int/attribute_summary
