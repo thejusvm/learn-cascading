@@ -234,10 +234,10 @@ class EmbeddingsRepo :
         override_embedding = attribute_config.override_embeddings
 
         if override_embedding.context_dict is None:
-            self.context_dict = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_size], -0.01, 0.01),
-                                            dtype=tf.float32)
+            self.context_dict = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_size], -0.0001, 0.0001),
+                                            dtype=tf.float32, name=self.attribute_name + "_context_w")
         else:
-            self.context_dict = tf.Variable(override_embedding.context_dict, dtype=tf.float32)
+            self.context_dict = tf.Variable(override_embedding.context_dict, dtype=tf.float32, name=self.attribute_name + "_context_w")
         if modelConf.reuse_context_dict:
             self.softmax_weights = self.context_dict
         else:
