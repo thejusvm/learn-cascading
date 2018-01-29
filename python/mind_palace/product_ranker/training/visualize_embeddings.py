@@ -9,11 +9,12 @@ from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models import softmax_model
 from mind_palace.DictIntegerizer import DictIntegerizer
 
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 def generate_metadata(attribute_dict_path, metadata_path, attribute_name):
     with open(metadata_path, mode="w+b") as writer :
         with open(attribute_dict_path, mode="r") as reader:
-            reader.readline()
+            # reader.readline()
             writer.write(reader.read())
 
 
