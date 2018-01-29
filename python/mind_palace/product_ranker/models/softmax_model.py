@@ -234,7 +234,7 @@ class EmbeddingsRepo :
         override_embedding = attribute_config.override_embeddings
 
         if override_embedding.context_dict is None:
-            self.context_dict = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_size], -0.0001, 0.0001),
+            self.context_dict = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_size], -0.001, 0.001),
                                             dtype=tf.float32, name=self.attribute_name + "_context_w")
         else:
             self.context_dict = tf.Variable(override_embedding.context_dict, dtype=tf.float32, name=self.attribute_name + "_context_w")
