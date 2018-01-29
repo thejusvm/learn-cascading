@@ -233,6 +233,19 @@ public class IntegerizeProductAttributes {
         return outputPath + "/integerized_attributes";
     }
 
+    public static void flow(String inputPath, String outputPath) {
+        IntegerizeProductAttributes integerizeProductAttributes = new IntegerizeProductAttributes();
+        try {
+            integerizeProductAttributes.collectStatsFromPath(inputPath);
+            System.out.println("---------------------------------------------");
+            System.out.println("Done collecting stats");
+            System.out.println("---------------------------------------------");
+            integerizeProductAttributes.processPath(inputPath, outputPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
 
         if(args.length == 0) {
@@ -245,16 +258,7 @@ public class IntegerizeProductAttributes {
         String inputPath = args[0];
         String outputPath = args[1];
 
-        IntegerizeProductAttributes integerizeProductAttributes = new IntegerizeProductAttributes();
-        try {
-            integerizeProductAttributes.collectStatsFromPath(inputPath);
-            System.out.println("---------------------------------------------");
-            System.out.println("Done collecting stats");
-            System.out.println("---------------------------------------------");
-            integerizeProductAttributes.processPath(inputPath, outputPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        flow(inputPath, outputPath);
     }
 
 }

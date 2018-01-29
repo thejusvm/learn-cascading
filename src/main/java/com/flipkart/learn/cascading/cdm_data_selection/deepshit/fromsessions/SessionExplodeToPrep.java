@@ -49,6 +49,14 @@ public class SessionExplodeToPrep extends SubAssembly {
         setTails(pipe);
     }
 
+    public static void flow(String input, String productData, String output) {
+        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
+        SessionExplodeToPrep toPrep = new SessionExplodeToPrep(fields,productData);
+        PipeRunner runner = new PipeRunner("prep_data");
+        runner.setNumReducers(600);
+        runner.executeHfs(toPrep, input, output, true);
+    }
+
     public static void main(String[] args) {
 
         if(args.length == 0) {
@@ -59,12 +67,11 @@ public class SessionExplodeToPrep extends SubAssembly {
             };
         }
 
-        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
+        String input = args[0];
+        String productData = args[1];
+        String output = args[2];
 
-        SessionExplodeToPrep toPrep = new SessionExplodeToPrep(fields, args[1]);
-        PipeRunner runner = new PipeRunner("prep_data");
-        runner.setNumReducers(600);
-        runner.executeHfs(toPrep, args[0], args[2], true);
+        flow(input, productData, output);
 
     }
 

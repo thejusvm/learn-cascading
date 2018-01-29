@@ -131,6 +131,15 @@ public class IntegerizeExplodedSession extends SubAssembly {
         }
     }
 
+    public static void flow(String input, String attributeDictPath, String output) {
+        IntegerizeExplodedSession integerizer = null;
+        integerizer = new IntegerizeExplodedSession(attributeDictPath);
+
+        PipeRunner runner = new PipeRunner("explode-integerize");
+        runner.setNumReducers(600);
+        runner.executeHfs(integerizer, input, output, true);
+    }
+
     public static void main(String[] args) {
 
         if(args.length == 0) {
@@ -141,12 +150,11 @@ public class IntegerizeExplodedSession extends SubAssembly {
             };
         }
 
-        IntegerizeExplodedSession integerizer = null;
-        integerizer = new IntegerizeExplodedSession(args[1]);
+        String input = args[0];
+        String attributeDictPath = args[1];
+        String output = args[2];
 
-        PipeRunner runner = new PipeRunner("explode-integerize");
-        runner.setNumReducers(600);
-        runner.executeHfs(integerizer, args[0], args[2], true);
+        flow(input, attributeDictPath, output);
 
 
     }

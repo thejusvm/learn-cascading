@@ -58,21 +58,7 @@ public class SplitTrainTest extends SubAssembly {
         }
     }
 
-    public static void main(String[] args) {
-
-        if(args.length == 0) {
-            args = new String[]{
-                    "data/sessionexplode-2017-0801.1000.final/part-*",
-                    "2017-08-01",
-                    "data/sessionexplode-2017-0801.1000.tt"
-            };
-        }
-
-
-
-        String inputPath = args[0];
-        String trainTestSplitDate = args[1];
-        String outputPath = args[2];
+    public static void flow(String inputPath, String trainTestSplitDate, String outputPath) {
         String trainPath = outputPath + "/train";
         String testPath = outputPath + "/test";
 
@@ -99,6 +85,25 @@ public class SplitTrainTest extends SubAssembly {
         runner.addHFSTailSink(ouputPipes[0], trainPath, true);
         runner.addHFSTailSink(ouputPipes[1], testPath, true);
         runner.execute();
+    }
+
+    public static void main(String[] args) {
+
+        if(args.length == 0) {
+            args = new String[]{
+                    "data/sessionexplode-2017-0801.1000.final/part-*",
+                    "2017-08-01",
+                    "data/sessionexplode-2017-0801.1000.tt"
+            };
+        }
+
+
+
+        String inputPath = args[0];
+        String trainTestSplitDate = args[1];
+        String outputPath = args[2];
+
+        flow(inputPath, trainTestSplitDate, outputPath);
 
     }
 

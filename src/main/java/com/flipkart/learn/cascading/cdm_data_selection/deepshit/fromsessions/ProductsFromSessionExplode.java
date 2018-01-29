@@ -63,11 +63,7 @@ public class ProductsFromSessionExplode implements SimpleFlow {
         }
     }
 
-    public static void main(String[] args) {
-        if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000.aggsess/part-*", "data/products-from-sessions-explode.2017-0801.1000"};
-        }
-
+    private static void flow(String input, String output) {
         PipeRunner runner = new PipeRunner("session-explode");
         runner.setNumReducers(600);
 
@@ -75,7 +71,18 @@ public class ProductsFromSessionExplode implements SimpleFlow {
 
         ProductsFromSessionExplode productsFromExplode = new ProductsFromSessionExplode(fields);
 
-        runner.executeHfs(productsFromExplode.getPipe(), args[0], args[1], true);
+        runner.executeHfs(productsFromExplode.getPipe(), input, output, true);
+    }
+
+    public static void main(String[] args) {
+        if(args.length == 0) {
+            args = new String[]{"data/session-2017-0801.1000.aggsess/part-*", "data/products-from-sessions-explode.2017-0801.1000"};
+        }
+
+        String input = args[0];
+        String output = args[1];
+
+        flow(input, output);
 
     }
 }
