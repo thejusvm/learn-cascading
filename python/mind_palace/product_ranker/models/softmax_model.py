@@ -256,7 +256,7 @@ class EmbeddingsRepo :
             self.softmax_bias = tf.Variable(override_embedding.softmax_bias, dtype=tf.float32)
 
         if attribute_config.for_regularization:
-            self.context_to_id = self.context_dict = tf.Variable(
+            self.context_to_id = tf.Variable(
                 tf.random_uniform([id_attribute_config.embedding_size, self.embedding_size], -0.01, 0.01), dtype=tf.float32)
 
 PerAttrClickEmb = collections.namedtuple('PerAttrClickEmb', 'pad_handler click_embedding')
