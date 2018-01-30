@@ -146,9 +146,7 @@ class softmax_model(model) :
 
 
     def per_record_test_summaries(self):
-        return [["perc-1_head", [self.head_prec_1, self.head_count]],
-                ["prec-1_tail", [self.tail_prec_1, self.tail_count]],
-                ["mean_reciprocal_rank_head", [self.head_mrr, self.head_count]],
+        return [["mean_reciprocal_rank_head", [self.head_mrr, self.head_count]],
                 ["mean_reciprocal_rank_tail", [self.tail_mrr, self.tail_count]]]
 
     def test_summaries(self):
