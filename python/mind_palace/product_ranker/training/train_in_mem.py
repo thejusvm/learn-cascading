@@ -6,6 +6,7 @@ import time
 import sys
 import json
 import pandas as pd
+import numpy as np
 
 import argparse
 
@@ -46,6 +47,14 @@ def read_feature_names(train_path):
     with open(train_path[0], "r") as reader:
         return reader.readline().rstrip('\n').split("\t");
 
+def to_feed_dict(feature_names, placeholders, df):
+    feature_values = []
+    for feature_name in feature_names:
+        feature_value = df[feature_name].as_matrix()
+        length = len(sorted(feature_value, key=len, reverse=True)[0])
+        padded_feature_value = np.array([xi + [0] * (length - len(xi)) for xi in feature_value])
+        feature_values.append(padded_feature_value)
+    return dict(zip(placeholders, feature_values))
 
 def train(train_cxt) :
     """@type train_cxt: trainingcontext"""
@@ -63,12 +72,22 @@ def train(train_cxt) :
     ################################### Prepareing datasets
 
     feature_names = read_feature_names(train_cxt.train_path)
-    # df = pd.read_csv(train_cxt.train_path[0], sep="\t")
-    #
-    # print df.head()
-    # sys.exit
-
     placeholders = [tf.placeholder(tf.int64, shape=(None, None), name=feature_name) for feature_name in feature_names]
+
+    start = time.time()
+    df = pd.read_csv(train_cxt.train_path[0], sep="\t", dtype=str)
+    df = df.applymap(lambda data: [int(i) for i in data.split(",")])
+
+    permuted_indices = np.random.permutation(len(df))
+    dfs = []
+    for i in range(0, len(df), train_cxt.batch_size):
+        dfs.append(df.iloc[permuted_indices[i : i + train_cxt.batch_size]])
+
+    feed_dicts = []
+    for df in dfs:
+        feed_dicts.append(to_feed_dict(feature_names, placeholders, df))
+    print "processing input file took : " + str(time.time() - start)
+    logBreak()
 
     ################################### Start model building
 
@@ -149,10 +168,10 @@ def train(train_cxt) :
         print "epoch : " + str(epoch)
         # dataset.initialize_iterator(sess)
         epoch_start = time.time()
-        while True :
+        for feed_dict in feed_dicts :
             try :
                 start = time.time()
-                _, loss_val, summary = sess.run([minimize_step, loss, loss_summary])
+                _, loss_val, summary = sess.run([minimize_step, loss, loss_summary], feed_dict=feed_dict)
                 elapsed_time += time.time() - start
                 # print str(trainCxt.train_counter) + " processing one batch took : " + str(elapsed_time)
                 if summary_writer is not None :
@@ -164,63 +183,63 @@ def train(train_cxt) :
 
                 trainCxt.train_counter = trainCxt.train_counter + 1
 
-                if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
-                    # test_dataset.initialize_iterator(sess)
-                    start = time.time()
-                    test_metric_names = ["test_" + x[0] for x in test_metric_nodes]
-                    test_metrics_ops = [x[1] for x in test_metric_nodes]
-
-                    per_record_test_metrics_names = ["test_" + x[0] for x in per_record_test_metric_nodes]
-                    per_record_test_metrics_ops = [x[1] for x in per_record_test_metric_nodes]
-
-                    test_batch_counter = 0
-                    test_metric_aggregated = [0 for _ in range(len(test_metric_names))]
-                    per_record_test_metrics_aggregated = [[0, 0] for _ in range(len(per_record_test_metrics_names))]
-
-                    while True:
-                        try :
-                            test_metrics_per_record, test_metrics_batch = sess.run([per_record_test_metrics_ops, test_metrics_ops])
-                            if per_record_metrics_enabled:
-                                per_record_test_metrics_aggregated = map(lambda x, y : [x[0] + y[0], x[1] + y[1]], per_record_test_metrics_aggregated, test_metrics_per_record)
-
-                            test_batch_counter += 1
-                            test_metric_aggregated = map(lambda x, y : x + y, test_metric_aggregated, test_metrics_batch)
-                        except tf.errors.OutOfRangeError:
-                            break
-
-                    test_metric_mean = [x/test_batch_counter for x in test_metric_aggregated]
-                    test_summary_values = map(lambda x, y : tf.Summary.Value(tag=x, simple_value=y), test_metric_names, test_metric_mean)
-
-                    if per_record_metrics_enabled:
-                        per_record_test_metrics_mean = [x[0]/ (x[1] if x[1] != 0 else 1) for x in per_record_test_metrics_aggregated]
-                        per_record_test_summary_values = map(lambda x, y: tf.Summary.Value(tag=x, simple_value=y),
-                                                  per_record_test_metrics_names, per_record_test_metrics_mean)
-                        test_summary_values += per_record_test_summary_values
-
-                    test_metric_summary = tf.Summary(value=test_summary_values)
-                    summary_writer.add_summary(test_metric_summary, trainCxt.train_counter)
-                    num_test_records = test_batch_counter * trainCxt.batch_size
-                    print str(trainCxt.train_counter) + " processing test batch of size ~" + str(num_test_records) + " records took  : " + str(time.time() - start)
-
-                    test_loss = test_metric_mean[0]
-                    print "best loss val : " + str(trainCxt.best_loss_val) + ", new loss val : " + str(test_loss)
-                    if trainCxt.save_model and (trainCxt.best_loss_val is None or test_loss < trainCxt.best_loss_val):
-                        print "new_loss < best_loss; hence replacing best saved model"
-                        saver.save(sess, nn_model_dir + ".best")
-                        train_cxt.best_loss_val = test_loss
-                        train_cxt.best_loss_iters = trainCxt.train_counter
-                        train_cxt.num_iters_since_best_score = 0
-                        save_traincxt(trainCxt)
-                    else:
-                        train_cxt.num_iters_since_best_score = train_cxt.num_iters_since_best_score + 1
-                        print "new_loss > best_loss; incrementing num_iters_since_best_score to : " + str(train_cxt.num_iters_since_best_score)
-
-                    if train_cxt.early_stopping and train_cxt.num_iters_since_best_score >= train_cxt.num_iters_for_early_stop:
-                        print "num_iters_since_best_score : " + str(train_cxt.num_iters_since_best_score) + " >= num_iters_for_early_stop : " + str(train_cxt.num_iters_for_early_stop)
-                        print "Early Stopping"
-                        raise EarlyStop()
-
-                    print "--------------------------------------------"
+                # if summary_writer is not None and trainCxt.train_counter % trainCxt.test_summary_publish_iters == 0 :
+                #     # test_dataset.initialize_iterator(sess)
+                #     start = time.time()
+                #     test_metric_names = ["test_" + x[0] for x in test_metric_nodes]
+                #     test_metrics_ops = [x[1] for x in test_metric_nodes]
+                #
+                #     per_record_test_metrics_names = ["test_" + x[0] for x in per_record_test_metric_nodes]
+                #     per_record_test_metrics_ops = [x[1] for x in per_record_test_metric_nodes]
+                #
+                #     test_batch_counter = 0
+                #     test_metric_aggregated = [0 for _ in range(len(test_metric_names))]
+                #     per_record_test_metrics_aggregated = [[0, 0] for _ in range(len(per_record_test_metrics_names))]
+                #
+                #     while True:
+                #         try :
+                #             test_metrics_per_record, test_metrics_batch = sess.run([per_record_test_metrics_ops, test_metrics_ops])
+                #             if per_record_metrics_enabled:
+                #                 per_record_test_metrics_aggregated = map(lambda x, y : [x[0] + y[0], x[1] + y[1]], per_record_test_metrics_aggregated, test_metrics_per_record)
+                #
+                #             test_batch_counter += 1
+                #             test_metric_aggregated = map(lambda x, y : x + y, test_metric_aggregated, test_metrics_batch)
+                #         except tf.errors.OutOfRangeError:
+                #             break
+                #
+                #     test_metric_mean = [x/test_batch_counter for x in test_metric_aggregated]
+                #     test_summary_values = map(lambda x, y : tf.Summary.Value(tag=x, simple_value=y), test_metric_names, test_metric_mean)
+                #
+                #     if per_record_metrics_enabled:
+                #         per_record_test_metrics_mean = [x[0]/ (x[1] if x[1] != 0 else 1) for x in per_record_test_metrics_aggregated]
+                #         per_record_test_summary_values = map(lambda x, y: tf.Summary.Value(tag=x, simple_value=y),
+                #                                   per_record_test_metrics_names, per_record_test_metrics_mean)
+                #         test_summary_values += per_record_test_summary_values
+                #
+                #     test_metric_summary = tf.Summary(value=test_summary_values)
+                #     summary_writer.add_summary(test_metric_summary, trainCxt.train_counter)
+                #     num_test_records = test_batch_counter * trainCxt.batch_size
+                #     print str(trainCxt.train_counter) + " processing test batch of size ~" + str(num_test_records) + " records took  : " + str(time.time() - start)
+                #
+                #     test_loss = test_metric_mean[0]
+                #     print "best loss val : " + str(trainCxt.best_loss_val) + ", new loss val : " + str(test_loss)
+                #     if trainCxt.save_model and (trainCxt.best_loss_val is None or test_loss < trainCxt.best_loss_val):
+                #         print "new_loss < best_loss; hence replacing best saved model"
+                #         saver.save(sess, nn_model_dir + ".best")
+                #         train_cxt.best_loss_val = test_loss
+                #         train_cxt.best_loss_iters = trainCxt.train_counter
+                #         train_cxt.num_iters_since_best_score = 0
+                #         save_traincxt(trainCxt)
+                #     else:
+                #         train_cxt.num_iters_since_best_score = train_cxt.num_iters_since_best_score + 1
+                #         print "new_loss > best_loss; incrementing num_iters_since_best_score to : " + str(train_cxt.num_iters_since_best_score)
+                #
+                #     if train_cxt.early_stopping and train_cxt.num_iters_since_best_score >= train_cxt.num_iters_for_early_stop:
+                #         print "num_iters_since_best_score : " + str(train_cxt.num_iters_since_best_score) + " >= num_iters_for_early_stop : " + str(train_cxt.num_iters_for_early_stop)
+                #         print "Early Stopping"
+                #         raise EarlyStop()
+                #
+                #     print "--------------------------------------------"
 
                 if trainCxt.save_model and trainCxt.save_model_num_iter != None and trainCxt.train_counter % trainCxt.save_model_num_iter == 0:
                     saver.save(sess, nn_model_dir + ".counter" , global_step = trainCxt.train_counter)
