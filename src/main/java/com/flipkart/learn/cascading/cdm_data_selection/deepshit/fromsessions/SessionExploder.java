@@ -30,6 +30,7 @@ public class SessionExploder implements SimpleFlow {
     public static final String PAST_BOUGHT_PRODUCTS = "pastBoughtProducts";
     public static final String POSITIVE_PRODUCTS = "positiveProducts";
     public static final String NEGATIVE_PRODUCTS = "negativeProducts";
+    public static final String RANDOM_NEGATIVE_PRODUCTS = "negativeSampledProducts";
     public static final String ACTION = "action";
     public static final String ACTION_CLICK = "action.click";
     public static final Fields EXPODED_FIELDS = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);

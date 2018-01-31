@@ -15,10 +15,8 @@ import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import javafx.util.Pair;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +29,7 @@ public class AttributeMapToColumns extends SubAssembly {
     Map<String, String> fieldToPrefix = ImmutableMap.of(
             POSITIVE_PRODUCTS, "positive",
             NEGATIVE_PRODUCTS, "negative",
+            RANDOM_NEGATIVE_PRODUCTS, "random_negative",
             PAST_CLICKED_PRODUCTS, "clicked",
             PAST_BOUGHT_PRODUCTS, "bought"
             );
@@ -48,7 +47,7 @@ public class AttributeMapToColumns extends SubAssembly {
         this.fieldNames = fieldNames;
 
         if(jsonify) {
-            Fields filedsToProcess = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS);
+            Fields filedsToProcess = new Fields(fieldToPrefix.keySet().toArray(new String[0]));
             pipe = new JsonDecodeEach(pipe, filedsToProcess, List.class);
         }
 
