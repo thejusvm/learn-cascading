@@ -51,7 +51,7 @@ def to_feed_dict(feature_names, placeholders, df):
     feature_values = []
     for feature_name in feature_names:
         feature_value = df[feature_name].as_matrix()
-        length = len(sorted(feature_value, key=len, reverse=True)[0])
+        length = len(max(feature_value, key=len))
         padded_feature_value = np.array([xi + [0] * (length - len(xi)) for xi in feature_value])
         feature_values.append(padded_feature_value)
     return dict(zip(placeholders, feature_values))
@@ -79,13 +79,12 @@ def train(train_cxt) :
     df = df.applymap(lambda data: [int(i) for i in data.split(",")])
 
     permuted_indices = np.random.permutation(len(df))
-    dfs = []
-    for i in range(0, len(df), train_cxt.batch_size):
-        dfs.append(df.iloc[permuted_indices[i : i + train_cxt.batch_size]])
 
     feed_dicts = []
-    for df in dfs:
-        feed_dicts.append(to_feed_dict(feature_names, placeholders, df))
+    for i in range(0, len(df), train_cxt.batch_size):
+        sub_df = df.iloc[permuted_indices[i : i + train_cxt.batch_size]]
+        feed_dicts.append(to_feed_dict(feature_names, placeholders, sub_df))
+
     print "processing input file took : " + str(time.time() - start)
     logBreak()
 
@@ -257,7 +256,7 @@ def train(train_cxt) :
             save_traincxt(trainCxt)
             print "saved nn on epoch " + str(epoch) + "model into : " + nn_model_dir
             logBreak()
-        ################################### End model to file
+            ################################### End model to file
 
     if trainCxt.save_model :
         nn_model_dir = trainCxt.model_dir + '/nn'
