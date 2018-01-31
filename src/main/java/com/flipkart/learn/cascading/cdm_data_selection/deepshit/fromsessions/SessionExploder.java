@@ -17,6 +17,8 @@ import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.*;
@@ -26,25 +28,37 @@ import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
 
 public class SessionExploder implements SimpleFlow {
 
-    public static final String PAST_CLICKED_PRODUCTS = "pastClickedProducts";
+    public static final String PAST_CLICKED_SHORT_PRODUCTS = "pastClickedShortProducts";
+    public static final String PAST_CLICKED_LONG_PRODUCTS = "pastClickedLongProducts";
     public static final String PAST_BOUGHT_PRODUCTS = "pastBoughtProducts";
     public static final String POSITIVE_PRODUCTS = "positiveProducts";
     public static final String NEGATIVE_PRODUCTS = "negativeProducts";
     public static final String RANDOM_NEGATIVE_PRODUCTS = "negativeSampledProducts";
     public static final String ACTION = "action";
     public static final String ACTION_CLICK = "action.click";
-    public static final Fields EXPODED_FIELDS = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
-    public static final Fields EXPLODER_TO_ENCODE_FIELDS = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS);
+    public static final Fields EXPODED_FIELDS = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
+    public static final Fields EXPLODER_TO_ENCODE_FIELDS = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS);
 
+    public static int defaultNumNegativeProduct = 10;
+    public static int defaultLongShortThresholdInMin = 30;
 
-    private static int numProducts = 10;
+    private int numNegativeProducts = defaultNumNegativeProduct;
+    private int longShortThresholdInMinutes = defaultLongShortThresholdInMin;
+
+    public void setLongShortThresholdInMinutes(int longShortThresholdInMinutes) {
+        this.longShortThresholdInMinutes = longShortThresholdInMinutes;
+    }
+
+    public void setNumNegativeProducts(int numNegativeProducts) {
+        this.numNegativeProducts = numNegativeProducts;
+    }
 
     @Override
     public Pipe getPipe() {
         Pipe pipe = new Pipe("session-exploder-pipe");
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
-        pipe = new Each(pipe, userContext, new ExplodeSessions(EXPODED_FIELDS), Fields.ALL);
+        pipe = new Each(pipe, userContext, new ExplodeSessions(EXPODED_FIELDS, longShortThresholdInMinutes, numNegativeProducts), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), EXPODED_FIELDS));
         pipe = new JsonEncodeEach(pipe, EXPLODER_TO_ENCODE_FIELDS);
         return pipe;
@@ -52,15 +66,20 @@ public class SessionExploder implements SimpleFlow {
 
     public static class ExplodeSessions extends BaseOperation implements Function, Serializable {
 
-        public ExplodeSessions(Fields fields) {
+        private long longShortTimestampThreshold; //30 mins * 60 sec * 1000 millis * 1000 nano
+        private final int numNegativeProducts;
+
+        public ExplodeSessions(Fields fields, int longShortThresholdInMinutes, int numNegativeProducts) {
             super(fields);
+            longShortTimestampThreshold = longShortThresholdInMinutes * 60 * 1000 * 1000; //mins * 60 sec * 1000 millis * 1000 nano
+            this.numNegativeProducts = numNegativeProducts;
         }
 
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             SearchSessions sessionsContainer = (SearchSessions) functionCall.getArguments().getObject(0);
             Collection<SearchSession> sessions = sessionsContainer.getSessions().values();
-            Map<String, Map<String, String>> pastClick = Collections.emptyMap();
+            List<ProductObj> pastClick = Collections.emptyList();
             Map<String, Map<String, String>> pastBought = Collections.emptyMap();
             for (SearchSession session : sessions) {
                 long timestamp = session.getTimestamp();
@@ -82,7 +101,7 @@ public class SessionExploder implements SimpleFlow {
                             .filter(product -> !clickedProduct.getProductId().equals(product.getProductId())) // removing the clicked product
                             .filter(product -> clickedProduct.getPosition() + 2 >= product.getPosition()) // removing if the product's position is 2 greater than the clicked product
                             .filter(productObj -> !dedupeNegativeProducts.contains(productObj.getProductId()))
-                            .limit(numProducts)
+                            .limit(numNegativeProducts)
                             .collect(Collectors.toList());
                     List<Map<String, String>> negativeAttributes = negativeProducts
                             .stream()
@@ -92,17 +111,21 @@ public class SessionExploder implements SimpleFlow {
                             .stream()
                             .map(ProductObj::getProductId)
                             .forEach(dedupeNegativeProducts::add);
+                    Pair<List<ProductObj>, List<ProductObj>> shortLongPair = getShortTermLongTermClick(pastClick, timestamp);
+                    List<ProductObj> shortTermClick = shortLongPair.getLeft();
+                    List<ProductObj> longTermClick = shortLongPair.getRight();
                     functionCall.getOutputCollector().add(
                             new Tuple(sqid,
                                     timestamp,
                                     findingMethod,
                                     ACTION_CLICK,
-                                    pastClick.values(),
+                                    shortTermClick.stream().map(ProductObj::getAttributes).collect(Collectors.toList()),
+                                    longTermClick.stream().map(ProductObj::getAttributes).collect(Collectors.toList()),
                                     pastBought.values(),
                                     clickedProduct.getAttributes(),
                                     negativeAttributes));
-                    pastClick = new LinkedHashMap<>(pastClick);
-                    pastClick.put(clickedProduct.getProductId(), clickedProduct.getAttributes());
+                    pastClick = new ArrayList<>(pastClick);
+                    pastClick.add(clickedProduct);
                 }
 
                 pastBought = new LinkedHashMap<>(pastBought);
@@ -111,6 +134,21 @@ public class SessionExploder implements SimpleFlow {
                 }
 
             }
+        }
+
+        private Pair<List<ProductObj>, List<ProductObj>> getShortTermLongTermClick(List<ProductObj> pastClick, long currentTimestamp) {
+            List<ProductObj> shortTerm = new ArrayList<>();
+            List<ProductObj> longTerm = new ArrayList<>();
+
+            for (ProductObj productObj : pastClick) {
+                if(currentTimestamp - productObj.getTimestamp() > longShortTimestampThreshold){
+                    longTerm.add(productObj);
+                } else {
+                    shortTerm.add(productObj);
+                }
+            }
+
+            return new MutablePair<>(shortTerm, longTerm);
         }
     }
 

@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,13 +27,16 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 public class AttributeMapToColumns extends SubAssembly {
 
     private final List<String> fieldNames;
-    Map<String, String> fieldToPrefix = ImmutableMap.of(
-            POSITIVE_PRODUCTS, "positive",
-            NEGATIVE_PRODUCTS, "negative",
-            RANDOM_NEGATIVE_PRODUCTS, "random_negative",
-            PAST_CLICKED_PRODUCTS, "clicked",
-            PAST_BOUGHT_PRODUCTS, "bought"
-            );
+    private static Map<String, String> fieldToPrefix;
+    static {
+        fieldToPrefix = new LinkedHashMap<>();
+        fieldToPrefix.put(POSITIVE_PRODUCTS, "positive");
+        fieldToPrefix.put(NEGATIVE_PRODUCTS, "negative");
+        fieldToPrefix.put(RANDOM_NEGATIVE_PRODUCTS, "random_negative");
+        fieldToPrefix.put(PAST_CLICKED_SHORT_PRODUCTS, "clicked_short");
+        fieldToPrefix.put(PAST_CLICKED_LONG_PRODUCTS, "clicked_long");
+        fieldToPrefix.put(PAST_BOUGHT_PRODUCTS, "bought");
+    }
 
 
     public AttributeMapToColumns(List<String> fieldNames) {

@@ -27,7 +27,7 @@ public class SessionExplodeToPrep extends SubAssembly {
 
         Pipe pipe = new Pipe("sessionexplode-translation");
 
-        pipe = new JsonDecodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
+        pipe = new JsonDecodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
         pipe = new NegativeSamplesGenerator(pipe, integerizedAttributesPath, false);
         pipe = new HandlePastClicks(pipe, numpastClicks, false);
         pipe = new AttributeMapToColumns(pipe, fields, false);

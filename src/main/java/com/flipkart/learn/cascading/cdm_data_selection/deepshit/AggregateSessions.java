@@ -40,7 +40,7 @@ public class AggregateSessions {
         pipe = new Each(pipe, should_filter, new ExpressionFilter("(should_filter == 0)", Integer.class));
         pipe = new Discard(pipe, should_filter);
         pipe = SessionDataGenerator.aggregateSessionsPipe(pipe, cmsInput, false);
-        pipe = new Each(pipe, userContext, new SessionExploder.ExplodeSessions(EXPODED_FIELDS), Fields.ALL);
+        pipe = new Each(pipe, userContext, new SessionExploder.ExplodeSessions(EXPODED_FIELDS, defaultLongShortThresholdInMin, defaultNumNegativeProduct), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), EXPODED_FIELDS));
         pipe = new JsonEncodeEach(pipe, EXPLODER_TO_ENCODE_FIELDS);
 

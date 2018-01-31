@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.NEGATIVE_PRODUCTS;
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.PAST_CLICKED_PRODUCTS;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.PAST_CLICKED_SHORT_PRODUCTS;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.PAST_CLICKED_LONG_PRODUCTS;
 
 public class HandlePastClicks extends SubAssembly {
 
@@ -37,12 +37,15 @@ public class HandlePastClicks extends SubAssembly {
 
         this.numPastClicks = numPastClicks;
 
-        Fields pastField = new Fields(PAST_CLICKED_PRODUCTS);
+        Fields pastShort = new Fields(PAST_CLICKED_SHORT_PRODUCTS);
+        Fields pastLong = new Fields(PAST_CLICKED_LONG_PRODUCTS);
+        Fields pastField = Fields.merge(pastShort, pastLong);
         if(jsonify) {
             pipe = new JsonDecodeEach(pipe, pastField, List.class);
         }
 
-        pipe = new Each(pipe, pastField, new Handler(pastField, numPastClicks), Fields.SWAP);
+        pipe = new Each(pipe, pastShort, new Handler(pastShort, numPastClicks), Fields.SWAP);
+        pipe = new Each(pipe, pastLong, new Handler(pastLong, numPastClicks), Fields.SWAP);
 
         if(jsonify) {
             pipe = new JsonEncodeEach(pipe, pastField);
