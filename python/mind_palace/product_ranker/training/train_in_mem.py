@@ -7,6 +7,10 @@ import sys
 import json
 import pandas as pd
 import numpy as np
+from multiprocessing import Pool
+from contextlib import closing
+from functools import partial
+
 
 import argparse
 
@@ -47,14 +51,24 @@ def read_feature_names(train_path):
     with open(train_path[0], "r") as reader:
         return reader.readline().rstrip('\n').split("\t");
 
-def to_feed_dict(feature_names, placeholders, df):
+def to_feed_dict(feature_names, df):
     feature_values = []
     for feature_name in feature_names:
         feature_value = df[feature_name].as_matrix()
         length = len(max(feature_value, key=len))
         padded_feature_value = np.array([xi + [0] * (length - len(xi)) for xi in feature_value])
         feature_values.append(padded_feature_value)
-    return dict(zip(placeholders, feature_values))
+    return feature_values
+
+def split_cast(data) :
+    return [int(i) for i in data.split(",")]
+
+def df_to_feed_dict(feature_names, sub_df):
+    sub_df = sub_df.applymap(split_cast)
+    feed_dict = to_feed_dict(feature_names, sub_df)
+    return feed_dict
+
+
 
 def train(train_cxt) :
     """@type train_cxt: trainingcontext"""
@@ -77,15 +91,17 @@ def train(train_cxt) :
     start = time.time()
     df = pd.read_csv(train_cxt.train_path[0], sep="\t", dtype=str)
     print "processing input file took : " + str(time.time() - start)
-    df = df.applymap(lambda data: [int(i) for i in data.split(",")])
-    print "processing input file took : " + str(time.time() - start)
 
     permuted_indices = np.random.permutation(len(df))
 
-    feed_dicts = []
+    sub_dfs = []
     for i in range(0, len(df), train_cxt.batch_size):
         sub_df = df.iloc[permuted_indices[i : i + train_cxt.batch_size]]
-        feed_dicts.append(to_feed_dict(feature_names, placeholders, sub_df))
+        sub_dfs.append(sub_df)
+
+    feed_dicts = []
+    with closing(Pool(processes=6)) as pool:
+        feed_dicts = pool.map(partial(df_to_feed_dict, feature_names), sub_dfs)
 
     print "processing input file took : " + str(time.time() - start)
     logBreak()
@@ -172,6 +188,7 @@ def train(train_cxt) :
         for feed_dict in feed_dicts :
             try :
                 start = time.time()
+                feed_dict = dict(zip(placeholders, feed_dict))
                 _, loss_val, summary = sess.run([minimize_step, loss, loss_summary], feed_dict=feed_dict)
                 elapsed_time += time.time() - start
                 # print str(trainCxt.train_counter) + " processing one batch took : " + str(elapsed_time)
