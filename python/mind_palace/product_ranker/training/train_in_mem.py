@@ -61,7 +61,7 @@ def to_feed_dict(feature_names, df):
     return feature_values
 
 def split_cast(data) :
-    return [int(i) for i in data.split(",")]
+    return map(int, data.split(","))
 
 def df_to_feed_dict(feature_names, sub_df):
     sub_df = sub_df.applymap(split_cast)
