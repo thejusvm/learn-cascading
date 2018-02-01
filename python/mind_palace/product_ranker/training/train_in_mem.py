@@ -76,7 +76,9 @@ def train(train_cxt) :
 
     start = time.time()
     df = pd.read_csv(train_cxt.train_path[0], sep="\t", dtype=str)
+    print "processing input file took : " + str(time.time() - start)
     df = df.applymap(lambda data: [int(i) for i in data.split(",")])
+    print "processing input file took : " + str(time.time() - start)
 
     permuted_indices = np.random.permutation(len(df))
 
