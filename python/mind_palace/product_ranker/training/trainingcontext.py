@@ -51,7 +51,7 @@ class trainingcontext :
         self.columns_in_data = ""
         self.test_path = ""
 
-        self.input_type = "csv" #csv/tfr
+        self.input_type = "csv" #csv/tfr/inmem-csv
 
         self.attribute_summary_path = ""
 

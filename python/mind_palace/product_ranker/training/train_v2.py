@@ -13,6 +13,7 @@ from mind_palace.product_ranker.models import model_factory as mf
 from mind_palace.product_ranker.models.model import model
 from mind_palace.product_ranker.models.modelconfig import modelconfig, parse_attribute_config
 from mind_palace.product_ranker.prepare_data_v2.csv_dataset import CSV_ClickstreamDataset
+from mind_palace.product_ranker.prepare_data_v2.inmemory_dataset import Inmemory_ClickstreamDataset
 from mind_palace.product_ranker.prepare_data.tfr_dataset import TFR_ClickstreamDataset
 from mind_palace.product_ranker.training.trainingcontext import trainingcontext, getTraningContextDir
 from mind_palace.product_ranker.prepare_data.dataprep_flow import get_attributedicts_path, get_train_data_path, get_test_data_path, get_integerized_attributes_path
@@ -67,8 +68,12 @@ def train(train_cxt) :
             dataset = TFR_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
             test_dataset = TFR_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
         else:
-            print "unknown intput_type"
-            sys.exit(1)
+            if trainCxt.input_type == "inmem-csv":
+                dataset = Inmemory_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
+                test_dataset = Inmemory_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
+            else:
+                print "unknown intput_type"
+                sys.exit(1)
 
     ################################### Start model building
 
