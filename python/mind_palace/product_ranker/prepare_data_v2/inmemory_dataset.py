@@ -61,7 +61,7 @@ class Inmemory_ClickstreamDataset :
     def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None):
         self.ctr_data_path = ctr_data_path
 
-        feature_names = read_feature_names(ctr_data_path)
+        self.feature_names = feature_names = read_feature_names(ctr_data_path)
         num_features = len(feature_names)
 
         start = time.time()
