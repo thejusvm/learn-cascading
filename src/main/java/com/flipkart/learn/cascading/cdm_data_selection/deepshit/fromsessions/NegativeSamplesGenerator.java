@@ -25,7 +25,7 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 
 public class NegativeSamplesGenerator extends SubAssembly {
 
-    int numNegativeSamples = 30;
+    int numNegativeSamples = 20;
 
     public NegativeSamplesGenerator(String integerizedAttributesPath) {
         this(new Pipe("negative_sampler"), integerizedAttributesPath);
