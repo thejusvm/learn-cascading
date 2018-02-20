@@ -18,14 +18,14 @@ def _parse_function(feature_names, features, example_proto):
 
 class TFR_ClickstreamDataset :
 
-    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None):
+    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None, num_threads=6):
         self.ctr_data_path = ctr_data_path
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.TFRecordDataset(self.filenames)
         self.feature_names = generate_feature_names(attributes, CONST.TRAINING_COL_PREFIXES)
         features = dict([[feature_name, tf.VarLenFeature(dtype=tf.int64)] for feature_name in self.feature_names])
         self.dataset = self.dataset.map(lambda row : _parse_function(self.feature_names, features, row),
-                                        num_threads = 25, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
+                                        num_threads=num_threads, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)

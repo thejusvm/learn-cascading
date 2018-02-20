@@ -25,7 +25,7 @@ def _parse_function(feature_indices, row):
 
 class CSV_ClickstreamDataset :
 
-    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None):
+    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None, num_threads=6):
         self.ctr_data_path = ctr_data_path
         self.filenames = tf.placeholder(tf.string, shape=[None])
         self.dataset = tf.contrib.data.Dataset.from_tensor_slices(self.filenames)
@@ -37,7 +37,7 @@ class CSV_ClickstreamDataset :
         column_names = get_column_names(ctr_data_path)
         feature_indices = [column_names.index(feature_name) for feature_name in self.feature_names]
         self.dataset = self.dataset.map(lambda row: _parse_function(feature_indices, row),
-                                        num_threads = 6, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
+                                        num_threads=num_threads, output_buffer_size = 100 * (batch_size if batch_size is not None else 1))
 
         if shuffle :
             self.dataset = self.dataset.shuffle(buffer_size=100000)

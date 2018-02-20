@@ -58,7 +58,7 @@ def file_to_feed_dict(feature_names, ctr_data_path):
 
 class Inmemory_ClickstreamDataset :
 
-    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None):
+    def __init__(self, attributes, ctr_data_path, shuffle=True, batch_size=None, num_threads=6):
         self.ctr_data_path = ctr_data_path
 
         self.feature_names = feature_names = read_feature_names(ctr_data_path)
@@ -67,7 +67,7 @@ class Inmemory_ClickstreamDataset :
         start = time.time()
 
         print ctr_data_path
-        with closing(Pool(processes=2)) as pool:
+        with closing(Pool(processes=num_threads)) as pool:
             feed_dicts = pool.map(partial(file_to_feed_dict, feature_names), ctr_data_path)
 
         zipped_dicts = zip(*feed_dicts)

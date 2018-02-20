@@ -61,16 +61,16 @@ def train(train_cxt) :
     ################################### Prepareing datasets
     attributes = map(lambda x: x.name, modelconf.attributes_config)
     if trainCxt.input_type == "csv":
-        dataset = CSV_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
-        test_dataset = CSV_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
+        dataset = CSV_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True, num_threads=train_cxt.num_threads)
+        test_dataset = CSV_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True, num_threads=train_cxt.num_threads)
     else:
         if trainCxt.input_type == "tfr":
-            dataset = TFR_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
-            test_dataset = TFR_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
+            dataset = TFR_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True, num_threads=train_cxt.num_threads)
+            test_dataset = TFR_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True, num_threads=train_cxt.num_threads)
         else:
             if trainCxt.input_type == "inmem-csv":
-                dataset = Inmemory_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True)
-                test_dataset = Inmemory_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True)
+                dataset = Inmemory_ClickstreamDataset(attributes, train_cxt.train_path, batch_size=train_cxt.batch_size, shuffle=True, num_threads=train_cxt.num_threads)
+                test_dataset = Inmemory_ClickstreamDataset(attributes, train_cxt.test_path, batch_size=train_cxt.batch_size, shuffle=True, num_threads=train_cxt.num_threads)
             else:
                 print "unknown intput_type"
                 sys.exit(1)
