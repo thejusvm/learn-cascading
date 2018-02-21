@@ -1,22 +1,15 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers;
 
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizedProductAttributesWrapper;
-
-import java.io.IOException;
 import java.util.Map;
-import java.util.Random;
 
-public class UniformRandomSampler implements Sampler {
+public class UniformRandomSampler extends AbstractSampler {
 
-    private final IntegerizedProductAttributesWrapper wrapper;
-    private final Random random;
-    private final int size;
-
-    public UniformRandomSampler(String attributesPath) throws IOException {
-         wrapper = new IntegerizedProductAttributesWrapper(attributesPath);
-         random = new Random();
-         size = wrapper.getNumProducts();
+    public UniformRandomSampler(String attributesPath) {
+        super(attributesPath);
     }
+
+    @Override
+    protected void subInit() {}
 
     @Override
     public Map<String, Integer> getNextSample() {

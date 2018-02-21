@@ -9,7 +9,7 @@ public class SessionExplodeToTrainTest {
 
         IntegerizeExplodedSession.flow(input + "/part-*", productDataPath +"/attribute_dicts" , expodedIntegerized);
         SessionExplodeToPrep.flow(expodedIntegerized + "/part-*", productDataPath, expodedToPrep);
-//        SplitTrainTest.flow(expodedToPrep + "/part-*", trainTestSplitDate, output);
+        SplitTrainTest.flow(expodedToPrep + "/part-*", trainTestSplitDate, output);
 
     }
 
@@ -20,7 +20,7 @@ public class SessionExplodeToTrainTest {
                     "data/sessionexplode-2017-0801.1000",
                     "data/product-attributes.MOB.int",
                     "2017-07-31",
-                    "data/sessionexplode-2017-0801.1000.tt"
+                    "data/sessionexplode-2017-0801.1000.tt.longshort"
             };
         }
 

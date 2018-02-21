@@ -15,6 +15,7 @@ public class IntegerizedProductAttributesWrapper {
 
     private List<String> fieldNames;
     private List<List<Integer>> allFieldValues;
+    private List<Integer> counts;
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegerizedProductAttributesWrapper.class);
 
@@ -22,27 +23,37 @@ public class IntegerizedProductAttributesWrapper {
 
         fieldNames = new ArrayList<>();
         allFieldValues = new ArrayList<>();
+        counts = new ArrayList<>();
+
 
         LOG.info("starting to read IntegerizedProductAttributes from path : " + dir);
         List<String> paths = HdfsUtils.listFiles(dir, 1);
         for (String path : paths) {
             FileProcessor.hdfsEachLine(path, new Container<String>() {
                 boolean first = true;
+                int countsIndex = -1;
+
                 @Override
                 public void collect(String line) {
                     if (first) {
                         first = false;
                         fieldNames = Arrays.asList(line.split("\t"));
+                        countsIndex = fieldNames.indexOf("count");
                     } else {
                         List<Integer> values = Arrays.stream(line.split("\t"))
                                 .map(Integer::parseInt)
                                 .collect(Collectors.toList());
                         allFieldValues.add(values);
+                        counts.add(values.get(countsIndex));
                     }
                 }
             });
             LOG.info("done to read IntegerizedProductAttributes from path : " + path);
         }
+    }
+
+    public List<Integer> getCounts() {
+        return counts;
     }
 
     public int getNumProducts() {

@@ -9,6 +9,7 @@ import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.CountBasedSampler;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.Sampler;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.samplers.UniformRandomSampler;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
@@ -21,7 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.RANDOM_NEGATIVE_PRODUCTS;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.UNIFORM_RANDOM_NEGATIVE_PRODUCTS;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS;
 
 public class NegativeSamplesGenerator extends SubAssembly {
 
@@ -37,11 +39,14 @@ public class NegativeSamplesGenerator extends SubAssembly {
 
     public NegativeSamplesGenerator(Pipe pipe, String integerizedAttributesPath, boolean jsonify) {
 
-        Fields negativeSamplesField = new Fields(RANDOM_NEGATIVE_PRODUCTS);
-        pipe = new Each(pipe, Fields.NONE, new AddNegativeSamples(negativeSamplesField, numNegativeSamples, integerizedAttributesPath), Fields.ALL);
+        Fields uniformNegative = new Fields(UNIFORM_RANDOM_NEGATIVE_PRODUCTS);
+        Fields zipfNegative = new Fields(IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS);
+        pipe = new Each(pipe, Fields.NONE, new AddNegativeSamples(uniformNegative, numNegativeSamples, new UniformRandomSampler(integerizedAttributesPath)), Fields.ALL);
+        pipe = new Each(pipe, Fields.NONE, new AddNegativeSamples(zipfNegative, numNegativeSamples, new CountBasedSampler(integerizedAttributesPath)), Fields.ALL);
 
         if(jsonify) {
-            pipe = new JsonEncodeEach(pipe, negativeSamplesField);
+            pipe = new JsonEncodeEach(pipe, uniformNegative);
+            pipe = new JsonEncodeEach(pipe, zipfNegative);
         }
 
         setTails(pipe);
@@ -51,30 +56,21 @@ public class NegativeSamplesGenerator extends SubAssembly {
     private static class AddNegativeSamples extends BaseOperation implements Function {
 
         private final int numNegativeSamples;
-        private final String integerizedAttributesPath;
-        private static Sampler sampler;
+        private Sampler sampler;
 
-        public AddNegativeSamples(Fields negativeField, int numNegativeSamples, String integerizedAttributesPath) {
+        public AddNegativeSamples(Fields negativeField, int numNegativeSamples, Sampler sampler) {
             super(negativeField);
             this.numNegativeSamples = numNegativeSamples;
-            this.integerizedAttributesPath = integerizedAttributesPath;
-        }
-
-        public static synchronized void init(String attributesPath) {
-            if(sampler == null) {
-                try {
-                    sampler = new UniformRandomSampler(attributesPath);//new ZiphianRandomSampler(attributesPath);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            this.sampler = sampler;
         }
 
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             HdfsUtils.setConfiguration((Configuration) flowProcess.getConfigCopy());
-            if(sampler == null) {
-                init(integerizedAttributesPath);
+            try {
+                sampler.init();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
 
             List<Map<String, Integer>> negativesList = new ArrayList<>(numNegativeSamples);

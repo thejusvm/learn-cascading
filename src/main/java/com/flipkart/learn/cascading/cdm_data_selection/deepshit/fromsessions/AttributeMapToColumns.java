@@ -14,7 +14,6 @@ import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -32,7 +31,8 @@ public class AttributeMapToColumns extends SubAssembly {
         fieldToPrefix = new LinkedHashMap<>();
         fieldToPrefix.put(POSITIVE_PRODUCTS, "positive");
         fieldToPrefix.put(NEGATIVE_PRODUCTS, "negative");
-        fieldToPrefix.put(RANDOM_NEGATIVE_PRODUCTS, "random_negative");
+        fieldToPrefix.put(UNIFORM_RANDOM_NEGATIVE_PRODUCTS, "uniform_random_negative");
+        fieldToPrefix.put(IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS, "impression_random_negative");
         fieldToPrefix.put(PAST_CLICKED_SHORT_PRODUCTS, "clicked_short");
         fieldToPrefix.put(PAST_CLICKED_LONG_PRODUCTS, "clicked_long");
         fieldToPrefix.put(PAST_BOUGHT_PRODUCTS, "bought");
