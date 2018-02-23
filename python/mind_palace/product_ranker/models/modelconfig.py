@@ -26,6 +26,11 @@ class modelconfig :
         self.probability_function = "sigmoid" #values: sigmoid/nn
         self.layer_count = []
 
+        self.positive_col_prefix = "positive"
+        self.negative_col_prefix = "impression_random_negative"
+        self.click_col_prefix = "clicked_short"
+
+
 class AttributeConfig :
 
     def __init__(self, name, embedding_size, vocab_size=0,

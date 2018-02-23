@@ -1,6 +1,5 @@
 import cPickle as pickle
 from mind_palace.DictIntegerizer import DictIntegerizer
-from mind_palace.product_ranker import constants as CONST
 
 
 def _new_dictintegerizer(attribute, deafult_dicy_keys):
@@ -28,7 +27,7 @@ def generate_key(key_prefix, attribute):
     return key_prefix + "_" + attribute
 
 
-def generate_feature_names(attributes, feature_prefixes = CONST.COL_PREFIXES):
+def generate_feature_names(attributes, feature_prefixes):
     features = []
     for attribute in attributes :
         for feature_prefix in feature_prefixes :

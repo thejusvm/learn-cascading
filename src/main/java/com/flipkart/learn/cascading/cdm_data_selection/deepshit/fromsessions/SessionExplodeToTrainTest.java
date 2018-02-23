@@ -18,7 +18,7 @@ public class SessionExplodeToTrainTest {
         if(args.length == 0) {
             args = new String[]{
                     "data/sessionexplode-2017-0801.1000",
-                    "data/product-attributes.MOB.int",
+                    "data/sessions-2017100.products-int.1",
                     "2017-07-31",
                     "data/sessionexplode-2017-0801.1000.tt.longshort"
             };

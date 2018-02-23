@@ -61,9 +61,9 @@ class softmax_model(model) :
 
     def feed_input(self, feature_names, inputs):
         ranking_attribute_names = [embeddingsrepo.attribute_name for embeddingsrepo in self.ranking_attributes_embeddingsrepo]
-        click_features = fetch_features(ranking_attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
-        postive_features = fetch_features(ranking_attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
-        negative_features = fetch_features(ranking_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
+        click_features = fetch_features(ranking_attribute_names, self.modelConf.click_col_prefix, feature_names, inputs)
+        postive_features = fetch_features(ranking_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)
+        negative_features = fetch_features(ranking_attribute_names, self.modelConf.negative_col_prefix, feature_names, inputs)
         if not self.modelConf.use_context:
             click_features = tf.zeros_like(click_features)
         self.click_embedder = ContextClickProductHandler(self.ranking_attributes_embeddingsrepo, click_features, self.model_config)
@@ -84,7 +84,7 @@ class softmax_model(model) :
         self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
         self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
 
-        self.head_tail_id = fetch_features([self.model_config.head_tail_id], CONST.POSITIVE_COL_PREFIX, feature_names, inputs)[0]
+        self.head_tail_id = fetch_features([self.model_config.head_tail_id], self.modelConf.positive_col_prefix, feature_names, inputs)[0]
         self.head_ids = tf.squeeze(tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
         self.tail_ids = tf.squeeze(tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
 
@@ -93,14 +93,14 @@ class softmax_model(model) :
         if self.enable_regularizer:
             regularizer_attribute_names = [regularizer_embeddings.attribute_name for regularizer_embeddings in self.regularizer_attributes_embeddingsrepo]
             regularizer_id_name = [self.regularizer_id_embeddingsrepo.attribute_name]
-            click_features = fetch_features(regularizer_attribute_names, CONST.CLICK_COL_PRERFIX, feature_names, inputs)
-            click_id = fetch_features(regularizer_id_name, CONST.CLICK_COL_PRERFIX, feature_names, inputs)[0]
+            click_features = fetch_features(regularizer_attribute_names, self.modelConf.click_col_prefix, feature_names, inputs)
+            click_id = fetch_features(regularizer_id_name, self.modelConf.click_col_prefix, feature_names, inputs)[0]
 
-            postive_features = fetch_features(regularizer_attribute_names, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)
-            postive_id = fetch_features(regularizer_id_name, CONST.POSITIVE_COL_PREFIX, feature_names, inputs)[0]
+            postive_features = fetch_features(regularizer_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)
+            postive_id = fetch_features(regularizer_id_name, self.modelConf.positive_col_prefix, feature_names, inputs)[0]
 
-            negative_features = fetch_features(regularizer_attribute_names, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)
-            negative_id = fetch_features(regularizer_id_name, CONST.NEGATIVE_COL_PREFIX, feature_names, inputs)[0]
+            negative_features = fetch_features(regularizer_attribute_names, self.modelConf.negative_col_prefix, feature_names, inputs)
+            negative_id = fetch_features(regularizer_id_name, self.modelConf.negative_col_prefix, feature_names, inputs)[0]
 
             self.click_regularization = AttributeRegularization(self.regularizer_id_embeddingsrepo, click_id, self.regularizer_attributes_embeddingsrepo, click_features, context_lookup_method)
             self.click_regularization_loss = self.click_regularization.loss

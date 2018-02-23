@@ -357,4 +357,4 @@ if __name__ == '__main__' :
     except EarlyStop:
         pass
 
-#--input_path=/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt --attribute_summary_path=/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int/attribute_summary
+#--input_path=/Users/thejus/workspace/learn-cascading/data/sessionexplode-2017-0801.1000.tt.longshort --attribute_summary_path=/Users/thejus/workspace/learn-cascading/data/product-attributes.MOB.int/attribute_summary
