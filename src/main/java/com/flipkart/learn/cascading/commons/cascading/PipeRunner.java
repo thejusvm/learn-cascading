@@ -111,7 +111,7 @@ public class PipeRunner {
         properties.setProperty("mapreduce.job.reduces", "200");
         properties.setProperty("mapred.reduce.tasks", "200");
         properties.setProperty("io.serializations", serialization);
-        properties.setProperty("mapred.job.queue.name", "search");
+        properties.setProperty("mapred.job.queue.name", "search_dev");
         properties.setProperty("mapred.map.child.java.opts", "-Xmx1024m");
         properties.setProperty("mapred.child.java.opts", "-Xmx1024m");
         properties.setProperty("mapreduce.task.timeout", "6000000");
