@@ -5,7 +5,8 @@ import tensorflow as tf
 import time
 import sys
 import json
-import pandas as pd
+import re
+
 
 import argparse
 
@@ -263,21 +264,33 @@ if __name__ == '__main__' :
     trainCxt = trainingcontext()
     parser = argparse.ArgumentParser()
     train_cxt_dict = trainCxt.__dict__
+
     for train_key in train_cxt_dict :
         parser.add_argument("--" + train_key, type=type(train_cxt_dict[train_key]))
+
+    parser.add_argument("--modelconfig.attribute_regularizer_id", type=str, default=None)
+    parser.add_argument("--modelconfig.attribute_regularizer_weight", type=float, default=0.5)
+    parser.add_argument("--modelconfig.click_pooling", type=str, default="sum")
+    parser.add_argument("--modelconfig.probability_function", type=str, default="sigmoid")
+
+    parser.add_argument("--modelconfig.positive_col_prefix", type=str, default="positive")
+    parser.add_argument("--modelconfig.negative_col_prefix", type=str, default="impression_random_negative")
+    parser.add_argument("--modelconfig.click_col_prefix", type=str, default="clicked_short")
+
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
     parser.add_argument("--ranking_attributes", type=str, default=None)
-    parser.add_argument("--attribute_regularizer_id", type=str, default=None)
-    parser.add_argument("--attribute_regularizer_weight", type=float, default=0.5)
     parser.add_argument("--regularizer_attributes", type=str, default=None)
     parser.add_argument("--click_non_linearity", type=bool, default=False)
     parser.add_argument("--click_layer_count", type=str)
-    parser.add_argument("--probability_function", type=str)
     parser.add_argument("--layer_count", type=str)
     parser.add_argument("--model_name", type=str)
     parser.add_argument("--use_context", type=str, default="True")
-    parser.add_argument("--click_pooling", type=str, default="sum")
     args = parser.parse_args()
+
+    model_name = "softmax_model"
+    if args.model_name:
+        model_name = args.model_name
+    modelconf = modelconfig(model_name)
 
     attributes_config = [parse_attribute_config(attribute_conf) for attribute_conf in args.attributeconfs.split(',')]
     attributes_config_map = dict([[ac.name, ac] for ac in attributes_config])
@@ -298,8 +311,13 @@ if __name__ == '__main__' :
 
     for arg in args.__dict__:
         arg_val = args.__dict__[arg]
+        is_model_conf_key = arg.startswith("modelconfig.")
         if arg_val != None:
-            trainCxt.__dict__[arg] = arg_val
+            if is_model_conf_key:
+                modelconfig_key = re.sub("^modelconfig.", "", arg)
+                modelconf.__dict__[modelconfig_key] = arg_val
+            else:
+                trainCxt.__dict__[arg] = arg_val
             print arg, arg_val
 
     if not (trainCxt.input_path or trainCxt.restore_model_path):
@@ -327,27 +345,17 @@ if __name__ == '__main__' :
         trainCxt.model_dir = "saved_models/run." + trainCxt.date
         trainCxt.summary_dir = "summary/sessionsimple." + trainCxt.date
 
-        model_name = "softmax_model"
-        if args.model_name :
-            model_name = args.model_name
-        modelconf = modelconfig(model_name)
         modelconf.attributes_config = attributes_config
-        if args.attribute_regularizer_id:
-            modelconf.attribute_regularizer_id = args.attribute_regularizer_id
-        if args.attribute_regularizer_weight:
-            modelconf.attribute_regularizer_weight = args.attribute_regularizer_weight
-        if args.probability_function :
-            modelconf.probability_function = args.probability_function
-        if args.layer_count :
+
+        if args.layer_count:
             modelconf.layer_count = [int(x) for x in args.layer_count.split(",")]
-        if args.click_non_linearity :
+        if args.click_non_linearity:
             modelconf.click_non_linearity = args.click_non_linearity
-        if args.click_layer_count :
+        if args.click_layer_count:
             modelconf.click_layer_count = [int(x) for x in args.click_layer_count.split(",")]
-        if args.use_context :
+        if args.use_context:
             modelconf.use_context = True if args.use_context != "False" else False
-        if args.click_pooling :
-            modelconf.click_pooling = args.click_pooling
+
         trainCxt.model_config = modelconf
 
     trainCxt.model_config.learning_rate = trainCxt.learning_rate
