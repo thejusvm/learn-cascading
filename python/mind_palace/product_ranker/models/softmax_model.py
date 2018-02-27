@@ -73,15 +73,20 @@ class softmax_model(model) :
 
         postive_features = fetch_features(ranking_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)
         self.positive_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, postive_features)
-        self.positive_weights = self.positive_embedder.weights
-        self.positive_bias = self.positive_embedder.bias
-        self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
+        self.positive_handler = to_probability(self.model_config, self.positive_embedder, self.context_embedding, True)
 
         negative_features = fetch_features(ranking_attribute_names, self.modelConf.negative_col_prefix, feature_names,inputs)
         self.negative_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, negative_features)
-        self.negative_weights = self.negative_embedder.weights
-        self.negative_bias = self.negative_embedder.bias
-        self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
+        self.negative_handler = to_probability(self.model_config, self.negative_embedder, self.context_embedding, False)
+
+        if self.modelConf.test_negative_col_prefix == self.modelConf.negative_col_prefix :
+            self.test_negative_embedder = self.negative_embedder
+            self.test_negative_handler = self.negative_handler
+        else:
+            text_negative_features = fetch_features(ranking_attribute_names, self.modelConf.test_negative_col_prefix, feature_names,inputs)
+            self.test_negative_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, text_negative_features)
+            self.test_negative_handler = to_probability(self.model_config, self.test_negative_embedder, self.context_embedding, False)
+
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent))
 
@@ -108,17 +113,19 @@ class softmax_model(model) :
             attribute_regularizer_weight = self.modelConf.attribute_regularizer_weight
             self.sigmoid_loss = self.sigmoid_loss + attribute_regularizer_weight * self.attribute_regularization_loss
 
-        self.batch_size = tf.shape(self.positive_weights)[0]
+        self.batch_size = tf.shape(inputs[0])[0]
         self.sigmoid_loss = self.sigmoid_loss / tf.cast(self.batch_size, tf.float32)
 
-        self.max_negative_score = tf.reduce_max(self.negative_handler.logits, reduction_indices = [1])
+        self.loss_negative_handler = self.test_negative_handler
+        self.loss_positive_handler = self.positive_handler
+        self.max_negative_score = tf.reduce_max(self.loss_negative_handler.logits, reduction_indices = [1])
         self.max_negative_score = tf.reshape(self.max_negative_score, [tf.size(self.max_negative_score)])
 
-        self.positive_score_vector = tf.reshape(self.positive_handler.logits, [tf.size(self.positive_handler.logits)])
+        self.positive_score_vector = tf.reshape(self.loss_positive_handler.logits, [tf.size(self.loss_positive_handler.logits)])
         self.prec_vector = tf.cast(tf.greater(self.positive_score_vector, self.max_negative_score), tf.float32)
         self.prec_1 = tf.reduce_mean(self.prec_vector)
 
-        self.less_than = tf.cast(tf.less(self.positive_handler.logits, self.negative_handler.logits), tf.float32)
+        self.less_than = tf.cast(tf.less(self.loss_positive_handler.logits, self.loss_negative_handler.logits), tf.float32)
         self.rank_per_record = tf.reduce_sum(self.less_than, reduction_indices = [1])
         self.rank_per_record = self.rank_per_record + 1
         self.mean_rank = tf.reduce_mean(self.rank_per_record)
@@ -127,7 +134,7 @@ class softmax_model(model) :
         self.mean_reciprocal_rank = tf.reduce_mean(self.reciprocal_rank_per_record)
 
 
-        self.positive_probability = tf.sigmoid(self.positive_handler.logits)
+        self.positive_probability = tf.sigmoid(self.loss_positive_handler.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
         self.head_tail_id = fetch_features([self.model_config.head_tail_id], self.modelConf.positive_col_prefix, feature_names, inputs)[0]
@@ -172,19 +179,18 @@ class softmax_model(model) :
         # return self.train_step
 
 class to_probability :
-    def __init__(self, modelconfig, weights, bias, context_embedding, positive = True):
+    def __init__(self, modelconfig, weights_n_bias, context_embedding, positive = True):
         """
         :type modelconfig: modelconfig
-        :param weights:
-        :param bias:
+        :type weights_n_bias: ScoringProductHandler
         :param context_embedding:
         :param positive:
         """
         self.probability_fn = None
         if "sigmoid" == modelconfig.probability_function:
-            self.probability_fn = sigmoid(weights, bias, context_embedding)
+            self.probability_fn = sigmoid(weights_n_bias.weights, weights_n_bias.bias, context_embedding)
         else :
-            self.probability_fn = nn_probability(weights, context_embedding, modelconfig.layer_count)
+            self.probability_fn = nn_probability(weights_n_bias.weights, context_embedding, modelconfig.layer_count)
 
         self.logits = self.probability_fn.logits
         if positive :

@@ -29,6 +29,7 @@ class modelconfig :
         self.positive_col_prefix = "positive"
         self.negative_col_prefix = "impression_random_negative"
         self.click_col_prefix = "clicked_short"
+        self.test_negative_col_prefix = "negative"
 
 
 class AttributeConfig :
