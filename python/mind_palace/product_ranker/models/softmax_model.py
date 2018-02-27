@@ -61,32 +61,27 @@ class softmax_model(model) :
 
     def feed_input(self, feature_names, inputs):
         ranking_attribute_names = [embeddingsrepo.attribute_name for embeddingsrepo in self.ranking_attributes_embeddingsrepo]
+
         click_features = fetch_features(ranking_attribute_names, self.modelConf.click_col_prefix, feature_names, inputs)
-        postive_features = fetch_features(ranking_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)
-        negative_features = fetch_features(ranking_attribute_names, self.modelConf.negative_col_prefix, feature_names, inputs)
         if not self.modelConf.use_context:
             click_features = tf.zeros_like(click_features)
         self.click_embedder = ContextClickProductHandler(self.ranking_attributes_embeddingsrepo, click_features, self.model_config)
-        self.positive_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, postive_features)
-        self.negative_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, negative_features)
-
-        click_pooling_methods = {"mean" : self.click_embedder.embeddings_mean, "sum" : self.click_embedder.embeddings_sum}
+        click_pooling_methods = {"mean": self.click_embedder.embeddings_mean, "sum": self.click_embedder.embeddings_sum}
         self.click_embeddings = click_pooling_methods[self.model_config.click_pooling]
         self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
+        self.context_embedding = self.click_embeddings
+
+        postive_features = fetch_features(ranking_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)
+        self.positive_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, postive_features)
         self.positive_weights = self.positive_embedder.weights
         self.positive_bias = self.positive_embedder.bias
+        self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
+
+        negative_features = fetch_features(ranking_attribute_names, self.modelConf.negative_col_prefix, feature_names,inputs)
+        self.negative_embedder = ScoringProductHandler(self.ranking_attributes_embeddingsrepo, negative_features)
         self.negative_weights = self.negative_embedder.weights
         self.negative_bias = self.negative_embedder.bias
-
-        self.context_embedding = self.click_embeddings
-        self.batch_size = tf.shape(self.positive_weights)[0]
-
-        self.positive_handler = to_probability(self.model_config, self.positive_weights, self.positive_bias, self.context_embedding, True)
         self.negative_handler = to_probability(self.model_config, self.negative_weights, self.negative_bias, self.context_embedding, False)
-
-        self.head_tail_id = fetch_features([self.model_config.head_tail_id], self.modelConf.positive_col_prefix, feature_names, inputs)[0]
-        self.head_ids = tf.squeeze(tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
-        self.tail_ids = tf.squeeze(tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
 
         self.sigmoid_loss = (tf.reduce_sum(self.positive_handler.xent) + tf.reduce_sum(self.negative_handler.xent))
 
@@ -113,6 +108,7 @@ class softmax_model(model) :
             attribute_regularizer_weight = self.modelConf.attribute_regularizer_weight
             self.sigmoid_loss = self.sigmoid_loss + attribute_regularizer_weight * self.attribute_regularization_loss
 
+        self.batch_size = tf.shape(self.positive_weights)[0]
         self.sigmoid_loss = self.sigmoid_loss / tf.cast(self.batch_size, tf.float32)
 
         self.max_negative_score = tf.reduce_max(self.negative_handler.logits, reduction_indices = [1])
@@ -133,6 +129,10 @@ class softmax_model(model) :
 
         self.positive_probability = tf.sigmoid(self.positive_handler.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
+
+        self.head_tail_id = fetch_features([self.model_config.head_tail_id], self.modelConf.positive_col_prefix, feature_names, inputs)[0]
+        self.head_ids = tf.squeeze(tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
+        self.tail_ids = tf.squeeze(tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
 
         self.head_count = tf.reduce_sum(self.head_ids)
         self.tail_count = tf.reduce_sum(self.tail_ids)
