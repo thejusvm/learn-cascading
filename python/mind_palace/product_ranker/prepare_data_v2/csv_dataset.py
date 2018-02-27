@@ -56,7 +56,7 @@ class CSV_ClickstreamDataset :
 
 def get_column_names(file_list) :
     with open(file_list[0]) as fh:
-        column_names = fh.readline().split("\t")
+        column_names = fh.readline().rstrip('\n').split("\t")
     return column_names
 
 
