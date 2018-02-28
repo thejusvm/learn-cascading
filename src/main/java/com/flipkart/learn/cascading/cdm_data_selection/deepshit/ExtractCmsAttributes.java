@@ -26,6 +26,7 @@ public class ExtractCmsAttributes implements SimpleFlow {
         FETCH_CONFIG.put("productId", null);
         FETCH_CONFIG.put("brand", null);
         FETCH_CONFIG.put("ideal_for", ImmutableSet.of("Women","Men","Women's","Men's","Girls","Boys","Baby","Girl's","Boy's","Kids","Adults","Couple","Junior","Senior","Unisex","Infants"));
+        FETCH_CONFIG.put("size", null);
         FETCH_CONFIG.put("type", null);
         FETCH_CONFIG.put("color", null);
         FETCH_CONFIG.put("pattern", null);
