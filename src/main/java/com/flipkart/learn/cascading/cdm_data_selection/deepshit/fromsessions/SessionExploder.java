@@ -73,7 +73,7 @@ public class SessionExploder implements SimpleFlow {
 
         public ExplodeSessions(Fields fields, int longShortThresholdInMinutes, int numNegativeProducts) {
             super(fields);
-            longShortTimestampThreshold = longShortThresholdInMinutes * 60 * 1000 * 1000; //mins * 60 sec * 1000 millis * 1000 nano
+            longShortTimestampThreshold = longShortThresholdInMinutes * 60 * 1000; //mins * 60 sec * 1000 millis
             this.numNegativeProducts = numNegativeProducts;
         }
 
@@ -157,7 +157,7 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000.filter/part-*", "data/sessionexplode-2017-0801.1000"};
+            args = new String[]{"data/sessions-20180220.1", "data/sessions-20180220.1.explode"};
         }
 
         PipeRunner runner = new PipeRunner("session-explode");
