@@ -31,6 +31,7 @@ public class AttributeMapToColumns extends SubAssembly {
         fieldToPrefix = new LinkedHashMap<>();
         fieldToPrefix.put(POSITIVE_PRODUCTS, "positive");
         fieldToPrefix.put(NEGATIVE_PRODUCTS, "negative");
+        fieldToPrefix.put(NEGATIVE_WITH_RANDOM_PRODUCTS, "negative_with_random");
         fieldToPrefix.put(UNIFORM_RANDOM_NEGATIVE_PRODUCTS, "uniform_random_negative");
         fieldToPrefix.put(IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS, "impression_random_negative");
         fieldToPrefix.put(PAST_CLICKED_SHORT_PRODUCTS, "clicked_short");

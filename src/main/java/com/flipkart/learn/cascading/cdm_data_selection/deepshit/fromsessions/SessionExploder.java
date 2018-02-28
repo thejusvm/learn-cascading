@@ -33,6 +33,7 @@ public class SessionExploder implements SimpleFlow {
     public static final String PAST_BOUGHT_PRODUCTS = "pastBoughtProducts";
     public static final String POSITIVE_PRODUCTS = "positiveProducts";
     public static final String NEGATIVE_PRODUCTS = "negativeProducts";
+    public static final String NEGATIVE_WITH_RANDOM_PRODUCTS = "negativeWithRandomProducts";
     public static final String UNIFORM_RANDOM_NEGATIVE_PRODUCTS = "uniformNegativeSampledProducts";
     public static final String IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS = "impressionsDistributedNegativeSampledProducts";
     public static final String ACTION = "action";

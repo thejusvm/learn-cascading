@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.NEGATIVE_PRODUCTS;
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.UNIFORM_RANDOM_NEGATIVE_PRODUCTS;
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS;
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
 public class NegativeSamplesGenerator extends SubAssembly {
 
@@ -48,7 +46,8 @@ public class NegativeSamplesGenerator extends SubAssembly {
             pipe = new JsonDecodeEach(pipe, negativeField, List.class);
         }
 
-        pipe = new Each(pipe, negativeField, new AddNegativeSamples(negativeField, numNegativeSamples, new UniformRandomSampler(integerizedAttributesPath)), Fields.SWAP);
+        Fields negativeWithRandom = new Fields(NEGATIVE_WITH_RANDOM_PRODUCTS);
+        pipe = new Each(pipe, negativeField, new AddNegativeSamples(negativeWithRandom, numNegativeSamples, new UniformRandomSampler(integerizedAttributesPath)), Fields.ALL);
 
         Fields uniformNegative = new Fields(UNIFORM_RANDOM_NEGATIVE_PRODUCTS);
         Fields zipfNegative = new Fields(IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS);
@@ -56,9 +55,10 @@ public class NegativeSamplesGenerator extends SubAssembly {
         pipe = new Each(pipe, Fields.NONE, new AddNegativeSamples(zipfNegative, numNegativeSamples, new CountBasedSampler(integerizedAttributesPath)), Fields.ALL);
 
         if(jsonify) {
-            pipe = new JsonEncodeEach(pipe, uniformNegative);
-            pipe = new JsonEncodeEach(pipe, zipfNegative);
             pipe = new JsonEncodeEach(pipe, negativeField);
+            pipe = new JsonEncodeEach(pipe, negativeWithRandom);
+            pipe = new JsonEncodeEach(pipe, zipfNegative);
+            pipe = new JsonEncodeEach(pipe, uniformNegative);
         }
 
         setTails(pipe);
