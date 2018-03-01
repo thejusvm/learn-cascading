@@ -221,6 +221,22 @@ public class CPRRow extends BaseOperation implements Function {
         }
 
 
+        Tuple productCardListingAttributes = (Tuple) entry.getObject(DataFields._PRODUCTCARDLISTINGATTRIBUTES);
+        if(productCardListingAttributes != null) {
+            if(mrp == null) {
+                mrp = productCardListingAttributes.getDouble(avroSchemaReader.getIndex(
+                        DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._MRP).get().getIdx());
+            }
+            if(fsp == null) {
+                fsp = productCardListingAttributes.getDouble(avroSchemaReader.getIndex(
+                        DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._FSP).get().getIdx());
+            }
+            if(finalPrice == null) {
+                finalPrice = productCardListingAttributes.getDouble(avroSchemaReader.getIndex(
+                        DataFields._PRODUCTPAGELISTINGATTRIBUTES, DataFields._FINALPRICE).get().getIdx());
+            }
+        }
+
         //Rest other signals
         Double productCardClicks = entry.getDouble(DataFields._PRODUCTCARDCLICKS);
         Double productPageViews = entry.getDouble(DataFields._PRODUCTPAGEVIEWS);

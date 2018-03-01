@@ -23,12 +23,11 @@ public class DataFields {
     public static final String _VERTICAL = "vertical";
     public static final String _BRAND = "brand";
 
+    public static final String _PRODUCTCARDLISTINGATTRIBUTES = "productCardListingAttributes";
+
     //product card attributes
     public static final String _PRODUCTCARDATTRIBUTES = "productCardAttributes";
     public static final String _POSITION = "position";
-
-    //product card listing attributes
-    public static final String _PRODUCTCARDLISTSINGATTRIBUTES = "productCardListingAttributes";
 
     //product page attributestimestamp
     public static final String _PRODUCTPAGEATTRIBUTES = "productPageAttributes";

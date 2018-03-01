@@ -6,6 +6,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -35,7 +36,7 @@ public class ProductObj implements Serializable {
     private String findingmethod;
 
     @JsonProperty(value = "attributes")
-    private Map<String, String> attributes;
+    private Map<String, Object> attributes;
 
     public ProductObj(@JsonProperty(value = "productId") String productId,
                       @JsonProperty(value = "timestamp") long timestamp,
@@ -43,7 +44,7 @@ public class ProductObj implements Serializable {
                       @JsonProperty(value = "click") float click,
                       @JsonProperty(value = "buy") float buy,
                       @JsonProperty(value = "findingmethod") String findingmethod,
-                      @JsonProperty(value = "attributes") Map<String, String> attributes) {
+                      @JsonProperty(value = "attributes") Map<String, Object> attributes) {
         this.productId = productId;
         this.timestamp = timestamp;
         this.date = format.format(new Date(timestamp));
@@ -94,8 +95,15 @@ public class ProductObj implements Serializable {
         return position;
     }
 
+    @JsonIgnore
     public Map<String, String> getAttributes() {
-        return attributes;
+        Map<String, String> stringAttributes = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> stringObjectEntry : attributes.entrySet()) {
+            if(stringObjectEntry.getValue() instanceof String){
+                stringAttributes.put(stringObjectEntry.getKey(), (String) stringObjectEntry.getValue());
+            }
+        }
+        return stringAttributes;
     }
 
     @Override

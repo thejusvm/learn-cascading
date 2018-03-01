@@ -76,9 +76,9 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 //            _DELIVERYDATE,
 //            _MINDELIVERYDATEEPOCHMS,
 //            _MAXDELIVERYDATEEPOCHMS,
-//            _MRP,
-//            _FINALPRICE,
-//            _FSP,
+            _MRP,
+            _FINALPRICE,
+            _FSP,
 //            _ISCODAVAILABLE,
 //            _DELIVERYSPEEDOPTIONS,
 //            _PREXOOFFERID,
@@ -211,10 +211,10 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         if(args.length == 0) {
             args = new String[] {
                     "flowName=session-data",
-                    "input=data/cdm-2017-0801.1000.avro",
-                    "output=data/session-2017-0801.1000",
+                    "input=data/impressionppv-20180210.10000",
+                    "output=data/session-20180210.10000",
                     "cmsInput=data/product-attributes.MOB/part-00000",
-                    "runId=sessions-2017-0801.1000"
+                    "runId=sessions-20180210.10000"
             };
         }
 
@@ -253,11 +253,15 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             float click = aggregatorCall.getArguments().getFloat(_PRODUCTCARDCLICKS);
             float buy = aggregatorCall.getArguments().getFloat(_BUYINTENT);
 
-            Map<String, String> productAttributes = new LinkedHashMap<>();
+            Map<String, Object> productAttributes = new LinkedHashMap<>();
             for (String attributeName : attributeNames) {
                 String attributeValue = aggregatorCall.getArguments().getString(attributeName);
                 productAttributes.put(attributeName, attributeValue);
             }
+
+            productAttributes.put(_FSP, aggregatorCall.getArguments().getDouble(_FSP));
+            productAttributes.put(_MRP, aggregatorCall.getArguments().getDouble(_MRP));
+            productAttributes.put(_FINALPRICE, aggregatorCall.getArguments().getDouble(_FINALPRICE));
 
             userContext.addToSession(sqid, searchQuery, new ProductObj(productId, timestamp, pos, click, buy, findingmethod, productAttributes));
         }
