@@ -49,16 +49,17 @@ public class NegativeSamplesGenerator extends SubAssembly {
         Fields negativeWithRandom = new Fields(NEGATIVE_WITH_RANDOM_PRODUCTS);
         pipe = new Each(pipe, negativeField, new AddNegativeSamples(negativeWithRandom, numNegativeSamples, new UniformRandomSampler(integerizedAttributesPath)), Fields.ALL);
 
-        Fields uniformNegative = new Fields(UNIFORM_RANDOM_NEGATIVE_PRODUCTS);
+        Fields negativeWithImpressionRandom = new Fields(NEGATIVE_WITH_IMPRESSION_RANDOM_PRODUCTS);
+        pipe = new Each(pipe, negativeField, new AddNegativeSamples(negativeWithImpressionRandom, numNegativeSamples, new CountBasedSampler(integerizedAttributesPath)), Fields.ALL);
+
         Fields zipfNegative = new Fields(IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS);
-        pipe = new Each(pipe, Fields.NONE, new AddNegativeSamples(uniformNegative, numNegativeSamples, new UniformRandomSampler(integerizedAttributesPath)), Fields.ALL);
         pipe = new Each(pipe, Fields.NONE, new AddNegativeSamples(zipfNegative, numNegativeSamples, new CountBasedSampler(integerizedAttributesPath)), Fields.ALL);
 
         if(jsonify) {
             pipe = new JsonEncodeEach(pipe, negativeField);
             pipe = new JsonEncodeEach(pipe, negativeWithRandom);
             pipe = new JsonEncodeEach(pipe, zipfNegative);
-            pipe = new JsonEncodeEach(pipe, uniformNegative);
+            pipe = new JsonEncodeEach(pipe, negativeWithImpressionRandom);
         }
 
         setTails(pipe);
