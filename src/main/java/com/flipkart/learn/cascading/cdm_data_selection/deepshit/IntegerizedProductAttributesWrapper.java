@@ -75,7 +75,7 @@ public class IntegerizedProductAttributesWrapper {
 
 
     public static void main(String[] args) throws IOException {
-        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("/Users/thejus/workspace/learn-cascading/data/sessions-2017100.products-int.1/integerized_attributes");
+        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("data/session-20180210.10000.explode.products-int/integerized_attributes/part-0");
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String next = scanner.next();

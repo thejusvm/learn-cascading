@@ -19,6 +19,7 @@ import com.flipkart.learn.cascading.commons.cascading.GenerateFieldsFromMap;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
+import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
 
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,14 @@ public class ProductsFromSessionExplode implements SimpleFlow {
         }
 
         pipe = new Every(pipe, enumFields, new Count());
+
+        for (String numericFeature : numericFeatures) {
+            Fields numericField = new Fields(numericFeature);
+            pipe = new TransformEach(pipe, numericField, x -> ((Number)x).intValue(), Fields.SWAP);
+        }
+
+        pipe = new TransformEach(pipe, new Fields("count"), x -> x, Fields.SWAP);
+
 
         return pipe;
     }
