@@ -10,17 +10,17 @@ import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
-import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
 public class AttributeMapToColumns extends SubAssembly {
@@ -129,7 +129,8 @@ public class AttributeMapToColumns extends SubAssembly {
             };
         }
 
-        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
+        List<String> fields = schema.getAllFeatureNames();
 
         AttributeMapToColumns prepPipe = null;
         prepPipe = new AttributeMapToColumns(fields);

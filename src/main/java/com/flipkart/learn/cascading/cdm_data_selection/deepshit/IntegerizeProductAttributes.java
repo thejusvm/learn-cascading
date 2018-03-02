@@ -2,9 +2,14 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 import com.flipkart.images.Container;
 import com.flipkart.images.FileProcessor;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.Feature;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.CountTracker;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -21,7 +26,7 @@ public class IntegerizeProductAttributes {
     private Map<String, DictIntegerizer> attributeToDict;
     Map<String, CountTracker> fieldToCountTracker = new LinkedHashMap<>();
     private String firstLine;
-    List<Pair<List<Integer>, Integer>> integerizedProductsAndCounts = new ArrayList<>();
+    List<Pair<List<Object>, Integer>> integerizedProductsAndCounts = new ArrayList<>();
 
     public IntegerizeProductAttributes() {
        attributeToDict = new HashMap<>();
@@ -42,12 +47,13 @@ public class IntegerizeProductAttributes {
         return attributeToDict.get(field);
     }
 
-    private void collectStatsFromFile(String inputFile) throws IOException {
+    private void collectStatsFromFile(String inputFile, FeatureSchema schema) throws IOException {
 
         FileProcessor.hdfsEachLine(inputFile, new Container<String>() {
 
             boolean first = true;
             List<String> fieldNames = null;
+            Set<Integer> ignoreIndexes = null;
             int countIndex = 0;
 
             private void initFieldData(Iterable<String> fieldNames) {
@@ -67,15 +73,26 @@ public class IntegerizeProductAttributes {
                 if (first) {
                     first = false;
                     fieldNames = Arrays.asList(line.split("\t"));
-                    countIndex = fieldNames.indexOf("count");
+
                     Set<String> fieldNamesSet = new HashSet<>(fieldNames);
+                    ignoreIndexes = new HashSet<>();
+
+                    List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.numeric);
+                    for (String numericFeature : numericFeatures) {
+                        ignoreIndexes.add(fieldNames.indexOf(numericFeature));
+                    }
+                    fieldNamesSet.removeAll(numericFeatures);
+
+                    countIndex = fieldNames.indexOf("count");
+                    ignoreIndexes.add(countIndex);
                     fieldNamesSet.remove("count");
+
                     initFieldData(fieldNamesSet);
                 } else {
                     String[] lineSplit = line.split("\t");
                     int count = Integer.parseInt(lineSplit[countIndex]);
                     for (int i = 0; i < fieldNames.size(); i++) {
-                        if(i == countIndex) {
+                        if(ignoreIndexes.contains(i)) {
                             continue;
                         }
                         String fieldName = fieldNames.get(i);
@@ -89,44 +106,41 @@ public class IntegerizeProductAttributes {
     }
 
 
-    private void collectStatsFromPath(String inputPath) throws IOException {
+    private void collectStatsFromPath(String inputPath, FeatureSchema schema) throws IOException {
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         for (int i = 0; i < files.size(); i++) {
             String inputFile = files.get(i);
-            collectStatsFromFile(inputFile);
+            collectStatsFromFile(inputFile, schema);
             System.out.println("stats collected from file : " + inputFile);
         }
         initDicts();
     }
 
-    private void processFile(String inputFile) throws IOException {
+    private void processFile(String inputFile, FeatureSchema schema) throws IOException {
         BufferedReader br = HdfsUtils.getReader(inputFile);
         try {
             firstLine = br.readLine();
 
-            List<String> fields = new ArrayList<>();
-            for (String split : firstLine.split("\t")) {
-                if(!"count".equals(split)) {
-                    fields.add(split);
-                }
-            }
-
+            List<String> fields = ImmutableList.copyOf(firstLine.split("\t"));
+            Set<String> enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.enumeration));
             int numFields = fields.size();
             while(true) {
                 String line = br.readLine();
                 if (line == null) break;
                 String[] values = line.split("\t");
-                List<Integer> intValues = new ArrayList<>();
-
+                List<Object> processedValues = new ArrayList<>();
                 for (int i = 0; i < numFields; i++) {
                     String field = fields.get(i);
-                    String value = values[i];
-                    DictIntegerizer fieldDict = getDict(field);
-                    intValues.add(fieldDict.only_get(value, MISSING_DATA_INDEX));
+                    if(enumFeatures.contains(field)) {
+                        String value = values[i];
+                        DictIntegerizer fieldDict = getDict(field);
+                        processedValues.add(fieldDict.only_get(value, MISSING_DATA_INDEX));
+                    } else {
+                        processedValues.add(values[i]);
+                    }
                 }
-                int count = Integer.parseInt(values[numFields]);
-                intValues.add(count);
-                integerizedProductsAndCounts.add(new ImmutablePair<>(intValues, count));
+                int count = Integer.parseInt(values[fields.indexOf("count")]);
+                integerizedProductsAndCounts.add(new ImmutablePair<>(processedValues, count));
             }
         } catch (Exception e) {
             br.close();
@@ -139,7 +153,7 @@ public class IntegerizeProductAttributes {
 
     private static ObjectMapper mapper = new ObjectMapper();
 
-    private void processPath(String inputPath, String outputPath) throws IOException {
+    private void processPath(String inputPath, String outputPath, FeatureSchema schema) throws IOException {
 
         HdfsUtils.cleanDir(outputPath);
 
@@ -151,12 +165,12 @@ public class IntegerizeProductAttributes {
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         for (int i = 0; i < files.size(); i++) {
             String inputFile = files.get(i);
-            processFile(inputFile);
+            processFile(inputFile, schema);
             System.out.println("processed file : " + inputFile);
         }
 
         integerizedProductsAndCounts.sort(Comparator.comparing(x -> -1 * x.getValue()));
-        List<List<Integer>> integerizedProducts = integerizedProductsAndCounts.stream().map(Pair::getKey).collect(Collectors.toList());
+        List<List<Object>> integerizedProducts = integerizedProductsAndCounts.stream().map(Pair::getKey).collect(Collectors.toList());
         writeIntegerizedAttributes(firstLine, integerizedProducts, attributeTuplesPath + "/part-0");
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
         writeCounts(fieldToCountTracker, countsTrackerPath);
@@ -192,11 +206,11 @@ public class IntegerizeProductAttributes {
     }
 
 
-    private static void writeIntegerizedAttributes(String firstLine, List<List<Integer>> integerizedProducts, String outputPath) throws IOException {
+    private static void writeIntegerizedAttributes(String firstLine, List<List<Object>> integerizedProducts, String outputPath) throws IOException {
         FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(outputPath, true);
         writer.write(firstLine + "\n");
         try {
-            for (List<Integer> integerizedProduct : integerizedProducts) {
+            for (List<Object> integerizedProduct : integerizedProducts) {
                 writer.write(Joiner.on("\t").join(integerizedProduct) + "\n");
             }
         } finally {
@@ -234,13 +248,14 @@ public class IntegerizeProductAttributes {
     }
 
     public static void flow(String inputPath, String outputPath) {
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
         IntegerizeProductAttributes integerizeProductAttributes = new IntegerizeProductAttributes();
         try {
-            integerizeProductAttributes.collectStatsFromPath(inputPath);
+            integerizeProductAttributes.collectStatsFromPath(inputPath, schema);
             System.out.println("---------------------------------------------");
             System.out.println("Done collecting stats");
             System.out.println("---------------------------------------------");
-            integerizeProductAttributes.processPath(inputPath, outputPath);
+            integerizeProductAttributes.processPath(inputPath, outputPath, schema);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -250,8 +265,8 @@ public class IntegerizeProductAttributes {
 
         if(args.length == 0) {
             args = new String[]{
-                    "data/sessions-2017100.products",
-                    "data/sessions-2017100.products-int.1",
+                    "data/session-20180210.10000.explode.products",
+                    "data/session-20180210.10000.explode.products-int",
             };
         }
 

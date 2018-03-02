@@ -2,11 +2,7 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
 import cascading.avro.AvroScheme;
 import cascading.flow.FlowDef;
-import cascading.flow.FlowProcess;
 import cascading.operation.AssertionLevel;
-import cascading.operation.BaseOperation;
-import cascading.operation.Filter;
-import cascading.operation.FilterCall;
 import cascading.operation.expression.ExpressionFilter;
 import cascading.pipe.Each;
 import cascading.pipe.Every;
@@ -20,13 +16,14 @@ import cascading.tap.Tap;
 import cascading.tap.hadoop.GlobHfs;
 import cascading.tap.hadoop.Hfs;
 import cascading.tuple.Fields;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.Feature;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
 import com.flipkart.learn.cascading.commons.cascading.SingleFieldListAggregator;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -48,7 +45,8 @@ public class SimpleSessionDataGenerator implements CascadingFlows, Serializable 
 
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
-        Pipe cdmRawPipe = getCDMPipe();
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
+        Pipe cdmRawPipe = getCDMPipe(schema.getFeaturesForSource(Feature.Source.CDM));
         cdmRawPipe = new Each(cdmRawPipe, new ExpressionFilter("(productCardClicks == 0)", Float.class));
         cdmRawPipe = new Retain(cdmRawPipe, new Fields(_ACCOUNTID, _PRODUCTID));
         cdmRawPipe = new Each(cdmRawPipe, new Fields(_PRODUCTID), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));

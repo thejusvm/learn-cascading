@@ -97,7 +97,7 @@ public class ExtractAttributePairs implements SimpleFlow {
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             SearchSessions searchSessions = (SearchSessions) functionCall.getArguments().getObject(0);
-            List<String> attributeList = new ArrayList<>();
+            List<Object> attributeList = new ArrayList<>();
 
             Collection<SearchSession> sessions = searchSessions.getSessions().values();
             for (SearchSession session : sessions) {

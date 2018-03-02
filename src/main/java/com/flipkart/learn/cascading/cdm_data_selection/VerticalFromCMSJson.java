@@ -8,80 +8,62 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 
 import cascading.tuple.TupleEntry;
-import com.esotericsoftware.kryo.util.ObjectMap;
-import org.apache.htrace.fasterxml.jackson.core.JsonParseException;
-import org.apache.htrace.fasterxml.jackson.databind.JsonMappingException;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.EnumFeature;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.Feature;
 import org.apache.htrace.fasterxml.jackson.databind.ObjectMapper;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by shubhranshu.shekhar on 28/06/17.
  */
 public class VerticalFromCMSJson extends BaseOperation implements Function {
 
-    private Map<String, Set<String>> fetchConfig;
-    private Map<String, String> renameConfig;
+
+    private List<Feature> features;
 
     public VerticalFromCMSJson(String[] attributes) {
-        this(toConfig(attributes), Collections.emptyMap());
+        this(toConfig(attributes));
     }
 
-    private static Map<String, Set<String>> toConfig(String[] attributes) {
-        Map<String, Set<String>> config = new HashMap<>();
+    private static List<Feature> toConfig(String[] attributes) {
+        List<Feature> config = new ArrayList<>();
         for (String attribute : attributes) {
-            config.put(attribute, null);
+            config.add(new EnumFeature(attribute, Feature.Source.CMS));
         }
         return config;
     }
 
     private static ObjectMapper mapper = new ObjectMapper();
 
-    public VerticalFromCMSJson(Map<String, Set<String>> fetchConfig, Map<String, String> renameConfig) {
-        super(new Fields(fetchConfig.keySet().toArray(new String[0])));
-        this.fetchConfig = fetchConfig;
-        this.renameConfig = renameConfig;
+    public VerticalFromCMSJson(List<Feature> cmsFeatures) {
+        super(new Fields(getSourceKeys(cmsFeatures)));
+        features = cmsFeatures;
+    }
+
+    private static String[] getSourceKeys(List<Feature> cmsFeatures) {
+        return cmsFeatures.stream().map(Feature::getSourceKey).collect(Collectors.toList()).toArray(new String[0]);
     }
 
     @Override
     public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
         TupleEntry arguments = functionCall.getArguments();
         String cmsJson = arguments.getString(DataFields._CMS);
-
         try {
             Map dataMap = mapper.readValue(cmsJson, Map.class);
             Tuple result = new Tuple();
-            for (String attribute : fetchConfig.keySet()) {
-                Set<String> allowedValues = fetchConfig.get(attribute);
-                List<String> attributeValues = (List<String>) dataMap.get(attribute);
+            for (Feature feature : features) {
+                List<String> attributeValues = (List<String>) dataMap.get(feature.getSourceKey());
+
                 String attributeValue = null;
                 if(attributeValues != null) {
                     attributeValue = attributeValues.get(0);
                 }
-                if(allowedValues != null && !allowedValues.contains(attributeValue)) {
-                    attributeValue = null;
-                }
-                if(attributeValue != null && !isClean(attributeValue)) {
-                    attributeValue = null;
-                }
-                if(attributeValue != null) {
-                    attributeValue = attributeValue.replaceAll(",", "").replaceAll("\t","");
 
-                }
-
-                if(attributeValue != null && renameConfig.containsKey(attributeValue)) {
-                    attributeValue = renameConfig.get(attributeValue);
-                }
-
-
-                if (attributeValue != null) {
-                    result.add(attributeValue);
-                } else {
-                    result.add("<missing-val>");
-                }
+                Object cleanedAttributeValue = feature.clean(attributeValue);
+                result.add(cleanedAttributeValue);
             }
             functionCall.getOutputCollector().add(result);
         } catch (IOException e) {
@@ -90,7 +72,4 @@ public class VerticalFromCMSJson extends BaseOperation implements Function {
 
     }
 
-    private boolean isClean(String attributeValue) {
-        return attributeValue.split(" ").length < 5;
-    }
 }

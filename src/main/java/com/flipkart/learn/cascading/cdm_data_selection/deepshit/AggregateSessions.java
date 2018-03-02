@@ -8,6 +8,8 @@ import cascading.pipe.assembly.Retain;
 import cascading.tuple.Fields;
 import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
@@ -39,7 +41,8 @@ public class AggregateSessions {
                 pid -> SessionDataGenerator.isLifeStyle((String) pid) ? 1 : 0, Fields.ALL);
         pipe = new Each(pipe, should_filter, new ExpressionFilter("(should_filter == 0)", Integer.class));
         pipe = new Discard(pipe, should_filter);
-        pipe = SessionDataGenerator.aggregateSessionsPipe(pipe, cmsInput, false);
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
+        pipe = SessionDataGenerator.aggregateSessionsPipe(pipe, cmsInput, schema, false);
         pipe = new Each(pipe, userContext, new SessionExploder.ExplodeSessions(EXPODED_FIELDS, defaultLongShortThresholdInMin, defaultNumNegativeProduct), Fields.ALL);
         pipe = new Retain(pipe, Fields.merge(new Fields(_ACCOUNTID), EXPODED_FIELDS));
         pipe = new JsonEncodeEach(pipe, EXPLODER_TO_ENCODE_FIELDS);

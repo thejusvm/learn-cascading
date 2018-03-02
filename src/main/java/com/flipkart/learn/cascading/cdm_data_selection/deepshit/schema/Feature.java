@@ -28,6 +28,10 @@ public abstract class Feature<T> implements Serializable {
         return featureName;
     }
 
+    public String getSourceKey() {
+        return featureName;
+    }
+
     public Source getSource() {
         return source;
     }

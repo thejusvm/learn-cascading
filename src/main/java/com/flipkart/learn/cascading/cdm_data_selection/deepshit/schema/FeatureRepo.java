@@ -36,7 +36,7 @@ public class FeatureRepo implements Serializable {
         lifestyleFeatureSchema.registerFeature(new EnumFeature("vertical", Feature.Source.CMS));
 
         lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._MRP, Feature.Source.CDM));
-        lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._FSN, Feature.Source.CDM));
+        lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._FSP, Feature.Source.CDM));
         lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._FINALPRICE, Feature.Source.CDM));
 
 

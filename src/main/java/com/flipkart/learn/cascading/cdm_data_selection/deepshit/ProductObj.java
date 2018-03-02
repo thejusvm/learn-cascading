@@ -96,14 +96,8 @@ public class ProductObj implements Serializable {
     }
 
     @JsonIgnore
-    public Map<String, String> getAttributes() {
-        Map<String, String> stringAttributes = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> stringObjectEntry : attributes.entrySet()) {
-            if(stringObjectEntry.getValue() instanceof String){
-                stringAttributes.put(stringObjectEntry.getKey(), (String) stringObjectEntry.getValue());
-            }
-        }
-        return stringAttributes;
+    public Map<String, Object> getAttributes() {
+        return attributes;
     }
 
     @Override

@@ -23,6 +23,9 @@ import cascading.tuple.Tuple;
 import com.flipkart.learn.cascading.cdm_data_selection.CPRRow;
 import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SplitTrainTest;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.Feature;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.CascadingFlow;
 import com.flipkart.learn.cascading.commons.CascadingFlows;
 import com.flipkart.learn.cascading.commons.CascadingRunner;
@@ -37,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
 
@@ -76,9 +80,9 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 //            _DELIVERYDATE,
 //            _MINDELIVERYDATEEPOCHMS,
 //            _MAXDELIVERYDATEEPOCHMS,
-            _MRP,
-            _FINALPRICE,
-            _FSP,
+//            _MRP,
+//            _FINALPRICE,
+//            _FSP,
 //            _ISCODAVAILABLE,
 //            _DELIVERYSPEEDOPTIONS,
 //            _PREXOOFFERID,
@@ -108,11 +112,13 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
     private String checkpointFile;
 
 
-    public static Pipe getCDMPipe() {
+    public static Pipe getCDMPipe(List<Feature> cdmFeatures) {
         Pipe cdmPipe = new Pipe("cdmPipe");
 
         cdmPipe = new Each(cdmPipe, Fields.ALL, new CPRRow(DataFields.cdmOutputFields), Fields.RESULTS);
-        cdmPipe = new Retain(cdmPipe, subFields);
+        String[] featuresArray = cdmFeatures.stream().map(Feature::getSourceKey).collect(Collectors.toList()).toArray(new String[0]);
+        Fields featureFields = new Fields(featuresArray);
+        cdmPipe = new Retain(cdmPipe, Fields.merge(subFields, featureFields));
         cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTCARDIMPRESSIONFILTER), new RegexFilter("true"));
         cdmPipe = new Each(cdmPipe, new Fields(_PRODUCTID), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));
         cdmPipe = new Discard(cdmPipe, new Fields(_PRODUCTCARDIMPRESSIONFILTER));
@@ -159,7 +165,9 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         Tap checkpointTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), checkpointFile, SinkMode.REPLACE);
         Tap outputTap = new Hfs(new TextDelimited(Fields.ALL, true, "\t"), options.get("output"), SinkMode.REPLACE);
 
-        Pipe cdmRawPipe = getCDMPipe();
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
+
+        Pipe cdmRawPipe = getCDMPipe(schema.getFeaturesForSource(Feature.Source.CDM));
 
         Pipe cmsPipe = new Pipe("attributePipe");
         cmsPipe = new Rename(cmsPipe, new Fields(_PRODUCTID), new Fields(_FSN));
@@ -171,7 +179,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                 new LeftJoin());
 
         Checkpoint checkpointPipe = new Checkpoint("checkpoint", cdmCmsPipe);
-        Pipe sessionPipe = aggregateSessionsPipe(checkpointPipe, cmsInput);
+        Pipe sessionPipe = aggregateSessionsPipe(checkpointPipe, cmsInput, schema);
 
         return FlowDef.flowDef().setName(options.get("flowName"))
                 .addSource(cdmRawPipe, inputData)
@@ -183,18 +191,17 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
     }
 
-    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput) {
-        return aggregateSessionsPipe(cmsCdmPipe, cmsInput, true);
+    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput, FeatureSchema schema) {
+        return aggregateSessionsPipe(cmsCdmPipe, cmsInput, schema,  true);
     }
 
-    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput, boolean shouldSerialize) {
-        String[] attributes = getAttributeFields(cmsInput);
+    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput, FeatureSchema schema, boolean shouldSerialize) {
         Pipe sessionPipe = new GroupBy(cmsCdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
 
-        sessionPipe = new Every(sessionPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), attributes), Fields.ALL);
+        sessionPipe = new Every(sessionPipe, new SessionDataAggregator(Fields.merge(userStats, userDayStats,userContext), schema), Fields.ALL);
         sessionPipe = new Each(sessionPipe, userStats, new ExpandUserStats(new Fields(NUM_DAYS, NUM_SESSIONS, NUM_IMPRESSIONS, NUM_CLICKS, NUM_BUYS)), Fields.ALL);
         sessionPipe = new Each(sessionPipe, new ExpressionFilter("(numClicks == 0)", Float.class));
 
@@ -223,11 +230,11 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
     public static class SessionDataAggregator extends BaseOperation<UserContext> implements Aggregator<UserContext>, Serializable {
 
-        private final String[] attributeNames;
+        private final FeatureSchema schema;
 
-        public SessionDataAggregator(Fields outputFields, String[] attributeNames) {
+        public SessionDataAggregator(Fields outputFields, FeatureSchema schema) {
             super(outputFields);
-            this.attributeNames = attributeNames;
+            this.schema = schema;
         }
 
         @Override
@@ -254,14 +261,17 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             float buy = aggregatorCall.getArguments().getFloat(_BUYINTENT);
 
             Map<String, Object> productAttributes = new LinkedHashMap<>();
-            for (String attributeName : attributeNames) {
-                String attributeValue = aggregatorCall.getArguments().getString(attributeName);
-                productAttributes.put(attributeName, attributeValue);
+            List<Feature> enumFeatures = schema.getFeaturesForType(Feature.FeatureType.enumeration);
+            for (Feature feature : enumFeatures) {
+                String featureValue = aggregatorCall.getArguments().getString(feature.getSourceKey());
+                productAttributes.put(feature.getFeatureName(), feature.clean(featureValue));
             }
 
-            productAttributes.put(_FSP, aggregatorCall.getArguments().getDouble(_FSP));
-            productAttributes.put(_MRP, aggregatorCall.getArguments().getDouble(_MRP));
-            productAttributes.put(_FINALPRICE, aggregatorCall.getArguments().getDouble(_FINALPRICE));
+            List<Feature> numericFeatures = schema.getFeaturesForType(Feature.FeatureType.numeric);
+            for (Feature feature : numericFeatures) {
+                double value = aggregatorCall.getArguments().getFloat(feature.getSourceKey());
+                productAttributes.put(feature.getFeatureName(), feature.clean(value));
+            }
 
             userContext.addToSession(sqid, searchQuery, new ProductObj(productId, timestamp, pos, click, buy, findingmethod, productAttributes));
         }

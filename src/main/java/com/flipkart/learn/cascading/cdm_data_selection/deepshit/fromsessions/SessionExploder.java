@@ -82,7 +82,7 @@ public class SessionExploder implements SimpleFlow {
             SearchSessions sessionsContainer = (SearchSessions) functionCall.getArguments().getObject(0);
             Collection<SearchSession> sessions = sessionsContainer.getSessions().values();
             List<ProductObj> pastClick = Collections.emptyList();
-            Map<String, Map<String, String>> pastBought = Collections.emptyMap();
+            Map<String, Map<String, Object>> pastBought = Collections.emptyMap();
             for (SearchSession session : sessions) {
                 long timestamp = session.getTimestamp();
                 String sqid = session.getSqid();
@@ -105,7 +105,7 @@ public class SessionExploder implements SimpleFlow {
                             .filter(productObj -> !dedupeNegativeProducts.contains(productObj.getProductId()))
                             .limit(numNegativeProducts)
                             .collect(Collectors.toList());
-                    List<Map<String, String>> negativeAttributes = negativeProducts
+                    List<Map<String, Object>> negativeAttributes = negativeProducts
                             .stream()
                             .map(ProductObj::getAttributes)
                             .collect(Collectors.toList());
@@ -157,7 +157,7 @@ public class SessionExploder implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/sessions-20180220.1", "data/sessions-20180220.1.explode"};
+            args = new String[]{"data/session-20180210.10000", "data/session-20180210.10000.explode"};
         }
 
         PipeRunner runner = new PipeRunner("session-explode");

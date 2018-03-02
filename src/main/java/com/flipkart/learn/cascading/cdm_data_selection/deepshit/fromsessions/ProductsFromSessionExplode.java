@@ -4,6 +4,7 @@ import cascading.flow.FlowProcess;
 import cascading.operation.BaseOperation;
 import cascading.operation.Function;
 import cascading.operation.FunctionCall;
+import cascading.operation.aggregator.Average;
 import cascading.operation.aggregator.Count;
 import cascading.pipe.Each;
 import cascading.pipe.Every;
@@ -11,24 +12,23 @@ import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.Feature;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.cascading.GenerateFieldsFromMap;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
-import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
-
 public class ProductsFromSessionExplode implements SimpleFlow {
 
-    private List<String> fields;
+    private FeatureSchema schema;
 
-    public ProductsFromSessionExplode(List<String> fields) {
-
-        this.fields = fields;
+    public ProductsFromSessionExplode(FeatureSchema schema) {
+        this.schema = schema;
     }
 
     @Override
@@ -40,9 +40,21 @@ public class ProductsFromSessionExplode implements SimpleFlow {
         pipe = new JsonDecodeEach(pipe, negProducts, List.class);
         Fields productAttributes = new Fields("ProductAttributes");
         pipe = new Each(pipe, Fields.merge(posProducts, negProducts), new FetchProductAttributes(productAttributes), Fields.RESULTS);
-        pipe = new Each(pipe, productAttributes, new GenerateFieldsFromMap(new Fields(fields.toArray(new String[0]))), Fields.RESULTS);
-        pipe = new GroupBy(pipe, Fields.ALL);
-        pipe = new Every(pipe, new Count());
+
+        Fields enumFields = new Fields(schema.getFeaturesNamesForType(Feature.FeatureType.enumeration).toArray(new String[0]));
+        List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.numeric);
+        Fields numericFields = new Fields(numericFeatures.toArray(new String[0]));
+
+        pipe = new Each(pipe, productAttributes, new GenerateFieldsFromMap(Fields.merge(enumFields, numericFields)), Fields.RESULTS);
+        pipe = new GroupBy(pipe, enumFields);
+
+        for (String numericFeature : numericFeatures) {
+            Fields numericField = new Fields(numericFeature);
+            pipe = new Every(pipe, numericField, new Average(numericField));
+        }
+
+        pipe = new Every(pipe, enumFields, new Count());
+
         return pipe;
     }
 
@@ -67,16 +79,15 @@ public class ProductsFromSessionExplode implements SimpleFlow {
         PipeRunner runner = new PipeRunner("session-explode");
         runner.setNumReducers(600);
 
-        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
-
-        ProductsFromSessionExplode productsFromExplode = new ProductsFromSessionExplode(fields);
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
+        ProductsFromSessionExplode productsFromExplode = new ProductsFromSessionExplode(schema);
 
         runner.executeHfs(productsFromExplode.getPipe(), input, output, true);
     }
 
     public static void main(String[] args) {
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000.aggsess/part-*", "data/products-from-sessions-explode.2017-0801.1000"};
+            args = new String[]{"data/session-20180210.10000.explode/part-*", "data/session-20180210.10000.explode.products"};
         }
 
         String input = args[0];

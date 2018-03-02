@@ -29,4 +29,18 @@ public class FeatureSchema implements Serializable {
                 .collect(Collectors.toList());
     }
 
+    public List<String> getFeaturesNamesForType(Feature.FeatureType featureType) {
+        return features.stream()
+                .filter(x -> featureType.equals(x.getFeatureType()))
+                .map(Feature::getFeatureName)
+                .collect(Collectors.toList());
+    }
+
+    public List<Feature> getAllFeatures() {
+        return features;
+    }
+
+    public List<String> getAllFeatureNames() {
+        return this.getAllFeatures().stream().map(Feature::getFeatureName).collect(Collectors.toList());
+    }
 }

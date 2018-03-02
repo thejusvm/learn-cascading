@@ -5,18 +5,18 @@ import cascading.pipe.SubAssembly;
 import cascading.pipe.assembly.Retain;
 import cascading.tuple.Fields;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.IntegerizeProductAttributes;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SerializableFunction;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields._TIMESTAMP;
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.ExtractCmsAttributes.FETCH_CONFIG;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
 
 public class SessionExplodeToPrep extends SubAssembly {
@@ -50,7 +50,8 @@ public class SessionExplodeToPrep extends SubAssembly {
     }
 
     public static void flow(String input, String productData, String output) {
-        List<String> fields = ImmutableList.copyOf(FETCH_CONFIG.keySet());
+        FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
+        List<String> fields = schema.getAllFeatureNames();
         SessionExplodeToPrep toPrep = new SessionExplodeToPrep(fields,productData);
         PipeRunner runner = new PipeRunner("prep_data");
         runner.setNumReducers(600);
