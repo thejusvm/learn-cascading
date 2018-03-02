@@ -4,13 +4,14 @@ import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.io.Serializable;
 import java.util.Map;
 
-public class FeatureRepo {
+public class FeatureRepo implements Serializable {
 
     private static FeatureSchema lifestyleFeatureSchema;
 
-    private static final String LIFESTYLE_KEY = "lifestyle";
+    public static final String LIFESTYLE_KEY = "lifestyle";
 
     private static Map<String, FeatureSchema> featureSchemaMap;
 

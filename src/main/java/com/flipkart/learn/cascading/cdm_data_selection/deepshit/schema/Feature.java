@@ -1,6 +1,8 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema;
 
-public abstract class Feature<T> {
+import java.io.Serializable;
+
+public abstract class Feature<T> implements Serializable {
 
     public enum Source {
         CMS, CDM

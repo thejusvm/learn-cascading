@@ -1,10 +1,11 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FeatureSchema {
+public class FeatureSchema implements Serializable {
 
     List<Feature> features;
 

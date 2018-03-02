@@ -3,6 +3,8 @@ package com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema;
 import java.util.Map;
 import java.util.Set;
 
+import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils.MISSING_DATA;
+
 public class EnumFeature extends Feature<String> {
 
     private final Set<String> allowedValues;
@@ -25,25 +27,17 @@ public class EnumFeature extends Feature<String> {
     @Override
     public String clean(Object attributeValueObj) {
         String attributeValue = (String) attributeValueObj;
+
+        if(attributeValue == null || !isClean(attributeValue)) {
+            return MISSING_DATA;
+        }
+
         if(allowedValues != null && !allowedValues.contains(attributeValue)) {
-            attributeValue = null;
-        }
-        if(attributeValue != null && !isClean(attributeValue)) {
-            attributeValue = null;
-        }
-        if(attributeValue != null) {
-            attributeValue = attributeValue.replaceAll(",", "").replaceAll("\t","");
-
+            return MISSING_DATA;
         }
 
-        if(attributeValue != null && renameConfig.containsKey(attributeValue)) {
-            attributeValue = renameConfig.get(attributeValue);
-        }
+        attributeValue = attributeValue.replaceAll(",", "").replaceAll("\t","");
+        return renameConfig == null ? attributeValue : renameConfig.getOrDefault(attributeValue, attributeValue);
 
-        if (attributeValue != null) {
-            return attributeValue;
-        } else {
-            return "<missing-val>";
-        }
     }
 }
