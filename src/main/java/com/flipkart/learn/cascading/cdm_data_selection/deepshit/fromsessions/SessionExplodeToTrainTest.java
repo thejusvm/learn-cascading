@@ -17,10 +17,10 @@ public class SessionExplodeToTrainTest {
 
         if(args.length == 0) {
             args = new String[]{
-                    "data/sessionexplode-2017-0801.1000",
-                    "data/sessions-2017100.products-int.1",
+                    "data/session-20180210.10000.explode",
+                    "data/session-20180210.10000.explode.products-int",
                     "2017-07-31",
-                    "data/sessionexplode-2017-0801.1000.tt.longshort"
+                    "data/session-20180210.10000.explode.split"
             };
         }
 
