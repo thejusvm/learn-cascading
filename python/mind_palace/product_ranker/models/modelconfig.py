@@ -28,7 +28,7 @@ class modelconfig :
 
         self.positive_col_prefix = "positive"
         self.negative_col_prefix = "negative_with_random"
-        self.click_col_prefix = "clicked_short"
+        self.click_col_prefixes = ["clicked_short", "clicked_long"]
         self.test_negative_col_prefix = "negative"
 
 

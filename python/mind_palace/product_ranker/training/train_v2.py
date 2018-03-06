@@ -276,7 +276,7 @@ if __name__ == '__main__' :
     parser.add_argument("--modelconfig.positive_col_prefix", type=str, default="positive")
     parser.add_argument("--modelconfig.negative_col_prefix", type=str, default="negative_with_random")
     parser.add_argument("--modelconfig.test_negative_col_prefix", type=str, default="negative_with_random")
-    parser.add_argument("--modelconfig.click_col_prefix", type=str, default="clicked_short")
+    parser.add_argument("--modelconfig.click_col_prefix", type=str, action='append', default=None)
 
     parser.add_argument("--attributeconfs", type=str, default="productId:30,brand:10")
     parser.add_argument("--ranking_attributes", type=str, default=None)

@@ -62,13 +62,22 @@ class softmax_model(model) :
     def feed_input(self, feature_names, inputs):
         ranking_attribute_names = [embeddingsrepo.attribute_name for embeddingsrepo in self.ranking_attributes_embeddingsrepo]
 
-        click_features = fetch_features(ranking_attribute_names, self.modelConf.click_col_prefix, feature_names, inputs)
-        if not self.modelConf.use_context:
-            click_features = tf.zeros_like(click_features)
-        self.click_embedder = ContextClickProductHandler(self.ranking_attributes_embeddingsrepo, click_features, self.model_config)
-        click_pooling_methods = {"mean": self.click_embedder.embeddings_mean, "sum": self.click_embedder.embeddings_sum}
-        self.click_embeddings = click_pooling_methods[self.model_config.click_pooling]
-        self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
+        self.click_embedders = []
+        self.click_embeddings = None
+        for click_col_prefix in self.modelConf.click_col_prefixes:
+            click_features = fetch_features(ranking_attribute_names, click_col_prefix, feature_names, inputs)
+            if not self.modelConf.use_context:
+                click_features = tf.zeros_like(click_features)
+            click_embedder = ContextClickProductHandler(self.ranking_attributes_embeddingsrepo, click_features, self.model_config)
+            self.click_embedders.append(click_embedder)
+            click_pooling_methods = {"mean": click_embedder.embeddings_mean, "sum": click_embedder.embeddings_sum}
+            click_embeddings = click_pooling_methods[self.model_config.click_pooling]
+            if self.click_embeddings is None:
+                self.click_embeddings = click_embeddings
+            else:
+                self.click_embeddings = self.click_embeddings + click_embeddings
+            self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
+
         self.context_embedding = self.click_embeddings
 
         postive_features = fetch_features(ranking_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)

@@ -51,8 +51,8 @@ sess.run(tf.global_variables_initializer())
 
 click_context_embedding_sum = np.array([[14] * product_emb_size + [44] * brand_emb_size, [26] * product_emb_size + [66] * brand_emb_size], dtype=float)
 positive_product_weights = np.array([[[1] * product_emb_size + [11] * brand_emb_size], [[4] * product_emb_size + [14] * brand_emb_size] ], dtype=float)
-positive_product_layer_1 = np.array([[[1] * product_emb_size + [11] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size]
-                                               , [[4] * product_emb_size + [14] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size]]
+positive_product_layer_1 = np.array([[[1] * product_emb_size + [11] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size]
+                                               , [[4] * product_emb_size + [14] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size]]
                                            , dtype=float)
 
 negative_product_weights = np.array([
@@ -75,26 +75,26 @@ negative_product_weights = np.array([
 
 negative_product_layer_1 = np.array([
     [
-        [0] * product_emb_size + [10] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size,
-        [0] * product_emb_size + [10] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size,
-        [0] * product_emb_size + [10] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size,
-        [4] * product_emb_size + [14] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size,
-        [3] * product_emb_size + [13] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size,
-        [6] * product_emb_size + [16] * brand_emb_size + [14] * product_emb_size + [44] * brand_emb_size
+        [0] * product_emb_size + [10] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size,
+        [0] * product_emb_size + [10] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size,
+        [0] * product_emb_size + [10] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size,
+        [4] * product_emb_size + [14] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size,
+        [3] * product_emb_size + [13] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size,
+        [6] * product_emb_size + [16] * brand_emb_size + [28] * product_emb_size + [88] * brand_emb_size
      ],[
-        [0] * product_emb_size + [10] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size,
-        [6] * product_emb_size + [16] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size,
-        [8] * product_emb_size + [18] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size,
-        [5] * product_emb_size + [15] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size,
-        [7] * product_emb_size + [17] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size,
-        [9] * product_emb_size + [19] * brand_emb_size + [26] * product_emb_size + [66] * brand_emb_size
+        [0] * product_emb_size + [10] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size,
+        [6] * product_emb_size + [16] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size,
+        [8] * product_emb_size + [18] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size,
+        [5] * product_emb_size + [15] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size,
+        [7] * product_emb_size + [17] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size,
+        [9] * product_emb_size + [19] * brand_emb_size + [52] * product_emb_size + [132] * brand_emb_size
      ]
 ], dtype=float)
 
 positive_handler = md.positive_handler.probability_fn #type:nn_probability
 negative_handler = md.negative_handler.probability_fn #type:nn_probability
 
-test_key_vals = [[md.click_embedder.embeddings_sum, click_context_embedding_sum, "context_sum"],
+test_key_vals = [[md.click_embedders[0].embeddings_sum, click_context_embedding_sum, "context_sum"],
                  [md.positive_embedder.weights, positive_product_weights, "positive_weights"],
                  [md.negative_embedder.weights, negative_product_weights, "negative_weights"],
                  [positive_handler.layer_1, positive_product_layer_1, "positive_layer_1"],
