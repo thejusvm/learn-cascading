@@ -76,8 +76,8 @@ class softmax_model(model) :
                 self.click_embeddings = click_embeddings
             else:
                 self.click_embeddings = self.click_embeddings + click_embeddings
-            self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
 
+        self.click_embeddings = tf.expand_dims(self.click_embeddings, 1)
         self.context_embedding = self.click_embeddings
 
         postive_features = fetch_features(ranking_attribute_names, self.modelConf.positive_col_prefix, feature_names, inputs)
