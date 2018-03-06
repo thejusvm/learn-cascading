@@ -40,7 +40,7 @@ negative_samples_test = [[0, 0, 0, 4, 3, 6], [0, 6, 8, 5, 7, 9]]
 context = [[2, 3, 9, 0, 0, 0], [6, 8, 5, 7, 0, 0]]
 bought = []
 
-feed_val_single = [positive_samples_test, negative_samples_test, negative_samples_test, negative_samples_test, context, context, bought]
+feed_val_single = [positive_samples_test, negative_samples_test, negative_samples_test, negative_samples_test, negative_samples_test, context, context, bought]
 feed_vals = feed_val_single + feed_val_single
 
 feature_names = generate_feature_names([x.name for x in mdl_conf.attributes_config], feature_prefixes=TRAINING_COL_PREFIXES)
