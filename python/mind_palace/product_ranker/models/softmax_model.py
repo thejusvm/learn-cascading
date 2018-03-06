@@ -124,9 +124,40 @@ class softmax_model(model) :
 
         self.batch_size = tf.shape(inputs[0])[0]
         self.sigmoid_loss = self.sigmoid_loss / tf.cast(self.batch_size, tf.float32)
+        self.metrics = Metrics(feature_names, inputs, self.modelConf, self.positive_handler, self.test_negative_handler)
 
-        self.loss_negative_handler = self.test_negative_handler
-        self.loss_positive_handler = self.positive_handler
+
+    def per_record_test_summaries(self):
+        return [["mean_reciprocal_rank_head", [self.metrics.head_mrr, self.metrics.head_count]],
+                ["mean_reciprocal_rank_tail", [self.metrics.tail_mrr, self.metrics.tail_count]]]
+
+    def test_summaries(self):
+        return [["loss", self.sigmoid_loss],
+                ["prec-1", self.metrics.prec_1],
+                ["probability", self.metrics.positive_mean_probability],
+                ["mean_rank", self.metrics.mean_rank],
+                ["mean_reciprocal_rank", self.metrics.mean_reciprocal_rank]]
+
+    def score(self):
+        return [["score", self.metrics.positive_score_vector],
+                ["xent", self.positive_handler.xent],
+                ["probability", self.metrics.positive_probability]]
+
+    def place_holders(self):
+        return []
+
+    def loss(self):
+        return self.sigmoid_loss
+
+    def minimize_step(self):
+        pass
+        # return self.train_step
+
+class Metrics:
+    def __init__(self, feature_names, inputs, model_config, positive_handler, negative_handler):
+        self.model_config = model_config
+        self.loss_positive_handler = positive_handler
+        self.loss_negative_handler = negative_handler
         self.max_negative_score = tf.reduce_max(self.loss_negative_handler.logits, reduction_indices = [1])
         self.max_negative_score = tf.reshape(self.max_negative_score, [tf.size(self.max_negative_score)])
 
@@ -146,7 +177,7 @@ class softmax_model(model) :
         self.positive_probability = tf.sigmoid(self.loss_positive_handler.logits)
         self.positive_mean_probability = tf.reduce_mean(self.positive_probability)
 
-        self.head_tail_id = fetch_features([self.model_config.head_tail_id], self.modelConf.positive_col_prefix, feature_names, inputs)[0]
+        self.head_tail_id = fetch_features([self.model_config.head_tail_id], self.model_config.positive_col_prefix, feature_names, inputs)[0]
         self.head_ids = tf.squeeze(tf.cast(tf.less(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
         self.tail_ids = tf.squeeze(tf.cast(tf.greater(self.head_tail_id, self.model_config.head_tail_split), tf.float32))
 
@@ -159,33 +190,6 @@ class softmax_model(model) :
         self.head_mrr = tf.reduce_sum(tf.multiply(self.reciprocal_rank_per_record, self.head_ids))
         self.tail_mrr = tf.reduce_sum(tf.multiply(self.reciprocal_rank_per_record, self.tail_ids))
 
-
-
-    def per_record_test_summaries(self):
-        return [["mean_reciprocal_rank_head", [self.head_mrr, self.head_count]],
-                ["mean_reciprocal_rank_tail", [self.tail_mrr, self.tail_count]]]
-
-    def test_summaries(self):
-        return [["loss", self.sigmoid_loss],
-                ["prec-1", self.prec_1],
-                ["probability", self.positive_mean_probability],
-                ["mean_rank", self.mean_rank],
-                ["mean_reciprocal_rank", self.mean_reciprocal_rank]]
-
-    def score(self):
-        return [["score", self.positive_score_vector],
-                ["xent", self.positive_handler.xent],
-                ["probability", self.positive_probability]]
-
-    def place_holders(self):
-        return []
-
-    def loss(self):
-        return self.sigmoid_loss
-
-    def minimize_step(self):
-        pass
-        # return self.train_step
 
 class to_probability :
     def __init__(self, modelconfig, weights_n_bias, context_embedding, positive = True):
