@@ -33,11 +33,14 @@ public class FeatureRepo implements Serializable {
         lifestyleFeatureSchema.registerFeature(new EnumFeature("fit", Feature.Source.CMS));
         lifestyleFeatureSchema.registerFeature(new EnumFeature("material", Feature.Source.CMS));
         lifestyleFeatureSchema.registerFeature(new EnumFeature("fabric", Feature.Source.CMS));
+        lifestyleFeatureSchema.registerFeature(new EnumFeature("pattern", Feature.Source.CMS));
+        lifestyleFeatureSchema.registerFeature(new EnumFeature("theme", Feature.Source.CMS));
         lifestyleFeatureSchema.registerFeature(new EnumFeature("vertical", Feature.Source.CMS));
 
         lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._MRP, Feature.Source.CDM));
         lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._FSP, Feature.Source.CDM));
         lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._FINALPRICE, Feature.Source.CDM));
+//        lifestyleFeatureSchema.registerFeature(new NumericFeature(DataFields._POSITION, Feature.Source.CDM));
 
 
         featureSchemaMap = ImmutableMap.of(LIFESTYLE_KEY, lifestyleFeatureSchema);
