@@ -31,7 +31,7 @@ public class VerticalFromCMSJson extends BaseOperation implements Function {
     private static List<Feature> toConfig(String[] attributes) {
         List<Feature> config = new ArrayList<>();
         for (String attribute : attributes) {
-            config.add(new EnumFeature(attribute, Feature.Source.CMS));
+            config.add(new EnumFeature(attribute, Feature.Source.CMS, Feature.Volatility.SLOW));
         }
         return config;
     }

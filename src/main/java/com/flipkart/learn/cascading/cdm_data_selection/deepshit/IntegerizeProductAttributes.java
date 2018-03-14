@@ -77,7 +77,7 @@ public class IntegerizeProductAttributes {
                     Set<String> fieldNamesSet = new HashSet<>(fieldNames);
                     ignoreIndexes = new HashSet<>();
 
-                    List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.numeric);
+                    List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.NUMERIC);
                     for (String numericFeature : numericFeatures) {
                         ignoreIndexes.add(fieldNames.indexOf(numericFeature));
                     }
@@ -122,7 +122,7 @@ public class IntegerizeProductAttributes {
             firstLine = br.readLine();
 
             List<String> fields = ImmutableList.copyOf(firstLine.split("\t"));
-            Set<String> enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.enumeration));
+            Set<String> enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.ENUMERATION));
             int numFields = fields.size();
             while(true) {
                 String line = br.readLine();

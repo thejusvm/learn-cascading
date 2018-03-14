@@ -262,13 +262,13 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             float buy = aggregatorCall.getArguments().getFloat(_BUYINTENT);
 
             Map<String, Object> productAttributes = new LinkedHashMap<>();
-            List<Feature> enumFeatures = schema.getFeaturesForType(Feature.FeatureType.enumeration);
+            List<Feature> enumFeatures = schema.getFeaturesForType(Feature.FeatureType.ENUMERATION);
             for (Feature feature : enumFeatures) {
                 String featureValue = aggregatorCall.getArguments().getString(feature.getSourceKey());
                 productAttributes.put(feature.getFeatureName(), feature.clean(featureValue));
             }
 
-            List<Feature> numericFeatures = schema.getFeaturesForType(Feature.FeatureType.numeric);
+            List<Feature> numericFeatures = schema.getFeaturesForType(Feature.FeatureType.NUMERIC);
             for (Feature feature : numericFeatures) {
                 double value = aggregatorCall.getArguments().getFloat(feature.getSourceKey());
                 productAttributes.put(feature.getFeatureName(), feature.clean(value));

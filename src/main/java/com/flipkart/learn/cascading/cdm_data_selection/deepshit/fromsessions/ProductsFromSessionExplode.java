@@ -42,8 +42,8 @@ public class ProductsFromSessionExplode implements SimpleFlow {
         Fields productAttributes = new Fields("ProductAttributes");
         pipe = new Each(pipe, Fields.merge(posProducts, negProducts), new FetchProductAttributes(productAttributes), Fields.RESULTS);
 
-        Fields enumFields = new Fields(schema.getFeaturesNamesForType(Feature.FeatureType.enumeration).toArray(new String[0]));
-        List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.numeric);
+        Fields enumFields = new Fields(schema.getFeaturesNamesForType(Feature.FeatureType.ENUMERATION).toArray(new String[0]));
+        List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.NUMERIC);
         Fields numericFields = new Fields(numericFeatures.toArray(new String[0]));
 
         pipe = new Each(pipe, productAttributes, new GenerateFieldsFromMap(Fields.merge(enumFields, numericFields)), Fields.RESULTS);

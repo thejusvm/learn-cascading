@@ -92,7 +92,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
             super(fields);
             this.attributeDictPath = attributeDictPath;
             this.schema = schema;
-            enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.enumeration));
+            enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.ENUMERATION));
         }
 
         private static synchronized void init(String attributeDictPath) throws IOException {

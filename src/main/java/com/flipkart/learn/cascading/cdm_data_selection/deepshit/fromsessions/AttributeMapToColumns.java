@@ -130,7 +130,7 @@ public class AttributeMapToColumns extends SubAssembly {
         }
 
         FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
-        List<String> fields = schema.getAllFeatureNames();
+        List<String> fields = schema.getFeatureNames();
 
         AttributeMapToColumns prepPipe = null;
         prepPipe = new AttributeMapToColumns(fields);

@@ -10,18 +10,26 @@ public class EnumFeature extends Feature<String> {
     private final Set<String> allowedValues;
     private final Map<String, String> renameConfig;
 
-    public EnumFeature(String featureName, Source source, Set<String> allowedValues, Map<String, String> renameConfig) {
-        super(featureName, source, FeatureType.enumeration);
+    public EnumFeature(String featureName, Source source, Volatility volatility, Set<String> allowedValues, Map<String, String> renameConfig) {
+        super(featureName, source, FeatureType.ENUMERATION, volatility);
         this.allowedValues = allowedValues;
         this.renameConfig = renameConfig;
     }
 
-    public EnumFeature(String featureName, Source source) {
-        this(featureName, source, null, null);
+    public EnumFeature(String featureName, Source source, Volatility volatility) {
+        this(featureName, source, volatility, null, null);
     }
 
     private boolean isClean(String attributeValue) {
         return attributeValue.split(" ").length < 5;
+    }
+
+    public Set<String> getAllowedValues() {
+        return allowedValues;
+    }
+
+    public Map<String, String> getRenameConfig() {
+        return renameConfig;
     }
 
     @Override

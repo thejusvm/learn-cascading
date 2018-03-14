@@ -51,7 +51,7 @@ public class SessionExplodeToPrep extends SubAssembly {
 
     public static void flow(String input, String productData, String output) {
         FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
-        List<String> fields = schema.getAllFeatureNames();
+        List<String> fields = schema.getFeatureNames();
         SessionExplodeToPrep toPrep = new SessionExplodeToPrep(fields,productData);
         PipeRunner runner = new PipeRunner("prep_data");
         runner.setNumReducers(600);

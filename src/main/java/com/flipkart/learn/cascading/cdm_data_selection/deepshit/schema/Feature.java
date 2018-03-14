@@ -9,7 +9,11 @@ public abstract class Feature<T> implements Serializable {
     }
 
     public enum FeatureType {
-        enumeration, numeric
+        ENUMERATION, NUMERIC
+    }
+
+    public enum Volatility {
+        FAST, SLOW
     }
 
     private final String featureName;
@@ -18,10 +22,13 @@ public abstract class Feature<T> implements Serializable {
 
     private final FeatureType featureType;
 
-    public Feature(String featureName, Source source, FeatureType featureType) {
+    private final Volatility volatility;
+
+    public Feature(String featureName, Source source, FeatureType featureType, Volatility volatility) {
         this.featureName = featureName;
         this.source = source;
         this.featureType = featureType;
+        this.volatility = volatility;
     }
 
     public String getFeatureName() {
@@ -38,6 +45,10 @@ public abstract class Feature<T> implements Serializable {
 
     public FeatureType getFeatureType() {
         return featureType;
+    }
+
+    public Volatility getVolatility() {
+        return volatility;
     }
 
     public abstract T clean(Object data);

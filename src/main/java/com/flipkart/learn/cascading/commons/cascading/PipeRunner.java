@@ -112,8 +112,8 @@ public class PipeRunner {
         properties.setProperty("mapred.reduce.tasks", "200");
         properties.setProperty("io.serializations", serialization);
         properties.setProperty("mapred.job.queue.name", "search_dev");
-        properties.setProperty("mapred.map.child.java.opts", "-Xmx1536m");
-        properties.setProperty("mapred.child.java.opts", "-Xmx1536m");
+        properties.setProperty("mapred.map.child.java.opts", "-Xmx1136m");
+        properties.setProperty("mapred.child.java.opts", "-Xmx1136m");
         properties.setProperty("mapreduce.task.timeout", "6000000");
 //        properties.setProperty("mapreduce.job.reduce.slowstart.completedmaps", "0.7");
 //        properties.setProperty("mapreduce.input.fileinputformat.split.maxsize", "2294967296");

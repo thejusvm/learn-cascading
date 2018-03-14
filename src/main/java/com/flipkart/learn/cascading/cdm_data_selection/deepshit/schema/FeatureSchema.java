@@ -1,5 +1,7 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class FeatureSchema implements Serializable {
 
-    List<Feature> features;
+    private List<Feature> features;
 
     public FeatureSchema() {
         features = new ArrayList<>();
@@ -36,11 +38,12 @@ public class FeatureSchema implements Serializable {
                 .collect(Collectors.toList());
     }
 
-    public List<Feature> getAllFeatures() {
+    public List<Feature> getFeatures() {
         return features;
     }
 
-    public List<String> getAllFeatureNames() {
-        return this.getAllFeatures().stream().map(Feature::getFeatureName).collect(Collectors.toList());
+    @JsonIgnore
+    public List<String> getFeatureNames() {
+        return this.getFeatures().stream().map(Feature::getFeatureName).collect(Collectors.toList());
     }
 }
