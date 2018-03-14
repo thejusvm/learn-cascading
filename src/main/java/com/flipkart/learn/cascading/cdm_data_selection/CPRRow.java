@@ -245,13 +245,19 @@ public class CPRRow extends BaseOperation implements Function {
         Double addToCartClicks = entry.getDouble(DataFields._ADDTOCARTCLICKS);
         Double buyNowClicks = entry.getDouble(DataFields._BUYNOWCLICKS);
 
+        double discountPrice = 0;
+        double discountPercent = 0;
+        if(fsp != null && finalPrice != null) {
+            discountPrice = fsp - finalPrice;
+            discountPercent = (fsp - finalPrice) * 100 / fsp ;
+        }
 
         if(productId != null) {
 
             Tuple result = new Tuple();
             result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, sqId, searchQuery, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
-                    deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, isCodAvailable,
+                    deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, discountPrice, discountPercent, isCodAvailable,
                     deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productPageListingIndex,
                     addToCartClicks, buyNowClicks, position, productCardImpressionsFilter);
             functionCall.getOutputCollector().add(result);

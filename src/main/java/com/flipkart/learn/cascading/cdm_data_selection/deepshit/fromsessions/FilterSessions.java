@@ -47,6 +47,7 @@ public class FilterSessions extends SubAssembly {
 
     private boolean match(ProductObj productObj) {
 
+        String[] lifeStylePrefixes = new String[]{"SAR"};
 //        return productObj.getProductId().startsWith("MOB");
         return Arrays.stream(lifeStylePrefixes).anyMatch(prefix -> productObj.getProductId().startsWith(prefix));
 

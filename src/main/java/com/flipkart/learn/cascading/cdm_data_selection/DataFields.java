@@ -66,6 +66,8 @@ public class DataFields {
     public static final String _MAXDELIVERYDATEEPOCHMS = "maxDeliveryDateEpochMs";
     public static final String _MRP = "mrp";
     public static final String _FINALPRICE = "finalPrice";
+    public static final String _DISCOUNTPERCENT = "discountPercent";
+    public static final String _DISCOUNTPRICE = "discountPrice";
     public static final String _FSP = "fsp";
     public static final String _SELLERID = "sellerId";
     public static final String _ISCODAVAILABLE = "isCodAvailable";
@@ -118,6 +120,8 @@ public class DataFields {
             _MRP,
             _FINALPRICE,
             _FSP,
+            _DISCOUNTPRICE,
+            _DISCOUNTPERCENT,
             _ISCODAVAILABLE,
             _DELIVERYSPEEDOPTIONS,
             _PREXOOFFERID,
