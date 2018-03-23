@@ -25,6 +25,7 @@ public class IntegerizeProductAttributes {
 
     private Map<String, DictIntegerizer> attributeToDict;
     Map<String, CountTracker> fieldToCountTracker = new LinkedHashMap<>();
+    Map<String, PivotedStatsTracker> numericfieldToStatsTracker = new LinkedHashMap<>();
     private String firstLine;
     List<Pair<List<Object>, Integer>> integerizedProductsAndCounts = new ArrayList<>();
     private int mincount = -1;
@@ -59,9 +60,10 @@ public class IntegerizeProductAttributes {
             boolean first = true;
             List<String> fieldNames = null;
             Set<Integer> ignoreIndexes = null;
+            Set<Integer> numericIndexes = null;
             int countIndex = 0;
 
-            private void initFieldData(Iterable<String> fieldNames) {
+            private void initEnumFieldData(Iterable<String> fieldNames) {
                 for (String fieldName : fieldNames) {
                     if(!fieldToCountTracker.containsKey(fieldName)) {
                         fieldToCountTracker.put(fieldName, new CountTracker());
@@ -69,8 +71,21 @@ public class IntegerizeProductAttributes {
                 }
             }
 
+            private void initNumericFieldData(List<String> numericFeatures) {
+                for (String numericFeature : numericFeatures) {
+                    if(!numericfieldToStatsTracker.containsKey(numericFeature)) {
+                        numericfieldToStatsTracker.put(numericFeature, new PivotedStatsTracker(numericFeature));
+                    }
+                }
+
+            }
+
             private void inc(String fieldName, String val, int count) {
                 fieldToCountTracker.get(fieldName).add(val.toLowerCase(), count);
+            }
+
+            private void trackStats(String fieldName, float val, int count) {
+                numericfieldToStatsTracker.get(fieldName).track(val);
             }
 
             @Override
@@ -81,10 +96,12 @@ public class IntegerizeProductAttributes {
 
                     Set<String> fieldNamesSet = new HashSet<>(fieldNames);
                     ignoreIndexes = new HashSet<>();
+                    numericIndexes = new HashSet<>();
 
                     List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.NUMERIC);
                     for (String numericFeature : numericFeatures) {
                         ignoreIndexes.add(fieldNames.indexOf(numericFeature));
+                        numericIndexes.add(fieldNames.indexOf(numericFeature));
                     }
                     fieldNamesSet.removeAll(numericFeatures);
 
@@ -92,17 +109,22 @@ public class IntegerizeProductAttributes {
                     ignoreIndexes.add(countIndex);
                     fieldNamesSet.remove("count");
 
-                    initFieldData(fieldNamesSet);
+                    initEnumFieldData(fieldNamesSet);
+                    initNumericFieldData(numericFeatures);
                 } else {
                     String[] lineSplit = line.split("\t");
                     int count = Integer.parseInt(lineSplit[countIndex]);
                     for (int i = 0; i < fieldNames.size(); i++) {
-                        if(ignoreIndexes.contains(i)) {
-                            continue;
+                        if(numericIndexes.contains(i)) {
+                            String fieldName = fieldNames.get(i);
+                            String fieldVal = lineSplit[i];
+                            trackStats(fieldName, Float.parseFloat(fieldVal), count);
                         }
-                        String fieldName = fieldNames.get(i);
-                        String fieldVal = lineSplit[i];
-                        inc(fieldName, fieldVal, count);
+                        if(!ignoreIndexes.contains(i)) { //same as isEnumField?
+                            String fieldName = fieldNames.get(i);
+                            String fieldVal = lineSplit[i];
+                            inc(fieldName, fieldVal, count);
+                        }
                     }
                 }
             }
@@ -179,12 +201,7 @@ public class IntegerizeProductAttributes {
         writeIntegerizedAttributes(firstLine, integerizedProducts, attributeTuplesPath + "/part-0");
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
         writeCounts(fieldToCountTracker, countsTrackerPath);
-        Map<String, Integer> attributesSummary = new HashMap<>();
-        for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
-            attributesSummary.put(attributeToDict.getKey(), attributeToDict.getValue().getCurrentCount());
-            System.out.println("attribute : " + attributeToDict.getKey() + ", size : " + attributeToDict.getValue().getCurrentCount());
-        }
-        writeSummary(attributeSummaryPath, attributesSummary);
+        writeSummary(attributeSummaryPath, schema);
 
     }
 
@@ -225,7 +242,29 @@ public class IntegerizeProductAttributes {
 
     }
 
-    private void writeSummary(String attributeSummaryPath, Map<String, Integer> attributesSummary) throws IOException {
+    private void writeSummary(String attributeSummaryPath, FeatureSchema schema) throws IOException {
+
+        Map<String, Map<String, Object>> attributesSummary = new HashMap<>();
+
+        for (Feature feature : schema.getFeatures()) {
+
+            String featureName = feature.getFeatureName();
+            Feature.FeatureType featuretype = feature.getFeatureType();
+            Map<String, Object> attributeSummary = new HashMap<>();
+            attributesSummary.put(featureName, attributeSummary);
+            attributeSummary.put("featureType", featuretype);
+
+            if(feature.getFeatureType() == Feature.FeatureType.ENUMERATION) {
+                DictIntegerizer di = attributeToDict.get(featureName);
+                int count = di.getCurrentCount();
+                attributeSummary.put("count", count);
+            } else if(feature.getFeatureType() == Feature.FeatureType.NUMERIC) {
+                PivotedStatsTracker statsTracker = numericfieldToStatsTracker.get(featureName);
+                attributeSummary.put("stats", statsTracker.getDefaultPivotedStats());
+            }
+            System.out.println("attribute : " + attributeSummary);
+        }
+
         String summaryString = mapper.writeValueAsString(attributesSummary);
         FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(attributeSummaryPath, false);
         try {
