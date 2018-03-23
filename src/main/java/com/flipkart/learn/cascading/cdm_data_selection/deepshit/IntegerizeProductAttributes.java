@@ -27,6 +27,11 @@ public class IntegerizeProductAttributes {
     Map<String, CountTracker> fieldToCountTracker = new LinkedHashMap<>();
     private String firstLine;
     List<Pair<List<Object>, Integer>> integerizedProductsAndCounts = new ArrayList<>();
+    private int mincount = -1;
+
+    public void setMincount(int mincount) {
+        this.mincount = mincount;
+    }
 
     public IntegerizeProductAttributes() {
        attributeToDict = new HashMap<>();
@@ -39,7 +44,7 @@ public class IntegerizeProductAttributes {
             }
             CountTracker countTracker = fieldToCountTracker.get(field);
             DictIntegerizer dict = attributeToDict.get(field);
-            countTracker.getValsSortedByCount().forEach(dict::get);
+            countTracker.getValsSortedByCount(mincount).forEach(dict::get);
         }
     }
 
@@ -250,6 +255,7 @@ public class IntegerizeProductAttributes {
     public static void flow(String inputPath, String outputPath) {
         FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
         IntegerizeProductAttributes integerizeProductAttributes = new IntegerizeProductAttributes();
+//        integerizeProductAttributes.setMincount(30);
         try {
             integerizeProductAttributes.collectStatsFromPath(inputPath, schema);
             System.out.println("---------------------------------------------");
