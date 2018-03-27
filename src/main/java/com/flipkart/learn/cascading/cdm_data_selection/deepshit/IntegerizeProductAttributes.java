@@ -318,9 +318,14 @@ public class IntegerizeProductAttributes {
     }
 
     public static void flow(String inputPath, String outputPath) {
+        flow(inputPath, outputPath, -1);
+    }
+
+    public static void flow(String inputPath, String outputPath, int minCount) {
         FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
         IntegerizeProductAttributes integerizeProductAttributes = new IntegerizeProductAttributes();
-//        integerizeProductAttributes.setMincount(30);
+
+        integerizeProductAttributes.setMincount(minCount);
         try {
             integerizeProductAttributes.collectStatsFromPath(inputPath, schema);
             System.out.println("---------------------------------------------");
@@ -338,13 +343,18 @@ public class IntegerizeProductAttributes {
             args = new String[]{
                     "data/session-20180210.10000.explode.products",
                     "data/session-20180210.10000.explode.products-int",
+//                    "10"
             };
         }
 
         String inputPath = args[0];
         String outputPath = args[1];
 
-        flow(inputPath, outputPath);
+        if(args.length == 2) {
+            flow(inputPath, outputPath);
+        } else {
+            flow(inputPath, outputPath, Integer.parseInt(args[2]));
+        }
     }
 
 }
