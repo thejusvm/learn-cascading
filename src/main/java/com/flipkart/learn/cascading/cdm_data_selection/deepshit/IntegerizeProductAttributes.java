@@ -188,6 +188,7 @@ public class IntegerizeProductAttributes {
         String attributeDictsPath = getAttributeDictsPath(outputPath);
         String countsTrackerPath = getCountsTrackerPath(outputPath);
         String attributeSummaryPath = getAttributeSummaryPath(outputPath);
+        String attributeSummaryV1Path = getAttributeSummaryV1Path(outputPath);
 
         List<String> files = HdfsUtils.listFiles(inputPath, 1);
         for (int i = 0; i < files.size(); i++) {
@@ -201,7 +202,8 @@ public class IntegerizeProductAttributes {
         writeIntegerizedAttributes(firstLine, integerizedProducts, attributeTuplesPath + "/part-0");
         DictIntegerizerUtils.writeAttributeDicts(attributeToDict.values(), attributeDictsPath);
         writeCounts(fieldToCountTracker, countsTrackerPath);
-        writeSummary(attributeSummaryPath, schema);
+        writeSummary(attributeSummaryPath);
+        writeV1Summary(attributeSummaryV1Path, schema);
 
     }
 
@@ -242,7 +244,27 @@ public class IntegerizeProductAttributes {
 
     }
 
-    private void writeSummary(String attributeSummaryPath, FeatureSchema schema) throws IOException {
+    private void writeSummary(String attributeSummaryPath) throws IOException {
+
+        Map<String, Integer> attributesSummary = new HashMap<>();
+        for (Map.Entry<String, DictIntegerizer> attributeToDict : attributeToDict.entrySet()) {
+            attributesSummary.put(attributeToDict.getKey(), attributeToDict.getValue().getCurrentCount());
+            System.out.println("attribute : " + attributeToDict.getKey() + ", size : " + attributeToDict.getValue().getCurrentCount());
+        }
+
+        String summaryString = mapper.writeValueAsString(attributesSummary);
+
+        FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(attributeSummaryPath, false);
+        try {
+            writer.write(summaryString);
+        } finally {
+            writer.flush();
+            writer.close();
+        }
+
+    }
+
+    private void writeV1Summary(String attributeSummaryPath, FeatureSchema schema) throws IOException {
 
         Map<String, Map<String, Object>> attributesSummary = new HashMap<>();
 
@@ -277,6 +299,10 @@ public class IntegerizeProductAttributes {
 
     public static String getAttributeSummaryPath(String outputPath) {
         return outputPath + "/attribute_summary";
+    }
+
+    public static String getAttributeSummaryV1Path(String outputPath) {
+        return outputPath + "/attribute_summary.v1";
     }
 
     public static String getAttributeDictsPath(String outputPath) {
