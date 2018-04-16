@@ -12,31 +12,27 @@ import cascading.pipe.Pipe;
 import cascading.pipe.assembly.Retain;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.ProductObj;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SearchSession;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SearchSessions;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
 import com.flipkart.learn.cascading.commons.cascading.SimpleFlow;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
-import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonEncodeEach;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import org.apache.commons.math3.util.Pair;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator.lifeStylePrefixes;
-
 public class ExtractAttributePairs implements SimpleFlow {
 
     public final static String ATTRIBUTE_CHAIN = "attributeChain";
+    public final static String COUNT = "count";
+    public final static String attribute_1 = "attribute_1";
+    public final static String attribute_2 = "attribute_";
+
     private String attribute;
 
     public ExtractAttributePairs(String attribute) {
@@ -51,13 +47,13 @@ public class ExtractAttributePairs implements SimpleFlow {
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
         pipe = new Each(pipe, userContext, new AttributeChainExtract(queryChain, attribute), Fields.ALL);
         pipe = new Retain(pipe, queryChain);
-        String attribute_1 = "attribute_1";
-        String attribute_2 = "attribute_2";
         Fields attributes = new Fields(attribute_1, attribute_2);
         pipe = new Each(pipe, queryChain, new GeneratePairs(new Fields(attribute_1, attribute_2)), Fields.ALL);
         pipe = new Retain(pipe, attributes);
         pipe = new GroupBy(pipe, attributes);
-        pipe = new Every(pipe, attributes, new Count());
+        Fields count = new Fields(COUNT);
+        pipe = new Every(pipe, attributes, new Count(count));
+        pipe = new GroupBy(pipe, Fields.NONE, count);
         return pipe;
     }
 
@@ -89,11 +85,6 @@ public class ExtractAttributePairs implements SimpleFlow {
             this.attribute = attribute;
         }
 
-        private boolean isLifestyleProduct(ProductObj productObj) {
-            return Iterables.any(ImmutableSet.<String>copyOf(lifeStylePrefixes), x -> productObj.getProductId().startsWith(x));
-
-        }
-
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             SearchSessions searchSessions = (SearchSessions) functionCall.getArguments().getObject(0);
@@ -102,7 +93,6 @@ public class ExtractAttributePairs implements SimpleFlow {
             Collection<SearchSession> sessions = searchSessions.getSessions().values();
             for (SearchSession session : sessions) {
                 session.getClickedProduct().stream()
-                        .filter(this::isLifestyleProduct)
                         .map(productObj -> new Pair<>(productObj.getProductId(), productObj.getAttributes().get(attribute)))
                         .distinct()
                         .map(Pair::getSecond)
@@ -118,7 +108,7 @@ public class ExtractAttributePairs implements SimpleFlow {
     public static void main(String[] args) {
 
         if(args.length == 0) {
-            args = new String[]{"data/session-2017-0801.1000", "data/brandChains-2017-0801.1000", "brand"};
+            args = new String[]{"data/session-20180210.10000", "data/session-20180210.10000.productId", "productId"};
         }
 
         PipeRunner runner = new PipeRunner("query-chain");
