@@ -31,7 +31,7 @@ public class ExtractAttributePairs implements SimpleFlow {
     public final static String ATTRIBUTE_CHAIN = "attributeChain";
     public final static String COUNT = "count";
     public final static String attribute_1 = "attribute_1";
-    public final static String attribute_2 = "attribute_";
+    public final static String attribute_2 = "attribute_2";
 
     private String attribute;
 
