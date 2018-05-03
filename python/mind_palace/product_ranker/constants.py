@@ -1,7 +1,7 @@
 
 
 PAD_TEXT = "<pad>"
-DEFAULT_CLICK_TEXT = "<defaultclick>"
+DEFAULT_CLICK_TEXT = "<default>"
 MISSING_DATA_TEXT = "<missing-val>"
 
 OUTPUTS_PER_ATTRIBUTE = ["positive", "negative", "clicked", "bought"]
@@ -14,4 +14,4 @@ DEFAULT_DICT_KEYS = [PAD_TEXT, MISSING_DATA_TEXT, DEFAULT_CLICK_TEXT]
 
 # COL_PREFIXES = tuple([POSITIVE_COL_PREFIX, NEGATIVE_COL_PREFIX, CLICK_COL_PRERFIX, BOUGHT_COL_PREFIX])
 # TRAINING_COL_PREFIXES = tuple(["positive", "negative", "clicked", "bought"])
-TRAINING_COL_PREFIXES = tuple(["positive", "negative", "negative_with_random", "negative_with_impression_random", "impression_random", "clicked_short", "clicked_long", "bought"])
+TRAINING_COL_PREFIXES = tuple(["positive", "negative", "clicked_short", "clicked_long", "bought"])

@@ -13,7 +13,7 @@ public class DictIntegerizerUtils {
 
     public static String PAD = "<pad>";
     public static String MISSING_DATA = "<missing-val>";
-    public static String DEFAULT_CLICK = "<defaultclick>";
+    public static String DEFAULT_CLICK = "<default>";
     public static String[] DEFAULT_DICT_KEYS = new String[] {PAD, MISSING_DATA, DEFAULT_CLICK};
 
     public static int MISSING_DATA_INDEX = 1;

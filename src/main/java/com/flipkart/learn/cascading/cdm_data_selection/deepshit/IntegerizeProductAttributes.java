@@ -229,6 +229,20 @@ public class IntegerizeProductAttributes {
         termDictWriter.close();
     }
 
+    private static List<Integer> getCountsList(CountTracker countTracker, DictIntegerizer dictIntegerizer) throws IOException {
+        List<org.apache.commons.math3.util.Pair<String, Integer>> terms = countTracker.getSortedByCount();
+        int numterms = dictIntegerizer.getCurrentCount();
+        Integer[] counts = new Integer[numterms];
+        Arrays.fill(counts, 0);
+        for (org.apache.commons.math3.util.Pair<String, Integer> termCount : terms) {
+            String term = termCount.getKey();
+            Integer count = termCount.getValue();
+            int position = dictIntegerizer.only_get(term, -1);
+            counts[position] = count;
+        }
+        return ImmutableList.copyOf(counts);
+    }
+
 
     private static void writeIntegerizedAttributes(String firstLine, List<List<Object>> integerizedProducts, String outputPath) throws IOException {
         FileProcessor.HDFSSyncWriter writer = new FileProcessor.HDFSSyncWriter(outputPath, true);
@@ -279,12 +293,17 @@ public class IntegerizeProductAttributes {
             if(feature.getFeatureType() == Feature.FeatureType.ENUMERATION) {
                 DictIntegerizer di = attributeToDict.get(featureName);
                 int count = di.getCurrentCount();
-                attributeSummary.put("count", count);
+                attributeSummary.put("num_terms", count);
+
+                CountTracker countTracker = fieldToCountTracker.get(featureName);
+                List<Integer> termCounts = getCountsList(countTracker, di);
+                attributeSummary.put("term_counts", termCounts);
+
             } else if(feature.getFeatureType() == Feature.FeatureType.NUMERIC) {
                 PivotedStatsTracker statsTracker = numericfieldToStatsTracker.get(featureName);
                 attributeSummary.put("stats", statsTracker.getDefaultPivotedStats());
             }
-            System.out.println("attribute : " + attributeSummary);
+//            System.out.println("attribute : " + attributeSummary);
         }
 
         String summaryString = mapper.writeValueAsString(attributesSummary);
