@@ -59,12 +59,15 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             _PLATFORM,
             _SESSIONID,
             _VISITORID,
+            _PINCODE,
 //            _FETCHID,
             _FINDINGMETHOD,
             _TIMESTAMP,
             _SEARCHQUERYID,
             _ORIGINALSEARCHQUERY,
             _RESPONSESTOREPATH,
+            _FILTERSAPPLIED,
+            _SORT,
             _PRODUCTID,
 //            _ISVIDEOAVAILABLE,
 //            _ISIMAGESAVAILABLE,
@@ -256,6 +259,9 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             String sqid = aggregatorCall.getArguments().getString(_SEARCHQUERYID);
             String searchQuery = aggregatorCall.getArguments().getString(_ORIGINALSEARCHQUERY);
             String responseStorePath = aggregatorCall.getArguments().getString(_RESPONSESTOREPATH);
+            int pincode = aggregatorCall.getArguments().getInteger(_PINCODE);
+            List filtersApplied = (List) aggregatorCall.getArguments().getObject(_FILTERSAPPLIED);
+            String sortBy = aggregatorCall.getArguments().getString(_SORT);
             String findingmethod = aggregatorCall.getArguments().getString(_FINDINGMETHOD);
             String productId = aggregatorCall.getArguments().getString(_PRODUCTID);
             int pos = aggregatorCall.getArguments().getInteger(_POSITION);
@@ -276,7 +282,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                 productAttributes.put(feature.getFeatureName(), feature.clean(value));
             }
 
-            RequestContext reqContext = new RequestContext(searchQuery, responseStorePath);
+            RequestContext reqContext = new RequestContext(searchQuery, responseStorePath, filtersApplied, sortBy, pincode);
             userContext.addToSession(sqid, reqContext, new ProductObj(productId, timestamp, pos, click, buy, findingmethod, productAttributes));
         }
 

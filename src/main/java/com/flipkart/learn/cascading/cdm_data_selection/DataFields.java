@@ -13,6 +13,7 @@ public class DataFields {
     public static final String _SESSIONID = "sessionId";
     public static final String _ACCOUNTID = "accountId";
     public static final String _VISITORID = "visitorId";
+    public static final String _PINCODE = "pincode";
 
     //finding method
     public static final String _FINDINGMETHOD = "findingMethod";
@@ -55,6 +56,8 @@ public class DataFields {
     public static final String _ORIGINALSEARCHQUERY = "originalSearchQuery";
     public static final String _REQSTOREPATH = "searchRequestStorePath";
     public static final String _RESPONSESTOREPATH = "searchResponseStorePath";
+    public static final String _FILTERSAPPLIED = "filtersApplied";
+    public static final String _SORT = "sortBy";
 
     //product page listing attributes
     public static final String _PRODUCTPAGELISTINGATTRIBUTES = "productPageListingAttributes";//parent node
@@ -96,6 +99,7 @@ public class DataFields {
             _SESSIONID,
             _ACCOUNTID,
             _VISITORID,
+            _PINCODE,
             _FETCHID,
             _TIMESTAMP,
             _PLATFORM,
@@ -105,6 +109,8 @@ public class DataFields {
             _ORIGINALSEARCHQUERY,
             _REQSTOREPATH,
             _RESPONSESTOREPATH,
+            _FILTERSAPPLIED,
+            _SORT,
             _PRODUCTID,
             _ISVIDEOAVAILABLE,
             _ISIMAGESAVAILABLE,

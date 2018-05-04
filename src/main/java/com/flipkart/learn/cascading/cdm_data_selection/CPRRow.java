@@ -7,8 +7,12 @@ import cascading.operation.FunctionCall;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by shubhranshu.shekhar on 06/06/17.
@@ -71,6 +75,8 @@ public class CPRRow extends BaseOperation implements Function {
                 DataFields._SESSIONID).get().getIdx());
         String visitorId = sessionAttributes.getString(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
                 DataFields._VISITORID).get().getIdx());
+        int pincode = sessionAttributes.getInteger(avroSchemaReader.getIndex(DataFields._SESSIONATTRIBUTES,
+                DataFields._PINCODE).get().getIdx());
 
 
         String accoutId = entry.getString(DataFields._ACCOUNTID);
@@ -154,12 +160,25 @@ public class CPRRow extends BaseOperation implements Function {
         String searchQuery = null;
         String reqStorePath = null;
         String respStorePath = null;
+        List<Pair<String, String>> filters = null;
+        String sort = null;
         if(searchAttributes != null) {
             sqId = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SEARCHQUERYID).get().getIdx());
             searchQuery = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._ORIGINALSEARCHQUERY).get().getIdx());
             searchQuery = cleanString(searchQuery);
             reqStorePath = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._REQSTOREPATH).get().getIdx());
             respStorePath = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._RESPONSESTOREPATH).get().getIdx());
+            List<Tuple> filtersObj = (List) searchAttributes.getObject(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._FILTERSAPPLIED).get().getIdx());
+            filters = new ArrayList<>();
+            if(filtersObj != null) {
+                for (Tuple objects : filtersObj) {
+                    String key = objects.getString(0);
+                    String value = objects.getString(1);
+                    filters.add(new ImmutablePair<>(key, value));
+                }
+            }
+
+            sort = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SORT).get().getIdx());
         } else {
 //            sqId = fetchId;
         }
@@ -263,7 +282,9 @@ public class CPRRow extends BaseOperation implements Function {
         if(productId != null) {
 
             Tuple result = new Tuple();
-            result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, sqId, searchQuery, reqStorePath, respStorePath, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
+            result.addAll(sessionId, accoutId, visitorId, pincode, fetchId, timestamp, platform, deviceId, findingMethod,
+                    sqId, searchQuery, reqStorePath, respStorePath, filters, sort,
+                    productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
                     deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, discountPrice, discountPercent, isCodAvailable,
                     deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productPageListingIndex,
