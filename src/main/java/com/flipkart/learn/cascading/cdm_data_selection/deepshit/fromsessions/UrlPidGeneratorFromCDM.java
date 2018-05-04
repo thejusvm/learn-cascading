@@ -54,7 +54,7 @@ public class UrlPidGeneratorFromCDM extends SubAssembly {
     private Object[] generateURI(Object[] x) {
         String searchQuery = (String) x[0];
         String storePath = (String) x[1];
-        List filters = (List) x[2];
+        String filters = (String) x[2];
         int pincode = (Integer) x[3];
         String sort = (String) x[4];
 
@@ -67,31 +67,16 @@ public class UrlPidGeneratorFromCDM extends SubAssembly {
             }
         }
 
-        String filtersString = constructFilterParams(filters);
         String uri = "/sherlock/stores/" + storePath + "/iterator?pincode="+pincode;
         if(encodedQuery != null) {
             uri += "&q="+encodedQuery;
         }
-        if(filtersString != null) {
-            uri += "&" + filtersString;
+        if(filters != null) {
+            uri += "&" + filters;
         }
         return new String[] {uri};
     }
 
-    private String constructFilterParams(List<Pair<String, String>> filters) {
-        if(filters.isEmpty()) {
-            return null;
-        } else {
-            StringBuilder urlBuilder = new StringBuilder();
-            for (Pair<String, String> filter : filters) {
-                urlBuilder.append(filter.getKey())
-                        .append("=")
-                        .append(filter.getValue())
-                        .append("&");
-            }
-            return urlBuilder.toString();
-        }
-    }
 
     public static void main(String[] args) {
         Pipe pipe = new Pipe("url-gen");

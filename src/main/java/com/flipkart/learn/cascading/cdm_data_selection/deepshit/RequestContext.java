@@ -1,10 +1,7 @@
 package com.flipkart.learn.cascading.cdm_data_selection.deepshit;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
-
-import java.util.List;
 
 public class RequestContext {
 
@@ -15,7 +12,7 @@ public class RequestContext {
     private final String storePath;
 
     @JsonProperty(value = "filtersApplied")
-    private final List<Pair<String, String>> filtersApplied;
+    private final String filtersApplied;
 
     @JsonProperty(value = "sortBy")
     private final String sortBy;
@@ -26,7 +23,7 @@ public class RequestContext {
     @JsonCreator
     public RequestContext(@JsonProperty(value = "searchQuery") String searchQuery,
                           @JsonProperty(value = "storePath") String storePath,
-                          @JsonProperty(value = "filtersApplied") List<Pair<String, String>> filtersApplied,
+                          @JsonProperty(value = "filtersApplied") String filtersApplied,
                           @JsonProperty(value = "sortBy") String sortBy,
                           @JsonProperty(value = "pincode") int pincode) {
         this.searchQuery = searchQuery;
@@ -44,7 +41,7 @@ public class RequestContext {
         return storePath;
     }
 
-    public List<Pair<String, String>> getFiltersApplied() {
+    public String getFiltersApplied() {
         return filtersApplied;
     }
 

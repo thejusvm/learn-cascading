@@ -56,6 +56,22 @@ public class CPRRow extends BaseOperation implements Function {
 //        return defaultVal;
 //    }
 
+    private String constructFilterString(List<Pair<String, String>> filters) {
+        if(filters.isEmpty()) {
+            return null;
+        } else {
+            StringBuilder urlBuilder = new StringBuilder();
+            for (Pair<String, String> filter : filters) {
+                urlBuilder.append(filter.getKey())
+                        .append("=")
+                        .append(filter.getValue())
+                        .append("&");
+            }
+            return urlBuilder.toString();
+        }
+    }
+
+
     @Override
     public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
         TupleEntry entry = functionCall.getArguments();
@@ -160,7 +176,7 @@ public class CPRRow extends BaseOperation implements Function {
         String searchQuery = null;
         String reqStorePath = null;
         String respStorePath = null;
-        List<Pair<String, String>> filters = null;
+        String filtersString = null;
         String sort = null;
         if(searchAttributes != null) {
             sqId = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SEARCHQUERYID).get().getIdx());
@@ -169,6 +185,7 @@ public class CPRRow extends BaseOperation implements Function {
             reqStorePath = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._REQSTOREPATH).get().getIdx());
             respStorePath = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._RESPONSESTOREPATH).get().getIdx());
             List<Tuple> filtersObj = (List) searchAttributes.getObject(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._FILTERSAPPLIED).get().getIdx());
+            List<Pair<String, String>> filters = null;
             filters = new ArrayList<>();
             if(filtersObj != null) {
                 for (Tuple objects : filtersObj) {
@@ -177,7 +194,7 @@ public class CPRRow extends BaseOperation implements Function {
                     filters.add(new ImmutablePair<>(key, value));
                 }
             }
-
+            filtersString = constructFilterString(filters);
             sort = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SORT).get().getIdx());
         } else {
 //            sqId = fetchId;
@@ -283,7 +300,7 @@ public class CPRRow extends BaseOperation implements Function {
 
             Tuple result = new Tuple();
             result.addAll(sessionId, accoutId, visitorId, pincode, fetchId, timestamp, platform, deviceId, findingMethod,
-                    sqId, searchQuery, reqStorePath, respStorePath, filters, sort,
+                    sqId, searchQuery, reqStorePath, respStorePath, filtersString, sort,
                     productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
                     deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, discountPrice, discountPercent, isCodAvailable,

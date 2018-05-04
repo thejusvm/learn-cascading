@@ -260,7 +260,7 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
             String searchQuery = aggregatorCall.getArguments().getString(_ORIGINALSEARCHQUERY);
             String responseStorePath = aggregatorCall.getArguments().getString(_RESPONSESTOREPATH);
             int pincode = aggregatorCall.getArguments().getInteger(_PINCODE);
-            List filtersApplied = (List) aggregatorCall.getArguments().getObject(_FILTERSAPPLIED);
+            String filtersApplied = aggregatorCall.getArguments().getString(_FILTERSAPPLIED);
             String sortBy = aggregatorCall.getArguments().getString(_SORT);
             String findingmethod = aggregatorCall.getArguments().getString(_FINDINGMETHOD);
             String productId = aggregatorCall.getArguments().getString(_PRODUCTID);
