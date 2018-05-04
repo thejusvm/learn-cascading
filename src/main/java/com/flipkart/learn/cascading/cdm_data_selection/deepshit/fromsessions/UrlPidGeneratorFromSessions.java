@@ -56,7 +56,7 @@ public class UrlPidGeneratorFromSessions extends SubAssembly {
             }
         }
 
-        String uri = "/sherlock/stores/" + storePath + "/debug?";
+        String uri = "/sherlock/stores/" + storePath + "/iterator?";
         if(encodedQuery != null) {
             uri += "&q="+encodedQuery;
         }
