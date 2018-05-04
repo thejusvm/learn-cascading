@@ -53,6 +53,8 @@ public class DataFields {
     public static final String _SEARCHATTRIBUTES = "searchAttributes";
     public static final String _SEARCHQUERYID = "searchQueryId";
     public static final String _ORIGINALSEARCHQUERY = "originalSearchQuery";
+    public static final String _REQSTOREPATH = "searchRequestStorePath";
+    public static final String _RESPONSESTOREPATH = "searchResponseStorePath";
 
     //product page listing attributes
     public static final String _PRODUCTPAGELISTINGATTRIBUTES = "productPageListingAttributes";//parent node
@@ -101,6 +103,8 @@ public class DataFields {
             _FINDINGMETHOD,
             _SEARCHQUERYID,
             _ORIGINALSEARCHQUERY,
+            _REQSTOREPATH,
+            _RESPONSESTOREPATH,
             _PRODUCTID,
             _ISVIDEOAVAILABLE,
             _ISIMAGESAVAILABLE,

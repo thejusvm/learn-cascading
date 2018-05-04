@@ -28,7 +28,10 @@ public class CPRRow extends BaseOperation implements Function {
     }
 
     public String cleanString(String str){
-        return str.replaceAll("\n", " ").replaceAll("\t", " ");
+        str = str.replaceAll("\\r|\\n", "");
+        str = str.replaceAll("[\r\n]", " ");
+        str = str.replaceAll("\t", " ");
+        return str;
     }
 
     //protected String[] compoundFields;
@@ -149,9 +152,14 @@ public class CPRRow extends BaseOperation implements Function {
         Tuple searchAttributes = (Tuple) entry.getObject(DataFields._SEARCHATTRIBUTES);
         String sqId = null;
         String searchQuery = null;
+        String reqStorePath = null;
+        String respStorePath = null;
         if(searchAttributes != null) {
             sqId = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._SEARCHQUERYID).get().getIdx());
-            searchQuery = cleanString(searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._ORIGINALSEARCHQUERY).get().getIdx()));
+            searchQuery = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._ORIGINALSEARCHQUERY).get().getIdx());
+            searchQuery = cleanString(searchQuery);
+            reqStorePath = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._REQSTOREPATH).get().getIdx());
+            respStorePath = searchAttributes.getString(avroSchemaReader.getIndex(DataFields._SEARCHATTRIBUTES, DataFields._RESPONSESTOREPATH).get().getIdx());
         } else {
 //            sqId = fetchId;
         }
@@ -255,7 +263,7 @@ public class CPRRow extends BaseOperation implements Function {
         if(productId != null) {
 
             Tuple result = new Tuple();
-            result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, sqId, searchQuery, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
+            result.addAll(sessionId, accoutId, visitorId, fetchId, timestamp, platform, deviceId, findingMethod, sqId, searchQuery, reqStorePath, respStorePath, productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
                     deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, discountPrice, discountPercent, isCodAvailable,
                     deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productPageListingIndex,

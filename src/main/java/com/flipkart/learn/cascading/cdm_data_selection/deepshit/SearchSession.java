@@ -20,8 +20,8 @@ public class SearchSession implements Serializable {
 
     @JsonProperty(value = "sqid")
     private String sqid;
-    @JsonProperty(value = "searchQuery")
-    private String searchQuery;
+    @JsonProperty(value = "requestContext")
+    private RequestContext requestContext;
     @JsonProperty(value = "timestamp")
     private long timestamp;
     @JsonProperty(value = "date")
@@ -30,17 +30,17 @@ public class SearchSession implements Serializable {
     private List<ProductObj> products;
 
     public SearchSession clone() {
-        return new SearchSession(sqid, searchQuery, timestamp, date, ImmutableList.copyOf(products));
+        return new SearchSession(sqid, requestContext, timestamp, date, ImmutableList.copyOf(products));
     }
 
     @JsonCreator
     public SearchSession(@JsonProperty(value = "sqid") String sqid,
-                         @JsonProperty(value = "searchQuery") String searchQuery,
+                         @JsonProperty(value = "requestContext") RequestContext requestContext,
                          @JsonProperty(value = "timestamp") long timestamp,
                          @JsonProperty(value = "date") String date,
                          @JsonProperty(value = "products") List<ProductObj> products) {
         this.sqid = sqid;
-        this.searchQuery = searchQuery;
+        this.requestContext = requestContext;
         this.timestamp = timestamp;
         this.date = date;
         this.products = products;
@@ -48,9 +48,9 @@ public class SearchSession implements Serializable {
 
     private static SimpleDateFormat format = new SimpleDateFormat("dd/MM/YY HH:mm:ss.SSSZ");
 
-    public SearchSession(String sqid, String searchQuery, long timestamp) {
+    public SearchSession(String sqid, RequestContext requestContext, long timestamp) {
         this.sqid = sqid;
-        this.searchQuery = searchQuery;
+        this.requestContext = requestContext;
         this.timestamp = timestamp;
         this.date = format.format(new Date(timestamp));
         products = new ArrayList<>();
@@ -65,8 +65,8 @@ public class SearchSession implements Serializable {
         return sqid;
     }
 
-    public String getSearchQuery() {
-        return searchQuery;
+    public RequestContext getRequestContext() {
+        return requestContext;
     }
 
     public long getTimestamp() {

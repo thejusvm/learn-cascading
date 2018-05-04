@@ -54,7 +54,7 @@ public class ExtractQueryChains implements SimpleFlow {
             String previousQuery = "";
             Collection<SearchSession> sessions = searchSessions.getSessions().values();
             for (SearchSession session : sessions) {
-                String query = session.getSearchQuery();
+                String query = session.getRequestContext().getSearchQuery();
 
                 if(query != null && !"".equals(query) && !query.equals(previousQuery)) {
                     queriesList.add(query);

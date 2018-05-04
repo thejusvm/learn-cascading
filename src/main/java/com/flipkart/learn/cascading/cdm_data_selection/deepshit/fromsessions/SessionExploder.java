@@ -38,7 +38,10 @@ public class SessionExploder implements SimpleFlow {
     public static final String IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS = "impressionsDistributedNegativeSampledProducts";
     public static final String ACTION = "action";
     public static final String ACTION_CLICK = "action.click";
-    public static final Fields EXPODED_FIELDS = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
+    public static final String STORE_PATH = "storePath";
+    public static final String SEARCH_QUERY = "searchQuery";
+
+    public static final Fields EXPODED_FIELDS = new Fields(_SEARCHQUERYID, _TIMESTAMP, _FINDINGMETHOD, ACTION, SEARCH_QUERY, STORE_PATH, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS, POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS);
     public static final Fields EXPLODER_TO_ENCODE_FIELDS = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS);
 
     public static int defaultNumNegativeProduct = 10;
@@ -84,6 +87,8 @@ public class SessionExploder implements SimpleFlow {
             List<ProductObj> pastClick = Collections.emptyList();
             Map<String, Map<String, Object>> pastBought = Collections.emptyMap();
             for (SearchSession session : sessions) {
+                String searhQuery = session.getRequestContext().getSearchQuery();
+                String storePath = session.getRequestContext().getStorePath();
                 long timestamp = session.getTimestamp();
                 String sqid = session.getSqid();
                 List<ProductObj> impressionProducts = session.getProducts();
@@ -121,6 +126,7 @@ public class SessionExploder implements SimpleFlow {
                                     timestamp,
                                     findingMethod,
                                     ACTION_CLICK,
+                                    searhQuery, storePath,
                                     shortTermClick.stream().map(ProductObj::getAttributes).collect(Collectors.toList()),
                                     longTermClick.stream().map(ProductObj::getAttributes).collect(Collectors.toList()),
                                     pastBought.values(),
