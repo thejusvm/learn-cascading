@@ -58,6 +58,7 @@ public class UrlPidGeneratorFromSessions extends SubAssembly {
         String storePath = context.getStorePath();
         String filters = context.getFiltersApplied();
         int pincode = context.getPincode();
+        String sort = context.getSortBy();
 
         String encodedQuery = null;
         if(searchQuery != null && !"".equals(searchQuery)) {
@@ -74,6 +75,9 @@ public class UrlPidGeneratorFromSessions extends SubAssembly {
         }
         if(filters != null) {
             uri += "&" + filters;
+        }
+        if(sort != null) {
+            uri += "&sort=" + sort;
         }
         return uri;
     }
