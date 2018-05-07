@@ -6,6 +6,7 @@ import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
 import cascading.pipe.assembly.Retain;
 import cascading.tuple.Fields;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.RequestContext;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SearchSessions;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator;
 import com.flipkart.learn.cascading.commons.cascading.MultiInMultiOutFunction;
@@ -23,6 +24,7 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 
 public class UrlPidGeneratorFromSessions extends SubAssembly {
 
+    private static final String STORE_PATH = "storePath";
     private int longShortThresholdInMinutes = defaultLongShortThresholdInMin;
 
     public UrlPidGeneratorFromSessions(Pipe pipe) {
@@ -30,8 +32,9 @@ public class UrlPidGeneratorFromSessions extends SubAssembly {
         Fields userContext = new Fields(SessionDataGenerator.USER_CONTEXT);
         pipe = new JsonDecodeEach(pipe, userContext, SearchSessions.class);
         pipe = new Each(pipe, userContext, new SessionExploder.ExplodeSessions(EXPODED_FIELDS, longShortThresholdInMinutes, 0), Fields.ALL);
+        pipe = new TransformEach(pipe, new Fields(REQ_CONTEXT), new Fields(STORE_PATH), x -> ((RequestContext)x).getStorePath(), Fields.ALL);
         pipe = new Each(pipe, new Fields(STORE_PATH), new FilterNull());
-        Fields uriFields = new Fields(SEARCH_QUERY, STORE_PATH, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS);
+        Fields uriFields = new Fields(REQ_CONTEXT, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS);
         Fields pidFields = new Fields(POSITIVE_PRODUCTS);
         pipe = new Retain(pipe, Fields.merge(uriFields, pidFields));
         Fields uri = new Fields("uri");
@@ -42,13 +45,22 @@ public class UrlPidGeneratorFromSessions extends SubAssembly {
     }
 
     private Object[] generateURI(Object[] x) {
-        String searchQuery = (String) x[0];
-        String storePath = (String) x[1];
-        List<String> shortClick = (List) x[2];
-        List<String> longClick = (List) x[3];
+        RequestContext requestContext = (RequestContext) x[0];
+        List<String> shortClick = (List) x[1];
+        List<String> longClick = (List) x[2];
+        String uri = constructUri(requestContext, shortClick, longClick);
+        return new String[] {uri};
+    }
+
+    public static String constructUri(RequestContext context,
+                                      List<String> shortClick, List<String> longClick) {
+        String searchQuery = context.getSearchQuery();
+        String storePath = context.getStorePath();
+        String filters = context.getFiltersApplied();
+        int pincode = context.getPincode();
 
         String encodedQuery = null;
-        if(searchQuery != null) {
+        if(searchQuery != null && !"".equals(searchQuery)) {
             try {
                 encodedQuery = URLEncoder.encode( searchQuery, "UTF-8" );
             } catch (UnsupportedEncodingException e) {
@@ -56,18 +68,21 @@ public class UrlPidGeneratorFromSessions extends SubAssembly {
             }
         }
 
-        String uri = "/sherlock/stores/" + storePath + "/iterator?";
+        String uri = "/sherlock/stores/" + storePath + "/iterator?pincode="+pincode;
         if(encodedQuery != null) {
             uri += "&q="+encodedQuery;
         }
-        return new String[] {uri};
+        if(filters != null) {
+            uri += "&" + filters;
+        }
+        return uri;
     }
 
     public static void main(String[] args) {
         Pipe pipe = new Pipe("url-gen");
 
         if(args.length == 0) {
-            args = new String[]{"data/session-20180210.10000", "data/session-20180210.10000.uri"};
+            args = new String[]{"data/session-20180210.10000", "data/session-20180210.10000.sessions.uri"};
         }
 
         PipeRunner runner = new PipeRunner("session-explode");

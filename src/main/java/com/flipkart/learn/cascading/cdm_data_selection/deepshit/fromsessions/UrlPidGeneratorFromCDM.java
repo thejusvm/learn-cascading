@@ -14,26 +14,15 @@ import cascading.tap.Tap;
 import cascading.tap.hadoop.GlobHfs;
 import cascading.tap.hadoop.Hfs;
 import cascading.tuple.Fields;
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SearchSessions;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.RequestContext;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.SessionDataGenerator;
 import com.flipkart.learn.cascading.commons.cascading.MultiInMultiOutFunction;
 import com.flipkart.learn.cascading.commons.cascading.PipeRunner;
-import com.flipkart.learn.cascading.commons.cascading.SerializableFunction;
-import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
-import org.apache.commons.lang3.tuple.Pair;
 
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields.*;
-
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
-import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.POSITIVE_PRODUCTS;
 
 public class UrlPidGeneratorFromCDM extends SubAssembly {
 
@@ -58,22 +47,8 @@ public class UrlPidGeneratorFromCDM extends SubAssembly {
         int pincode = (Integer) x[3];
         String sort = (String) x[4];
 
-        String encodedQuery = null;
-        if(searchQuery != null && !"".equals(searchQuery)) {
-            try {
-                encodedQuery = URLEncoder.encode( searchQuery, "UTF-8" );
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        String uri = "/sherlock/stores/" + storePath + "/iterator?pincode="+pincode;
-        if(encodedQuery != null) {
-            uri += "&q="+encodedQuery;
-        }
-        if(filters != null) {
-            uri += "&" + filters;
-        }
+        String uri = UrlPidGeneratorFromSessions.constructUri(new RequestContext(searchQuery, storePath, filters, sort, pincode),
+                Collections.emptyList(), Collections.emptyList());
         return new String[] {uri};
     }
 
@@ -82,7 +57,7 @@ public class UrlPidGeneratorFromCDM extends SubAssembly {
         Pipe pipe = new Pipe("url-gen");
 
         if(args.length == 0) {
-            args = new String[]{"data/cdm-2017-0801.1000.avro", "data/session-20180210.10000.uri"};
+            args = new String[]{"data/impressionppv-20180210.10000", "data/session-20180210.10000.uri"};
         }
 
         PipeRunner runner = new PipeRunner("session-explode");
