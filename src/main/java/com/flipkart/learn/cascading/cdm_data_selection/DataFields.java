@@ -84,6 +84,7 @@ public class DataFields {
     public static final String _PRODUCTCARDCLICKS ="productCardClicks";
     public static final String _FIRSTPRODUCTCARDCLICKTIMESTAMP = "firstProductCardClickTimestamp";
     public static final String _PRODUCTPAGEVIEWS = "productPageViews";
+    public static final String _CLICKINTENT = "productClickIntent";
     public static final String _ADDTOCARTCLICKS = "addToCartClicks";
     public static final String _FIRSTADDTOCARTCLICKTIMESTAMP = "firstAddToCartClickTimestamp";
     public static final String _BUYNOWCLICKS = "buyNowClicks";
@@ -138,6 +139,7 @@ public class DataFields {
             _OFFERIDS,
             _PRODUCTCARDCLICKS,
             _PRODUCTPAGEVIEWS,
+            _CLICKINTENT,
             _PRODUCTPAGELISTINGINDEX,
             _ADDTOCARTCLICKS,
             _BUYNOWCLICKS,

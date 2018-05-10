@@ -10,8 +10,7 @@ import cascading.pipe.SubAssembly;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizer;
-import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils;
+import com.flipkart.learn.cascading.cdm_data_selection.deepshit.*;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.Feature;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
@@ -35,17 +34,19 @@ public class IntegerizeExplodedSession extends SubAssembly {
     private String attributeDictPath;
     private final FeatureSchema schema;
     private boolean jsonize;
+    private String integerizedAttributesPath;
 
-    public IntegerizeExplodedSession(String attributeDictPath, FeatureSchema schema) {
-        this(new Pipe("session-integerizer"), attributeDictPath, schema);
+    public IntegerizeExplodedSession(String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema) {
+        this(new Pipe("session-integerizer"), integerizedAttributesPath, attributeDictPath, schema);
     }
 
-    public IntegerizeExplodedSession(Pipe pipe, String attributeDictPath, FeatureSchema schema) {
-        this(pipe, attributeDictPath, schema,true);
+    public IntegerizeExplodedSession(Pipe pipe, String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema) {
+        this(pipe, integerizedAttributesPath, attributeDictPath, schema,true);
     }
 
-    public IntegerizeExplodedSession(Pipe pipe, String attributeDictPath, FeatureSchema schema, boolean jsonize) {
+    public IntegerizeExplodedSession(Pipe pipe, String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema, boolean jsonize) {
         this.attributeDictPath = attributeDictPath;
+        this.integerizedAttributesPath = integerizedAttributesPath;
         this.schema = schema;
         this.jsonize = jsonize;
         setTails(modifyPipe(pipe));
@@ -58,7 +59,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
 
         pipe = new Each(pipe, new Fields(POSITIVE_PRODUCTS), new ToList(new Fields(POSITIVE_PRODUCTS)), Fields.SWAP);
         Fields integerizingFields = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS);
-        pipe = new Each(pipe, integerizingFields, new Integerize(integerizingFields, attributeDictPath, schema), Fields.SWAP);
+        pipe = new Each(pipe, integerizingFields, new Integerize(integerizingFields, integerizedAttributesPath, attributeDictPath, schema), Fields.SWAP);
 
         if(jsonize) {
             pipe = new JsonEncodeEach(pipe, integerizingFields);
@@ -83,23 +84,27 @@ public class IntegerizeExplodedSession extends SubAssembly {
 
     private static class Integerize extends BaseOperation implements Function {
 
+        private static DictIntegerizer idDict;
+        private final String integerizedAttributesPath;
         private final String attributeDictPath;
         private final FeatureSchema schema;
-        private static Map<String, DictIntegerizer> attribueDict = null;
-        private final ImmutableSet<String> enumFeatures;
+        private final ImmutableSet<String> numericFeatures;
+        private static IntegerizedProductAttributesWrapper wrapper;
 
-        public Integerize(Fields fields, String attributeDictPath, FeatureSchema schema) {
+        public Integerize(Fields fields, String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema) {
             super(fields);
+            this.integerizedAttributesPath = integerizedAttributesPath;
             this.attributeDictPath = attributeDictPath;
             this.schema = schema;
-            enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.ENUMERATION));
+            numericFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.NUMERIC));
         }
 
-        private static synchronized void init(String attributeDictPath) throws IOException {
-            if(attribueDict == null){
-                List<DictIntegerizer> attribueDictList = DictIntegerizerUtils.readAttributeDicts(attributeDictPath);
-                attribueDict = DictIntegerizerUtils.indexByName(attribueDictList);
-                System.out.println("done reading attributes dict from path : " + attributeDictPath + ", " + attribueDict);
+        private static synchronized void init(String integerizedAttributesPath, String attributeDictPath) throws IOException {
+            if(idDict == null){
+                String idDictPath = DictIntegerizerUtils.getAttributeDictPath(attributeDictPath, "productId");
+                idDict = DictIntegerizerUtils.getDictIntegerizer(idDictPath);
+                System.out.println("done reading attributes dict from path : " + attributeDictPath + ", " + idDict);
+                wrapper = IntegerizedProductAttributesRepo.getWrapper(integerizedAttributesPath, "productId");
             }
         }
 
@@ -107,7 +112,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             try {
                 HdfsUtils.setConfiguration((Configuration)flowProcess.getConfigCopy());
-                init(attributeDictPath);
+                init(integerizedAttributesPath, attributeDictPath);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -126,16 +131,12 @@ public class IntegerizeExplodedSession extends SubAssembly {
             List<Map<String, Object>> integerAttributes = new ArrayList<>();
             for (Map<String, String> productAttribute : productAttributes) {
                 Map<String, Object> integerAttribute = new HashMap<>();
+                String productId = productAttribute.get("productId");
+                int idIndex = idDict.only_get(productId, DictIntegerizerUtils.MISSING_DATA_INDEX);
+                integerAttribute.putAll(wrapper.getIdAttributes(idIndex));
                 for (Map.Entry<String, String> attributeToValue : productAttribute.entrySet()) {
                     String attribute = attributeToValue.getKey();
-                    if(enumFeatures.contains(attribute)) {
-                        DictIntegerizer dict = attribueDict.get(attribute);
-                        if(dict == null) {
-                            throw new NullPointerException("dict for attribute " + attribute + " is missing");
-                        }
-                        int valInt = dict.only_get(attributeToValue.getValue(), dict.get(DictIntegerizerUtils.MISSING_DATA));
-                        integerAttribute.put(attribute, valInt);
-                    } else {
+                    if(numericFeatures.contains(attribute)){
                         integerAttribute.put(attribute, attributeToValue.getValue());
                     }
                 }
@@ -145,10 +146,12 @@ public class IntegerizeExplodedSession extends SubAssembly {
         }
     }
 
-    public static void flow(String input, String attributeDictPath, String output) {
+    public static void flow(String input, String productsIntPath, String output) {
         IntegerizeExplodedSession integerizer = null;
         FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
-        integerizer = new IntegerizeExplodedSession(attributeDictPath, schema);
+        String integerizedAttributesPath = IntegerizeProductAttributes.getIntegerizedAttributesPath(productsIntPath);
+        String attributeDictPath = IntegerizeProductAttributes.getAttributeDictsPath(productsIntPath);
+        integerizer = new IntegerizeExplodedSession(integerizedAttributesPath, attributeDictPath, schema);
 
         PipeRunner runner = new PipeRunner("explode-integerize");
         runner.setNumReducers(600);
@@ -160,7 +163,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
         if(args.length == 0) {
             args = new String[]{
                     "data/sessionexplode-2017-0801.1000",
-                    "data/product-attributes.MOB.int/attribute_dicts",
+                    "data/product-attributes.MOB.int",
                     "data/sessionexplode-2017-0801.1000.int"
             };
         }

@@ -13,14 +13,20 @@ import java.util.stream.Collectors;
 
 public class IntegerizedProductAttributesWrapper {
 
+    private final String idAttribute;
     private List<String> fieldNames;
     private List<List<Integer>> allFieldValues;
     private List<Integer> counts;
+    private Map<Integer, Integer> idIndex;
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegerizedProductAttributesWrapper.class);
 
     public IntegerizedProductAttributesWrapper(String dir) throws IOException {
+        this(dir, null);
+    }
 
+    public IntegerizedProductAttributesWrapper(String dir, String idAttribute) throws IOException {
+        this.idAttribute = idAttribute;
         fieldNames = new ArrayList<>();
         allFieldValues = new ArrayList<>();
         counts = new ArrayList<>();
@@ -50,6 +56,22 @@ public class IntegerizedProductAttributesWrapper {
             });
             LOG.info("done to read IntegerizedProductAttributes from path : " + path);
         }
+
+        if(idAttribute != null) {
+            int idColumn = fieldNames.indexOf(idAttribute);
+            idIndex = createIdIndex(allFieldValues, idColumn);
+        }
+
+    }
+
+    private Map<Integer, Integer> createIdIndex(List<List<Integer>> allFieldValues, int idCol) {
+        Map<Integer, Integer> index = new HashMap<>();
+        for (int i = 0; i < allFieldValues.size(); i++) {
+            List<Integer> allFieldValue = allFieldValues.get(i);
+            int idVal = allFieldValue.get(idCol);
+            index.put(idVal, i);
+        }
+        return index;
     }
 
     public List<Integer> getCounts() {
@@ -58,6 +80,13 @@ public class IntegerizedProductAttributesWrapper {
 
     public int getNumProducts() {
         return allFieldValues.size();
+    }
+
+    public Map<String, Integer> getIdAttributes(int id) {
+        if(idAttribute != null) {
+            return getAttributes(idIndex.get(id));
+        }
+        throw new RuntimeException("no id attribute given");
     }
 
     public Map<String, Integer> getAttributes(int index) {

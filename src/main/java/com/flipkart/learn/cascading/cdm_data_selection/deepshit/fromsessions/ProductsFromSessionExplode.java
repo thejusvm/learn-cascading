@@ -23,6 +23,7 @@ import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ProductsFromSessionExplode implements SimpleFlow {
 
@@ -42,7 +43,8 @@ public class ProductsFromSessionExplode implements SimpleFlow {
         Fields productAttributes = new Fields("ProductAttributes");
         pipe = new Each(pipe, Fields.merge(posProducts, negProducts), new FetchProductAttributes(productAttributes), Fields.RESULTS);
 
-        Fields enumFields = new Fields(schema.getFeaturesNamesForType(Feature.FeatureType.ENUMERATION).toArray(new String[0]));
+        List<String> featuresNamesForType = getNonCMSEnumFields(schema);
+        Fields enumFields = new Fields(featuresNamesForType.toArray(new String[0]));
         List<String> numericFeatures = schema.getFeaturesNamesForType(Feature.FeatureType.NUMERIC);
         Fields numericFields = new Fields(numericFeatures.toArray(new String[0]));
 
@@ -65,6 +67,22 @@ public class ProductsFromSessionExplode implements SimpleFlow {
 
 
         return pipe;
+    }
+
+    public static List<String> getNonCMSEnumFields(FeatureSchema schema) {
+        List<Feature> enumFeatures = schema.getFeaturesForType(Feature.FeatureType.ENUMERATION);
+        return enumFeatures.stream()
+                .filter(x -> x.getSource() != Feature.Source.CMS)
+                .map(Feature::getFeatureName)
+                .collect(Collectors.toList());
+    }
+
+    public static List<String> getCMSEnumFields(FeatureSchema schema) {
+        List<Feature> enumFeatures = schema.getFeaturesForType(Feature.FeatureType.ENUMERATION);
+        return enumFeatures.stream()
+                .filter(x -> x.getSource() == Feature.Source.CMS)
+                .map(Feature::getFeatureName)
+                .collect(Collectors.toList());
     }
 
     private static class FetchProductAttributes extends BaseOperation implements Function {

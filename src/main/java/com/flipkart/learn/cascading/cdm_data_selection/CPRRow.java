@@ -284,6 +284,7 @@ public class CPRRow extends BaseOperation implements Function {
         //Rest other signals
         Double productCardClicks = entry.getDouble(DataFields._PRODUCTCARDCLICKS);
         Double productPageViews = entry.getDouble(DataFields._PRODUCTPAGEVIEWS);
+        Double productClickIntent = Math.max(productCardClicks, productPageViews);
         //this line is shifted above because this is also a filtering signal
         // Integer productPageListingIndex = entry.getInteger(DataFields._PRODUCTPAGELISTINGINDEX);
         Double addToCartClicks = entry.getDouble(DataFields._ADDTOCARTCLICKS);
@@ -304,7 +305,7 @@ public class CPRRow extends BaseOperation implements Function {
                     productId, isVideoAvailable, isImagesAvailable, finalProductState, isSwatchAvailable, ugcReviewCount,
                     ugcAvgRating, ugcRatingCount, listingId, isServiceable, availabilityStatus, state, isFlipkartAdvantage,
                     deliveryDate, minDeliveryDateEpochMs, maxDeliveryDateEpochMs, mrp, finalPrice, fsp, discountPrice, discountPercent, isCodAvailable,
-                    deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productPageListingIndex,
+                    deliverySpeedOptions, prexoOfferId, offerIds, productCardClicks, productPageViews, productClickIntent, productPageListingIndex,
                     addToCartClicks, buyNowClicks, position, productCardImpressionsFilter);
             functionCall.getOutputCollector().add(result);
         }

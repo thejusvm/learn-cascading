@@ -133,32 +133,12 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
         return cdmPipe;
     }
 
-    private static String[] getAttributeFields(String cmsInput) {
-        String[] attributes;
-        try {
-            String cmsInputFile = HdfsUtils.listFiles(cmsInput, 1).get(0);
-            List<String> fields = HdfsUtils.nextLines(cmsInputFile, 1);
-            attributes = fields.get(0).split("\t");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return attributes;
-    }
-
     @Override
-    public void cleanup() {
-//        try {
-//            HdfsUtils.delete(checkpointFile);
-//        } catch (IOException e) {
-//            LOG.error("error cleaning up checkpoint file", e);
-//        }
-    }
+    public void cleanup() {}
+
     @Override
     public FlowDef getFlowDefinition(Map<String, String> options) {
         Tap inputData = new GlobHfs( (Scheme)new AvroScheme(), options.get("input"));
-        String cmsInput = options.get("cmsInput");
-        Tap cmsData = new GlobHfs(new TextDelimited(Fields.ALL, true, "\t"), cmsInput);
-
 
         String runId = options.get("runId");
         if (runId == null) {
@@ -174,34 +154,22 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
         Pipe cdmRawPipe = getCDMPipe(schema.getFeaturesForSource(Feature.Source.CDM));
 
-        Pipe cmsPipe = new Pipe("attributePipe");
-        cmsPipe = new Rename(cmsPipe, new Fields(_PRODUCTID), new Fields(_FSN));
-        cmsPipe = new Each(cmsPipe, new Fields(_FSN), new SessionDataGenerator.PrefixFilter(lifeStylePrefixes));
-
-
-        Pipe cdmCmsPipe = new CoGroup(cdmRawPipe, new Fields(DataFields._PRODUCTID), cmsPipe,
-                new Fields(DataFields._FSN),
-                new LeftJoin());
-
-        Checkpoint checkpointPipe = new Checkpoint("checkpoint", cdmCmsPipe);
-        Pipe sessionPipe = aggregateSessionsPipe(checkpointPipe, cmsInput, schema);
+        Pipe sessionPipe = aggregateSessionsPipe(cdmRawPipe, schema);
 
         return FlowDef.flowDef().setName(options.get("flowName"))
                 .addSource(cdmRawPipe, inputData)
-                .addSource(cmsPipe, cmsData)
-                .addCheckpoint(checkpointPipe, checkpointTap)
                 .addTailSink(sessionPipe, outputTap)
                 .setRunID(runId)
                 .setAssertionLevel(AssertionLevel.VALID);
 
     }
 
-    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput, FeatureSchema schema) {
-        return aggregateSessionsPipe(cmsCdmPipe, cmsInput, schema,  true);
+    public static Pipe aggregateSessionsPipe(Pipe pipe, FeatureSchema schema) {
+        return aggregateSessionsPipe(pipe, schema,  true);
     }
 
-    public static Pipe aggregateSessionsPipe(Pipe cmsCdmPipe, String cmsInput, FeatureSchema schema, boolean shouldSerialize) {
-        Pipe sessionPipe = new GroupBy(cmsCdmPipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
+    public static Pipe aggregateSessionsPipe(Pipe pipe, FeatureSchema schema, boolean shouldSerialize) {
+        Pipe sessionPipe = new GroupBy(pipe, new Fields(_ACCOUNTID), new Fields(_VISITORID , _SESSIONID, _TIMESTAMP, _POSITION));
         Fields userContext = new Fields(USER_CONTEXT);
         Fields userStats = new Fields(USER_STATS);
         Fields userDayStats = new Fields(USER_DAY_STATS);
@@ -225,7 +193,6 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
                     "flowName=session-data",
                     "input=data/impressionppv-20180210.10000",
                     "output=data/session-20180210.10000",
-                    "cmsInput=data/product-attributes.MOB/part-00000",
                     "runId=sessions-20180210.10000"
             };
         }
@@ -271,6 +238,8 @@ public class SessionDataGenerator implements CascadingFlows, Serializable {
 
             Map<String, Object> productAttributes = new LinkedHashMap<>();
             List<Feature> enumFeatures = schema.getFeaturesForType(Feature.FeatureType.ENUMERATION);
+            enumFeatures = enumFeatures.stream().filter(x -> x.getSource() != Feature.Source.CMS).collect(Collectors.toList());
+
             for (Feature feature : enumFeatures) {
                 String featureValue = aggregatorCall.getArguments().getString(feature.getSourceKey());
                 productAttributes.put(feature.getFeatureName(), feature.clean(featureValue));

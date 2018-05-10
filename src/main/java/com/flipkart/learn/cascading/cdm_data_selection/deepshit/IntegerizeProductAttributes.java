@@ -92,7 +92,8 @@ public class IntegerizeProductAttributes {
             public void collect(String line) {
                 if (first) {
                     first = false;
-                    fieldNames = Arrays.asList(line.split("\t"));
+                    String[] split = line.split("\t", -1);
+                    fieldNames = Arrays.asList(split);
 
                     Set<String> fieldNamesSet = new HashSet<>(fieldNames);
                     ignoreIndexes = new HashSet<>();
@@ -112,7 +113,7 @@ public class IntegerizeProductAttributes {
                     initEnumFieldData(fieldNamesSet);
                     initNumericFieldData(numericFeatures);
                 } else {
-                    String[] lineSplit = line.split("\t");
+                    String[] lineSplit = line.split("\t", -1);
                     int count = Integer.parseInt(lineSplit[countIndex]);
                     for (int i = 0; i < fieldNames.size(); i++) {
                         if(numericIndexes.contains(i)) {
@@ -148,13 +149,13 @@ public class IntegerizeProductAttributes {
         try {
             firstLine = br.readLine();
 
-            List<String> fields = ImmutableList.copyOf(firstLine.split("\t"));
+            List<String> fields = ImmutableList.copyOf(firstLine.split("\t", -1));
             Set<String> enumFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.ENUMERATION));
             int numFields = fields.size();
             while(true) {
                 String line = br.readLine();
                 if (line == null) break;
-                String[] values = line.split("\t");
+                String[] values = line.split("\t", -1);
                 List<Object> processedValues = new ArrayList<>();
                 for (int i = 0; i < numFields; i++) {
                     String field = fields.get(i);
@@ -360,7 +361,7 @@ public class IntegerizeProductAttributes {
 
         if(args.length == 0) {
             args = new String[]{
-                    "data/session-20180210.10000.explode.products",
+                    "data/session-20180210.10000.explode.products-enrich",
                     "data/session-20180210.10000.explode.products-int",
 //                    "10"
             };

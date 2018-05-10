@@ -34,14 +34,19 @@ public class DictIntegerizerUtils {
     public static List<DictIntegerizer> readAttributeDicts(String attributeDictPath) throws IOException {
         List<DictIntegerizer> dicts = new ArrayList<>();
         for (String file : HdfsUtils.listFiles(attributeDictPath, 1)) {
-            System.out.println("reading dict from file : " + file);
-            DictIntegerizerCollector dictCollector = new DictIntegerizerCollector();
-            FileProcessor.hdfsEachLine(file, dictCollector);
-            DictIntegerizer dict = dictCollector.getDict();
-            System.out.println("done reading dict : " + dict);
+            DictIntegerizer dict = getDictIntegerizer(file);
             dicts.add(dict);
         }
         return dicts;
+    }
+
+    public static DictIntegerizer getDictIntegerizer(String file) {
+        System.out.println("reading dict from file : " + file);
+        DictIntegerizerCollector dictCollector = new DictIntegerizerCollector();
+        FileProcessor.hdfsEachLine(file, dictCollector);
+        DictIntegerizer dict = dictCollector.getDict();
+        System.out.println("done reading dict : " + dict);
+        return dict;
     }
 
     public static void writeAttributeDicts(Collection<DictIntegerizer> dicts, String outputPath) throws IOException {
@@ -65,8 +70,8 @@ public class DictIntegerizerUtils {
         termDictWriter.close();
     }
 
-    private static String getAttributeDictPath(String outputPath, String name) {
-        return outputPath + "/" + name + ".dict";
+    public static String getAttributeDictPath(String path, String name) {
+        return path + "/" + name + ".dict";
     }
 
     public static Map<String, DictIntegerizer> indexByName(Collection<DictIntegerizer> attribueDictList) {

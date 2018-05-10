@@ -7,7 +7,7 @@ public class SessionExplodeToTrainTest {
         String expodedIntegerized = input + ".int";
         String expodedToPrep = input + ".toprep";
 
-        IntegerizeExplodedSession.flow(input + "/part-*", productDataPath +"/attribute_dicts" , expodedIntegerized);
+        IntegerizeExplodedSession.flow(input + "/part-*", productDataPath, expodedIntegerized);
         SessionExplodeToPrep.flow(expodedIntegerized + "/part-*", productDataPath, expodedToPrep);
         SplitTrainTest.flow(expodedToPrep + "/part-*", trainTestSplitDate, output);
 
