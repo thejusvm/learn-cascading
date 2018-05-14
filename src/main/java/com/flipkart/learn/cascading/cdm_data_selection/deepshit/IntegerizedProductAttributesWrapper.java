@@ -26,32 +26,46 @@ public class IntegerizedProductAttributesWrapper {
     }
 
     public IntegerizedProductAttributesWrapper(String dir, String idAttribute) throws IOException {
+        this(dir, idAttribute, 0, Integer.MAX_VALUE);
+    }
+
+    public IntegerizedProductAttributesWrapper(String dir, String idAttribute, int fromIndex, int toIndex) throws IOException {
         this.idAttribute = idAttribute;
         fieldNames = new ArrayList<>();
         allFieldValues = new ArrayList<>();
         counts = new ArrayList<>();
 
 
+        final int[] lineCounter = {-1};
         LOG.info("starting to read IntegerizedProductAttributes from path : " + dir);
         List<String> paths = HdfsUtils.listFiles(dir, 1);
+        Collections.sort(paths);
         for (String path : paths) {
             FileProcessor.hdfsEachLine(path, new Container<String>() {
                 boolean first = true;
                 int countsIndex = -1;
 
                 @Override
-                public void collect(String line) {
+                public boolean collect(String line) {
                     if (first) {
                         first = false;
                         fieldNames = Arrays.asList(line.split("\t"));
                         countsIndex = fieldNames.indexOf("count");
                     } else {
-                        List<Integer> values = Arrays.stream(line.split("\t"))
-                                .map(Integer::parseInt)
-                                .collect(Collectors.toList());
-                        allFieldValues.add(values);
-                        counts.add(values.get(countsIndex));
+                        lineCounter[0]++;
+                        if(lineCounter[0] >= fromIndex) {
+                            if(lineCounter[0] < toIndex) {
+                                List<Integer> values = Arrays.stream(line.split("\t"))
+                                        .map(Integer::parseInt)
+                                        .collect(Collectors.toList());
+                                allFieldValues.add(values);
+                                counts.add(values.get(countsIndex));
+                            } else {
+                                return false;
+                            }
+                        }
                     }
+                    return true;
                 }
             });
             LOG.info("done to read IntegerizedProductAttributes from path : " + path);
@@ -84,7 +98,11 @@ public class IntegerizedProductAttributesWrapper {
 
     public Map<String, Integer> getIdAttributes(int id) {
         if(idAttribute != null) {
-            return getAttributes(idIndex.get(id));
+            if(idIndex.containsKey(id)) {
+                return getAttributes(idIndex.get(id));
+            } else {
+                return null;
+            }
         }
         throw new RuntimeException("no id attribute given");
     }
@@ -104,7 +122,8 @@ public class IntegerizedProductAttributesWrapper {
 
 
     public static void main(String[] args) throws IOException {
-        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper("data/session-20180210.10000.explode.products-int/integerized_attributes/part-0");
+        IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper(
+                "data/session-20180210.10000.explode.products-int/integerized_attributes/part-0", null, 85, 105);
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String next = scanner.next();

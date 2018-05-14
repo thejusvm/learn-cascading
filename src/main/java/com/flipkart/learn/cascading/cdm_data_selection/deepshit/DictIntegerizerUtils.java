@@ -93,7 +93,7 @@ public class DictIntegerizerUtils {
         }
 
         @Override
-        public void collect(String line) {
+        public boolean collect(String line) {
             if(first) {
                 String name = line;
                 dict = new DictIntegerizer(name);
@@ -101,6 +101,7 @@ public class DictIntegerizerUtils {
             } else {
                 dict.get(line);
             }
+            return true;
         }
 
         public DictIntegerizer getDict() {

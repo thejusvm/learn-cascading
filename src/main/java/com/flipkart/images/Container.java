@@ -5,7 +5,7 @@ package com.flipkart.images;
  */
 public interface Container<I> {
 
-    public void collect(I line);
+    public boolean collect(I line);
 
     default void close() {
 

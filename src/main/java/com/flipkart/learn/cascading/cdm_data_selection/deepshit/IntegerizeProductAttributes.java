@@ -89,7 +89,7 @@ public class IntegerizeProductAttributes {
             }
 
             @Override
-            public void collect(String line) {
+            public boolean collect(String line) {
                 if (first) {
                     first = false;
                     String[] split = line.split("\t", -1);
@@ -128,6 +128,7 @@ public class IntegerizeProductAttributes {
                         }
                     }
                 }
+                return true;
             }
         });
 

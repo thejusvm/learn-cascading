@@ -1,5 +1,7 @@
 package com.flipkart.learn.cascading.commons;
 
+import com.flipkart.images.Container;
+import com.flipkart.images.FileProcessor;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
@@ -59,6 +61,27 @@ public class HdfsUtils {
         }
         return files;
     }
+
+    public static int numLines(List<String> paths) throws IOException {
+        int totalCount = 0;
+        for (String path : paths) {
+            totalCount += numLines(path);
+        }
+        return totalCount;
+    }
+
+    private static int numLines(String path) {
+        final int[] totalCount = {0};
+        FileProcessor.hdfsEachLine(path, new Container<String>() {
+            @Override
+            public boolean collect(String line) {
+                totalCount[0]++;
+                return true;
+            }
+        });
+        return totalCount[0];
+    }
+
 
     public static String slurp(String file) throws IOException {
         FileSystem fs = FileSystem.get(configuration);

@@ -12,9 +12,11 @@ import com.flipkart.learn.cascading.commons.cascading.SerializableFunction;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.JsonDecodeEach;
 import com.flipkart.learn.cascading.commons.cascading.subAssembly.TransformEach;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.flipkart.learn.cascading.cdm_data_selection.DataFields._TIMESTAMP;
 import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessions.SessionExploder.*;
@@ -27,7 +29,10 @@ public class SessionExplodeToPrep extends SubAssembly {
 
         Pipe pipe = new Pipe("sessionexplode-translation");
 
-        pipe = new JsonDecodeEach(pipe, new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
+        pipe = new JsonDecodeEach(pipe, new Fields(NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS), List.class);
+        Fields positive_products = new Fields(POSITIVE_PRODUCTS);
+        pipe = new JsonDecodeEach(pipe, positive_products, Map.class);
+        pipe = new TransformEach(pipe, positive_products, (SerializableFunction) x -> ImmutableList.of(x), Fields.SWAP);
 //        pipe = new NegativeSamplesGenerator(pipe, integerizedAttributesPath, false);
         pipe = new HandlePastClicks(pipe, numpastClicks, false);
         pipe = new AttributeMapToColumns(pipe, fields, false);

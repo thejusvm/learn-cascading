@@ -25,7 +25,10 @@ public class FileProcessor {
             br = new BufferedReader(new FileReader(inputFile));
 
             while ((line = br.readLine()) != null) {
-                lineCollector.collect(line);
+                boolean toContinue = lineCollector.collect(line);
+                if(!toContinue) {
+                    break;
+                }
             }
 
         } catch (IOException e) {
@@ -61,7 +64,10 @@ public class FileProcessor {
 
             int counter = 1;
             while ((line = br.readLine()) != null) {
-                lineCollector.collect(line);
+                boolean toContinue = lineCollector.collect(line);
+                if(!toContinue) {
+                    break;
+                }
                 counter ++;
                 if(counter % 10000 == 0) {
                     LOG.info("read " + inputFile + " lines : " + counter);
