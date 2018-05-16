@@ -7,7 +7,7 @@ import cascading.pipe.joiner.InnerJoin;
 import cascading.pipe.joiner.LeftJoin;
 import cascading.pipe.joiner.RightJoin;
 import cascading.tuple.Fields;
-import com.flipkart.learn.cascading.cdm_data_selection.DataFields;
+
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.DictIntegerizerUtils;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureRepo;
 import com.flipkart.learn.cascading.cdm_data_selection.deepshit.schema.FeatureSchema;
@@ -22,9 +22,9 @@ public class JoinCMSWithProductsFromData extends SubAssembly {
 
     private static final String ID = "id";
 
-    public JoinCMSWithProductsFromData(Pipe cmsPipe, Pipe dataPipe, List<String> cmsEnumFields) {
-        Fields productIdField = new Fields(DataFields._PRODUCTID);
-        Fields IDField = new Fields(ID);
+    public JoinCMSWithProductsFromData(Pipe cmsPipe, Pipe dataPipe, List<String> cmsEnumFields, String primaryKey) {
+        Fields productIdField = new Fields(primaryKey);
+        Fields IDField = new Fields(primaryKey + "_" + ID);
         cmsPipe = new Rename(cmsPipe, productIdField, IDField);
 
         Pipe pipe = new CoGroup(dataPipe, productIdField, cmsPipe, IDField,
@@ -32,7 +32,7 @@ public class JoinCMSWithProductsFromData extends SubAssembly {
 
         pipe = new Discard(pipe, IDField);
         for (String cmsEnumField : cmsEnumFields) {
-            if(DataFields._PRODUCTID.equals(cmsEnumField)) continue;
+            if(primaryKey.equals(cmsEnumField)) continue;
             pipe = new TransformEach(pipe, new Fields(cmsEnumField), new SerializableFunction() {
                 @Override
                 public Object apply(Object x) {
@@ -56,7 +56,7 @@ public class JoinCMSWithProductsFromData extends SubAssembly {
         Pipe cmsPipe = new Pipe("cms");
         Pipe dataPipe = new Pipe("data");
 
-        Pipe joinedPipe = new JoinCMSWithProductsFromData(cmsPipe, dataPipe, cmsEnumFields);
+        Pipe joinedPipe = new JoinCMSWithProductsFromData(cmsPipe, dataPipe, cmsEnumFields, schema.getPrimaryKey());
 
         PipeRunner runner = new PipeRunner("attribute-data-joiner");
         runner.addHFSSource(cmsPipe, args[0]);

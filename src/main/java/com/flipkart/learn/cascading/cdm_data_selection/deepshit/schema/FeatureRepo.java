@@ -21,9 +21,8 @@ public class FeatureRepo implements Serializable {
 
     static {
 
-        lifestyleFeatureSchema = new FeatureSchema();
-
-        lifestyleFeatureSchema.registerFeature(new EnumFeature("productId", Source.CDM, Volatility.SLOW));
+        EnumFeature productId = new EnumFeature("productId", Source.CDM, Volatility.SLOW);
+        lifestyleFeatureSchema = new FeatureSchema(productId);
 
         lifestyleFeatureSchema.registerFeature(new EnumFeature("brand", Source.CMS, Volatility.SLOW));
         lifestyleFeatureSchema.registerFeature(new EnumFeature("ideal_for", Source.CMS,

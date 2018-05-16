@@ -9,10 +9,17 @@ import java.util.stream.Collectors;
 
 public class FeatureSchema implements Serializable {
 
+    private String primaryKey;
     private List<Feature> features;
 
-    public FeatureSchema() {
+    public FeatureSchema(Feature primaryKeyFeature) {
         features = new ArrayList<>();
+        registerFeature(primaryKeyFeature);
+        primaryKey = primaryKeyFeature.getFeatureName();
+    }
+
+    public String getPrimaryKey() {
+        return primaryKey;
     }
 
     public void registerFeature(Feature feature) {

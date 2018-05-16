@@ -115,13 +115,13 @@ public class IntegerizeExplodedSession extends SubAssembly {
 //            wrapper = null;
         }
 
-        private static synchronized void init(String integerizedAttributesPath, String attributeDictPath,
+        private static synchronized void init(String primaryKey, String integerizedAttributesPath, String attributeDictPath,
                                               int start, int end) throws IOException {
             if(idDict == null){
-                String idDictPath = DictIntegerizerUtils.getAttributeDictPath(attributeDictPath, "productId");
+                String idDictPath = DictIntegerizerUtils.getAttributeDictPath(attributeDictPath, primaryKey);
                 idDict = DictIntegerizerUtils.getDictIntegerizer(idDictPath);
                 System.out.println("done reading attributes dict from path : " + attributeDictPath + ", " + idDict);
-                wrapper = IntegerizedProductAttributesRepo.getWrapper(integerizedAttributesPath, "productId", start, end);
+                wrapper = IntegerizedProductAttributesRepo.getWrapper(integerizedAttributesPath, primaryKey, start, end);
             }
         }
 
@@ -129,7 +129,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             try {
                 HdfsUtils.setConfiguration((Configuration)flowProcess.getConfigCopy());
-                init(integerizedAttributesPath, attributeDictPath, start, end);
+                init(schema.getPrimaryKey(), integerizedAttributesPath, attributeDictPath, start, end);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -148,7 +148,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
             List<Map<String, Object>> integerAttributes = new ArrayList<>();
             for (Map<String, Object> productAttribute : productAttributes) {
                 Map<String, Object> integerAttribute = new HashMap<>();
-                Object productId = productAttribute.get("productId");
+                Object productId = productAttribute.get(schema.getPrimaryKey());
                 if(productId instanceof Integer) {
                     integerAttributes.add(productAttribute);
                 } else if(productId instanceof String) {
