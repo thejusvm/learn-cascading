@@ -48,7 +48,7 @@ public class ConditionalCtr extends SubAssembly {
         pipe = new GroupBy(pipe, groupByFields);
         pipe = new Every(pipe , clickField, new Sum(clickField));
         pipe = new Every(pipe, impField, new Sum(impField));
-        pipe = new GroupBy(pipe, Fields.NONE, impField, true);
+//        pipe = new GroupBy(pipe, Fields.NONE, impField, true);
         pipe = new TransformEach(pipe, new Fields(CLICK, IMPRESSION), new Fields(ctr),
                 (MultiInMultiOutFunction) x -> new Object[]{((Double)x[0]).floatValue()/((Double)x[1]).floatValue()}, Fields.ALL);
 
