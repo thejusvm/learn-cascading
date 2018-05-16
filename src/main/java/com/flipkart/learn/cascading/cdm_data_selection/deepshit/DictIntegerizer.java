@@ -7,9 +7,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class DictIntegerizer implements Serializable{
 
@@ -17,19 +15,30 @@ public class DictIntegerizer implements Serializable{
 
     private final Map<String, Integer> termDict;
 
+    private final Set<Integer> collectOnly;
+
     private int currentCount;
 
     public DictIntegerizer(String name) {
         this(name, new String[0]);
     }
 
+    public DictIntegerizer(String name, Set<Integer> collectOnly) {
+        this(name, new String[0], collectOnly);
+    }
+
     public DictIntegerizer(String name, String[] defaultKeys) {
+        this(name, defaultKeys, null);
+    }
+
+    public DictIntegerizer(String name, String[] defaultKeys, Set<Integer> collectOnly) {
         this.name = name;
         this.termDict = new HashMap<>();
         this.currentCount = 0;
         for (String defaultKey : defaultKeys) {
             this.get(defaultKey);
         }
+        this.collectOnly = collectOnly;
     }
 
     public String getName() {
@@ -49,7 +58,9 @@ public class DictIntegerizer implements Serializable{
     }
 
     private void add(String term) {
-        termDict.put(term, currentCount);
+        if(collectOnly == null || collectOnly.contains(currentCount)) {
+            termDict.put(term, currentCount);
+        }
         currentCount++;
     }
 
@@ -58,7 +69,7 @@ public class DictIntegerizer implements Serializable{
         if(!termDict.containsKey(term)) {
             add(term);
         }
-        return termDict.get(term);
+        return termDict.getOrDefault(term, -1);
     }
 
     public int only_get(String term, int missingVal) {

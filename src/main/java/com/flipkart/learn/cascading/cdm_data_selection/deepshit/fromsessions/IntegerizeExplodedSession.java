@@ -29,30 +29,28 @@ import static com.flipkart.learn.cascading.cdm_data_selection.deepshit.fromsessi
 
 public class IntegerizeExplodedSession extends SubAssembly {
 
-    private String attributeDictPath;
+    private String productDataPath;
     private final FeatureSchema schema;
     private boolean jsonize;
-    private String integerizedAttributesPath;
     private final int start;
     private final int end;
 
-    public IntegerizeExplodedSession(String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema) {
-        this(new Pipe("session-integerizer"), integerizedAttributesPath, attributeDictPath, schema);
+    public IntegerizeExplodedSession(String productDataPath, FeatureSchema schema) {
+        this(new Pipe("session-integerizer"), productDataPath, schema);
     }
 
-    public IntegerizeExplodedSession(Pipe pipe, String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema) {
-        this(pipe, integerizedAttributesPath, attributeDictPath, schema,true, 0, Integer.MAX_VALUE);
+    public IntegerizeExplodedSession(Pipe pipe, String productDataPath, FeatureSchema schema) {
+        this(pipe, productDataPath, schema,true, 0, Integer.MAX_VALUE);
     }
 
-    public IntegerizeExplodedSession(String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema,
+    public IntegerizeExplodedSession(String productDataPath, FeatureSchema schema,
                                      int start, int end) {
-        this(new Pipe("session-integerizer"), integerizedAttributesPath, attributeDictPath, schema,true, start, end);
+        this(new Pipe("session-integerizer"), productDataPath, schema,true, start, end);
     }
 
-    public IntegerizeExplodedSession(Pipe pipe, String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema, boolean jsonize,
+    public IntegerizeExplodedSession(Pipe pipe, String productDataPath, FeatureSchema schema, boolean jsonize,
                                      int start, int end) {
-        this.attributeDictPath = attributeDictPath;
-        this.integerizedAttributesPath = integerizedAttributesPath;
+        this.productDataPath = productDataPath;
         this.schema = schema;
         this.jsonize = jsonize;
         this.start = start;
@@ -67,7 +65,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
 
         pipe = new Each(pipe, new Fields(POSITIVE_PRODUCTS), new ToList(new Fields(POSITIVE_PRODUCTS)), Fields.SWAP);
         Fields integerizingFields = new Fields(POSITIVE_PRODUCTS, NEGATIVE_PRODUCTS, PAST_CLICKED_SHORT_PRODUCTS, PAST_CLICKED_LONG_PRODUCTS, PAST_BOUGHT_PRODUCTS);
-        pipe = new Each(pipe, integerizingFields, new Integerize(integerizingFields, integerizedAttributesPath, attributeDictPath, schema, start, end), Fields.SWAP);
+        pipe = new Each(pipe, integerizingFields, new Integerize(integerizingFields, productDataPath, schema, start, end), Fields.SWAP);
         pipe = new TransformEach(pipe, new Fields(POSITIVE_PRODUCTS), x -> ((List) x).get(0), Fields.SWAP);
 
         if(jsonize) {
@@ -93,35 +91,28 @@ public class IntegerizeExplodedSession extends SubAssembly {
 
     private static class Integerize extends BaseOperation implements Function {
 
-        private static DictIntegerizer idDict;
-        private final String integerizedAttributesPath;
-        private final String attributeDictPath;
+        private final String productDataPath;
         private final FeatureSchema schema;
         private final ImmutableSet<String> numericFeatures;
         private final int start;
         private final int end;
         private static IntegerizedProductAttributesWrapper wrapper;
 
-        public Integerize(Fields fields, String integerizedAttributesPath, String attributeDictPath, FeatureSchema schema,
+        public Integerize(Fields fields, String productDataPath, FeatureSchema schema,
                           int start, int end) {
             super(fields);
-            this.integerizedAttributesPath = integerizedAttributesPath;
-            this.attributeDictPath = attributeDictPath;
+            this.productDataPath = productDataPath;
             this.schema = schema;
             numericFeatures = ImmutableSet.copyOf(schema.getFeaturesNamesForType(Feature.FeatureType.NUMERIC));
             this.start = start;
             this.end = end;
-//            idDict = null;
-//            wrapper = null;
+            wrapper = null;
         }
 
-        private static synchronized void init(String primaryKey, String integerizedAttributesPath, String attributeDictPath,
+        private static synchronized void init(String primaryKey, String productDataPath,
                                               int start, int end) throws IOException {
-            if(idDict == null){
-                String idDictPath = DictIntegerizerUtils.getAttributeDictPath(attributeDictPath, primaryKey);
-                idDict = DictIntegerizerUtils.getDictIntegerizer(idDictPath);
-                System.out.println("done reading attributes dict from path : " + attributeDictPath + ", " + idDict);
-                wrapper = IntegerizedProductAttributesRepo.getWrapper(integerizedAttributesPath, primaryKey, start, end);
+            if(wrapper == null){
+                wrapper = IntegerizedProductAttributesRepo.getWrapper(productDataPath, primaryKey, start, end);
             }
         }
 
@@ -129,7 +120,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
             try {
                 HdfsUtils.setConfiguration((Configuration)flowProcess.getConfigCopy());
-                init(schema.getPrimaryKey(), integerizedAttributesPath, attributeDictPath, start, end);
+                init(schema.getPrimaryKey(), productDataPath, start, end);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -152,8 +143,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
                 if(productId instanceof Integer) {
                     integerAttributes.add(productAttribute);
                 } else if(productId instanceof String) {
-                    int idIndex = idDict.only_get((String)productId, DictIntegerizerUtils.MISSING_DATA_INDEX);
-                    Map<String, Integer> idAttributes = wrapper.getIdAttributes(idIndex);
+                    Map<String, Integer> idAttributes = wrapper.getIdAttributes((String) productId);
                     if(idAttributes == null) {
                         integerAttributes.add(productAttribute);
                     } else {
@@ -206,9 +196,7 @@ public class IntegerizeExplodedSession extends SubAssembly {
 
     public static void flow(String input, String productsIntPath, String output, int start, int stop) {
         FeatureSchema schema = FeatureRepo.getFeatureSchema(FeatureRepo.LIFESTYLE_KEY);
-        String integerizedAttributesPath = IntegerizeProductAttributes.getIntegerizedAttributesPath(productsIntPath);
-        String attributeDictPath = IntegerizeProductAttributes.getAttributeDictsPath(productsIntPath);
-        IntegerizeExplodedSession integerizer = new IntegerizeExplodedSession(integerizedAttributesPath, attributeDictPath, schema,
+        IntegerizeExplodedSession integerizer = new IntegerizeExplodedSession(productsIntPath, schema,
                 start, stop);
 
         PipeRunner runner = new PipeRunner("explode-integerize");

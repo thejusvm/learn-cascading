@@ -40,13 +40,18 @@ public class DictIntegerizerUtils {
         return dicts;
     }
 
-    public static DictIntegerizer getDictIntegerizer(String file) {
+    public static DictIntegerizer getDictIntegerizer(String file, Set<Integer> ords) {
         System.out.println("reading dict from file : " + file);
-        DictIntegerizerCollector dictCollector = new DictIntegerizerCollector();
+        DictIntegerizerCollector dictCollector = new DictIntegerizerCollector(ords);
         FileProcessor.hdfsEachLine(file, dictCollector);
         DictIntegerizer dict = dictCollector.getDict();
         System.out.println("done reading dict : " + dict);
         return dict;
+
+    }
+
+    public static DictIntegerizer getDictIntegerizer(String file) {
+        return getDictIntegerizer(file, null);
     }
 
     public static void writeAttributeDicts(Collection<DictIntegerizer> dicts, String outputPath) throws IOException {
@@ -87,8 +92,10 @@ public class DictIntegerizerUtils {
 
         private DictIntegerizer dict;
         boolean first;
+        private Set<Integer> ords;
 
-        public DictIntegerizerCollector() {
+        public DictIntegerizerCollector(Set<Integer> ords) {
+            this.ords = ords;
             first = true;
         }
 
@@ -96,7 +103,7 @@ public class DictIntegerizerUtils {
         public boolean collect(String line) {
             if(first) {
                 String name = line;
-                dict = new DictIntegerizer(name);
+                dict = new DictIntegerizer(name, ords);
                 first = false;
             } else {
                 dict.get(line);

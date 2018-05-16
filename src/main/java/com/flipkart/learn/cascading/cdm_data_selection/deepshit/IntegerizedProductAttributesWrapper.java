@@ -4,6 +4,7 @@ import com.flipkart.images.Container;
 import com.flipkart.images.FetchImageUrls;
 import com.flipkart.images.FileProcessor;
 import com.flipkart.learn.cascading.commons.HdfsUtils;
+import com.sun.tools.corba.se.idl.StringGen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,7 @@ public class IntegerizedProductAttributesWrapper {
     private List<List<Integer>> allFieldValues;
     private List<Integer> counts;
     private Map<Integer, Integer> idIndex;
+    private DictIntegerizer idDict;
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegerizedProductAttributesWrapper.class);
 
@@ -29,16 +31,33 @@ public class IntegerizedProductAttributesWrapper {
         this(dir, idAttribute, 0, Integer.MAX_VALUE);
     }
 
-    public IntegerizedProductAttributesWrapper(String dir, String idAttribute, int fromIndex, int toIndex) throws IOException {
+    public IntegerizedProductAttributesWrapper(String baseDir, String idAttribute, int fromIndex, int toIndex) throws IOException {
         this.idAttribute = idAttribute;
         fieldNames = new ArrayList<>();
         allFieldValues = new ArrayList<>();
         counts = new ArrayList<>();
 
 
+        String attributesPath = IntegerizeProductAttributes.getIntegerizedAttributesPath(baseDir);
+        populateFieldValues(attributesPath, fromIndex, toIndex);
+        if(idAttribute != null) {
+            idIndex = createIdIndex(allFieldValues, idAttribute);
+            String dictPath = IntegerizeProductAttributes.getAttributeDictsPath(baseDir);
+            String idDictPath = DictIntegerizerUtils.getAttributeDictPath(dictPath, idAttribute);
+            idDict = initDict(idDictPath, idIndex.keySet());
+        }
+    }
+
+    private DictIntegerizer initDict(String idDictPath, Set<Integer> integers) {
+        DictIntegerizer dictIntegerizer = DictIntegerizerUtils.getDictIntegerizer(idDictPath, integers);
+        System.out.println("done reading attributes dict from path : " + idDictPath + ", " + idDict);
+        return dictIntegerizer;
+    }
+
+    private void populateFieldValues(String attributesPath, int fromIndex, int toIndex) throws IOException {
         final int[] lineCounter = {-1};
-        LOG.info("starting to read IntegerizedProductAttributes from path : " + dir);
-        List<String> paths = HdfsUtils.listFiles(dir, 1);
+        LOG.info("starting to read IntegerizedProductAttributes from path : " + attributesPath);
+        List<String> paths = HdfsUtils.listFiles(attributesPath, 1);
         Collections.sort(paths);
         for (String path : paths) {
             FileProcessor.hdfsEachLine(path, new Container<String>() {
@@ -70,15 +89,10 @@ public class IntegerizedProductAttributesWrapper {
             });
             LOG.info("done to read IntegerizedProductAttributes from path : " + path);
         }
-
-        if(idAttribute != null) {
-            int idColumn = fieldNames.indexOf(idAttribute);
-            idIndex = createIdIndex(allFieldValues, idColumn);
-        }
-
     }
 
-    private Map<Integer, Integer> createIdIndex(List<List<Integer>> allFieldValues, int idCol) {
+    private Map<Integer, Integer> createIdIndex(List<List<Integer>> allFieldValues, String idAttribute) {
+        int idCol = fieldNames.indexOf(idAttribute);
         Map<Integer, Integer> index = new HashMap<>();
         for (int i = 0; i < allFieldValues.size(); i++) {
             List<Integer> allFieldValue = allFieldValues.get(i);
@@ -96,10 +110,11 @@ public class IntegerizedProductAttributesWrapper {
         return allFieldValues.size();
     }
 
-    public Map<String, Integer> getIdAttributes(int id) {
+    public Map<String, Integer> getIdAttributes(String id) {
         if(idAttribute != null) {
-            if(idIndex.containsKey(id)) {
-                return getAttributes(idIndex.get(id));
+            int idOrd = idDict.only_get(id, -1);
+            if(idIndex.containsKey(idOrd)) {
+                return getAttributes(idIndex.get(idOrd));
             } else {
                 return null;
             }
@@ -123,7 +138,7 @@ public class IntegerizedProductAttributesWrapper {
 
     public static void main(String[] args) throws IOException {
         IntegerizedProductAttributesWrapper wrapper = new IntegerizedProductAttributesWrapper(
-                "data/session-20180210.10000.explode.products-int/integerized_attributes/part-0", null, 85, 105);
+                "data/session-20180210.10000.explode.products-int", null, 85, 105);
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String next = scanner.next();
