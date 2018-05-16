@@ -36,7 +36,7 @@ public class AttributeMapToColumns extends SubAssembly {
 //        fieldToPrefix.put(IMPRESSIONS_DISTRIBUTED_NEGATIVE_SAMPLED_PRODUCTS, "impression_random");
         fieldToPrefix.put(PAST_CLICKED_SHORT_PRODUCTS, "clicked_short");
         fieldToPrefix.put(PAST_CLICKED_LONG_PRODUCTS, "clicked_long");
-        fieldToPrefix.put(PAST_BOUGHT_PRODUCTS, "bought");
+//        fieldToPrefix.put(PAST_BOUGHT_PRODUCTS, "bought");
     }
 
 
@@ -90,26 +90,32 @@ public class AttributeMapToColumns extends SubAssembly {
 
     private static class GenerateAttributeColumns extends BaseOperation implements Function {
 
+        private String prefix;
         private final List<String> fieldNames;
 
         public GenerateAttributeColumns(String prefix, List<String> fieldNames) {
             super(new Fields(generateColumnNames(prefix, fieldNames)));
+            this.prefix = prefix;
             this.fieldNames = fieldNames;
         }
 
 
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall functionCall) {
-            List<Map<String, Integer>> attributeMaps = (List<Map<String, Integer>>) functionCall.getArguments().getObject(0);
+            List<Map<String, Object>> attributeMaps = (List<Map<String, Object>>) functionCall.getArguments().getObject(0);
             List<List<Integer>> attributeValues = new ArrayList<>();
             for (int i = 0; i < fieldNames.size(); i++) {
                 attributeValues.add(new ArrayList<>());
             }
-            for (Map<String, Integer> attributeMap : attributeMaps) {
+            for (Map<String, Object> attributeMap : attributeMaps) {
                 for (int i = 0; i < fieldNames.size(); i++) {
                     String fieldName = fieldNames.get(i);
-                    Integer value = attributeMap.getOrDefault(fieldName, DictIntegerizerUtils.MISSING_DATA_INDEX);
-                    attributeValues.get(i).add(value);
+                    Object value = attributeMap.getOrDefault(fieldName, DictIntegerizerUtils.MISSING_DATA_INDEX);
+                    if(value instanceof Integer) {
+                        attributeValues.get(i).add((Integer) value);
+                    } else {
+                        throw new RuntimeException(value.toString() + " not an integer in context : " + prefix);
+                    }
                 }
             }
             Tuple result = new Tuple();

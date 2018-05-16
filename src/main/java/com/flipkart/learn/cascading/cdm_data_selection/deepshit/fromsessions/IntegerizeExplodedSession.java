@@ -195,6 +195,9 @@ public class IntegerizeExplodedSession extends SubAssembly {
             flow(input, productsIntPath, loopOutput, start, end);
             start = end;
             end = start + linesPerPart;
+            if(i != 0) {
+                HdfsUtils.cleanDir(input);
+            }
             input = loopOutput;
         }
         return input;
